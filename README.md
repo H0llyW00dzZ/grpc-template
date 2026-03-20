@@ -1,5 +1,9 @@
 # gRPC Template
 
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D1.26-blue?logo=go)](https://go.dev/dl/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/H0llyW00dzZ/grpc-template.svg)](https://pkg.go.dev/github.com/H0llyW00dzZ/grpc-template)
+[![Go Report Card](https://goreportcard.com/badge/github.com/H0llyW00dzZ/grpc-template)](https://goreportcard.com/report/github.com/H0llyW00dzZ/grpc-template)
+
 A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC projects. Designed as a template repository for any Git code hosting (e.g., GitHub).
 
 > **Actively maintained** — I built this template from my own experience with high-performance and critical systems that rely on gRPC. Proto definitions are added as I encounter real-world patterns worth templating. Use this repo as a template to bootstrap your next project without writing boilerplate from scratch.
