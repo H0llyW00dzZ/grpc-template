@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"os"
 
 	"google.golang.org/grpc"
@@ -120,5 +121,15 @@ func WithMaxConcurrentStreams(n uint32) Option {
 func WithGrpcOptions(opts ...grpc.ServerOption) Option {
 	return func(s *Server) {
 		s.grpcOpts = append(s.grpcOpts, opts...)
+	}
+}
+
+// WithListener sets a pre-created net.Listener for the server to use
+// instead of opening a new TCP listener on the configured port.
+// This is useful for testing (e.g., bufconn) and custom deployment
+// scenarios such as Unix domain sockets or systemd socket activation.
+func WithListener(lis net.Listener) Option {
+	return func(s *Server) {
+		s.listener = lis
 	}
 }

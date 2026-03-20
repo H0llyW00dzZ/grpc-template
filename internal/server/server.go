@@ -34,6 +34,7 @@ type Server struct {
 	streamInterceptors []grpc.StreamServerInterceptor
 	registrars         []ServiceRegistrar
 	grpcOpts           []grpc.ServerOption
+	listener           net.Listener
 }
 
 // New creates a new Server with the given functional options.
@@ -108,10 +109,14 @@ func (s *Server) Run(ctx context.Context) error {
 
 	grpcServer, healthServer := s.setupServer()
 
-	// Start TCP listener.
-	lis, err := net.Listen("tcp", ":"+s.port)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", s.port, err)
+	// Use injected listener or start a new TCP listener.
+	lis := s.listener
+	if lis == nil {
+		var err error
+		lis, err = net.Listen("tcp", ":"+s.port)
+		if err != nil {
+			return fmt.Errorf("failed to listen on port %s: %w", s.port, err)
+		}
 	}
 
 	// Start serving in a goroutine.
