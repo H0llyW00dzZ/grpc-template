@@ -65,6 +65,21 @@ grpc-template/
 └── README.md
 ```
 
+## Getting Started
+
+Clone this repository to bootstrap your new project:
+
+```bash
+git clone https://github.com/H0llyW00dzZ/grpc-template.git my-grpc-project
+cd my-grpc-project
+```
+
+Then update the Go module path to match your own project:
+
+```bash
+go mod edit -module github.com/yourorg/yourproject
+```
+
 ## Prerequisites
 
 - [Go](https://go.dev/) 1.26+
