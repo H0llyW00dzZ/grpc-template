@@ -16,6 +16,13 @@ proto:
 	buf generate
 	@echo "==> Done."
 
+# Generate code for a specific proto path.
+# Usage: make proto-path PROTO_PATH=proto/storage/v1
+proto-path:
+	@echo "==> Generating proto for $(PROTO_PATH)..."
+	buf generate --path $(PROTO_PATH)
+	@echo "==> Done."
+
 # Lint proto files.
 lint-proto:
 	@echo "==> Linting proto files..."

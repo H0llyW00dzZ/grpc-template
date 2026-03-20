@@ -164,6 +164,7 @@ srv.RegisterService(
 | Set keepalives | `cmd/server/main.go` | `server.WithKeepalive(...)` |
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
+| Custom listener | `cmd/server/main.go` | `server.WithListener(lis)` |
 | Proto output path | `buf.gen.yaml` | Change `out` field |
 | Go module path | `go.mod` | `go mod edit -module your/module` |
 
@@ -172,6 +173,7 @@ srv.RegisterService(
 | Target | Description |
 |--------|-------------|
 | `make proto` | Generate Go + TypeScript/JS + PHP code from proto files |
+| `make proto-path PROTO_PATH=proto/storage/v1` | Generate code for a specific proto package |
 | `make build` | Build server and client binaries |
 | `make run-server` | Run the gRPC server |
 | `make run-client` | Run the client demo |
