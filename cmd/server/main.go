@@ -11,6 +11,7 @@ import (
 	"log"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
+	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 )
 
@@ -23,12 +24,12 @@ func main() {
 		server.WithPort("50051"),
 		server.WithReflection(),
 		server.WithUnaryInterceptors(
-			server.RecoveryInterceptor(),
-			server.LoggingInterceptor(),
+			interceptor.Recovery(),
+			interceptor.Logging(),
 		),
 		server.WithStreamInterceptors(
-			server.StreamRecoveryInterceptor(),
-			server.StreamLoggingInterceptor(),
+			interceptor.StreamRecovery(),
+			interceptor.StreamLogging(),
 		),
 	)
 
