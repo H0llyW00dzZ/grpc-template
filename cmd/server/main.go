@@ -11,7 +11,7 @@ import (
 	"log"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
-	"github.com/H0llyW00dzZ/grpc-template/internal/service"
+	service "github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 )
 
 func main() {

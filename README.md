@@ -44,7 +44,9 @@ grpc-template/
 │   │   ├── option.go           # Functional options (TLS, mTLS)
 │   │   └── interceptor.go      # Logging & recovery interceptors
 │   ├── service/
-│   │   └── greeter.go          # Example service implementation
+│   │   └── greeter/            # Example service implementation
+│   │       ├── greeter.go      # Greeter service
+│   │       └── greeter_test.go # Greeter service tests
 │   └── testutil/
 │       └── grpctest.go         # Shared bufconn test helpers
 ├── proto/
@@ -164,13 +166,13 @@ Tests use [bufconn](https://pkg.go.dev/google.golang.org/grpc/test/bufconn) for 
 make test
 ```
 
-Shared test helpers live in `internal/testutil/`. See `internal/service/greeter_test.go` for a working example of unary and server-streaming RPC tests.
+Shared test helpers live in `internal/testutil/`. See `internal/service/greeter/greeter_test.go` for a working example of unary and server-streaming RPC tests.
 
 ## Adding a New Service
 
 1. **Define a proto** — Create a new `.proto` file under `proto/yourservice/v1/`
 2. **Generate code** — Run `make proto`
-3. **Implement the service** — Create a new file in `internal/service/` implementing the generated server interface
+3. **Implement the service** — Create a new package in `internal/service/<yourservice>/` implementing the generated server interface
 4. **Register the service** — Add to `srv.RegisterService(...)` in `cmd/server/main.go`
 
 ```go
