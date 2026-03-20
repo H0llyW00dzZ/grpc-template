@@ -7,7 +7,7 @@ managed:
       value: github.com/H0llyW00dzZ/grpc-template/pkg/gen
 
 plugins:
-  # Go server
+  # Go (can be used as both client and server)
   - remote: buf.build/protocolbuffers/go
     out: pkg/gen
     opt: paths=source_relative
