@@ -51,18 +51,18 @@ run-client:
 ## ──────────────────────────────────────────────
 
 # Run all tests.
-test:
+test: proto
 	@echo "==> Running tests..."
-	go test ./... -v -count=1
+	go test ./cmd/... ./internal/... -v -count=1
 	@echo "==> Done."
 
 # Run go vet.
 vet:
-	go vet ./...
+	go vet ./cmd/... ./internal/...
 
 # Run linter (requires golangci-lint).
 lint:
-	golangci-lint run ./...
+	golangci-lint run ./cmd/... ./internal/...
 
 ## ──────────────────────────────────────────────
 ## Cleanup
