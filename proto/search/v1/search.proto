@@ -1,0 +1,184 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package search.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/search/v1;searchv1";
+
+// SearchService provides full-text search, indexing, and suggestion capabilities.
+//
+// Suitable for product catalogs, document search, log exploration,
+// and any workload requiring fast, ranked text retrieval.
+service SearchService {
+  // Index adds or updates a document in the search index.
+  rpc Index(IndexRequest) returns (IndexResponse) {}
+
+  // Search performs a full-text search query.
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+
+  // Suggest returns autocomplete suggestions for a partial query.
+  rpc Suggest(SuggestRequest) returns (SuggestResponse) {}
+
+  // DeleteDocument removes a document from the index.
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {}
+
+  // BatchIndex indexes multiple documents in a single call.
+  rpc BatchIndex(BatchIndexRequest) returns (BatchIndexResponse) {}
+}
+
+// Document represents a searchable document.
+message Document {
+  // id is the unique document identifier.
+  string id = 1;
+
+  // index_name is the index this document belongs to (e.g., "products", "logs").
+  string index_name = 2;
+
+  // fields contains the document's searchable fields as structured data.
+  google.protobuf.Struct fields = 3;
+
+  // indexed_at is when the document was last indexed.
+  google.protobuf.Timestamp indexed_at = 4;
+}
+
+// SearchHit represents a single search result.
+message SearchHit {
+  // document is the matched document.
+  Document document = 1;
+
+  // score is the relevance score.
+  double score = 2;
+
+  // highlights maps field names to highlighted snippets.
+  map<string, string> highlights = 3;
+}
+
+// FacetCount represents a count for a facet value.
+message FacetCount {
+  // value is the facet value.
+  string value = 1;
+
+  // count is the number of documents matching this value.
+  int64 count = 2;
+}
+
+// IndexRequest adds or updates a document.
+message IndexRequest {
+  // index_name is the target index.
+  string index_name = 1;
+
+  // document_id is the unique document identifier.
+  string document_id = 2;
+
+  // fields contains the document's searchable fields.
+  google.protobuf.Struct fields = 3;
+}
+
+// IndexResponse is returned after indexing a document.
+message IndexResponse {
+  // indexed indicates whether the document was successfully indexed.
+  bool indexed = 1;
+}
+
+// SearchRequest performs a search query.
+message SearchRequest {
+  // index_name is the index to search.
+  string index_name = 1;
+
+  // query is the search query string.
+  string query = 2;
+
+  // filters are key-value pairs for filtering results.
+  map<string, string> filters = 3;
+
+  // facet_fields are fields to compute facet counts for.
+  repeated string facet_fields = 4;
+
+  // page_size is the maximum number of results to return.
+  int32 page_size = 5;
+
+  // page_token is the pagination cursor.
+  string page_token = 6;
+
+  // sort_by is the field to sort results by (optional).
+  string sort_by = 7;
+
+  // sort_descending controls sort order.
+  bool sort_descending = 8;
+}
+
+// SearchResponse contains search results.
+message SearchResponse {
+  // hits is the list of matching documents.
+  repeated SearchHit hits = 1;
+
+  // total_hits is the total number of matches (may exceed page_size).
+  int64 total_hits = 2;
+
+  // facets maps facet field names to their value counts.
+  map<string, FacetResult> facets = 3;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 4;
+}
+
+// FacetResult contains counts for a single facet field.
+message FacetResult {
+  // counts is the list of value counts.
+  repeated FacetCount counts = 1;
+}
+
+// SuggestRequest returns autocomplete suggestions.
+message SuggestRequest {
+  // index_name is the index to suggest from.
+  string index_name = 1;
+
+  // prefix is the partial query to complete.
+  string prefix = 2;
+
+  // field is the field to suggest from (optional).
+  string field = 3;
+
+  // limit is the maximum number of suggestions.
+  int32 limit = 4;
+}
+
+// SuggestResponse contains suggestions.
+message SuggestResponse {
+  // suggestions is the list of suggested completions.
+  repeated string suggestions = 1;
+}
+
+// DeleteDocumentRequest removes a document from the index.
+message DeleteDocumentRequest {
+  // index_name is the index containing the document.
+  string index_name = 1;
+
+  // document_id is the document to remove.
+  string document_id = 2;
+}
+
+// DeleteDocumentResponse is returned after deletion.
+message DeleteDocumentResponse {
+  // deleted indicates whether the document existed and was removed.
+  bool deleted = 1;
+}
+
+// BatchIndexRequest indexes multiple documents.
+message BatchIndexRequest {
+  // requests is the list of index requests.
+  repeated IndexRequest requests = 1;
+}
+
+// BatchIndexResponse is returned after batch indexing.
+message BatchIndexResponse {
+  // indexed_count is the number of documents successfully indexed.
+  int32 indexed_count = 1;
+}

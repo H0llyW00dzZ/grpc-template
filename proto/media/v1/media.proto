@@ -1,0 +1,190 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package media.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/media/v1;mediav1";
+
+// MediaService provides media processing and transformation pipelines.
+//
+// Suitable for image/video transcoding, thumbnail generation, watermarking,
+// and any workload requiring asynchronous media processing with progress tracking.
+service MediaService {
+  // Transcode submits a media transcoding job.
+  rpc Transcode(TranscodeRequest) returns (TranscodeResponse) {}
+
+  // Resize resizes an image.
+  rpc Resize(ResizeRequest) returns (ResizeResponse) {}
+
+  // GetJobStatus retrieves the current status of a processing job.
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusResponse) {}
+
+  // WatchJob streams real-time progress updates for a processing job.
+  rpc WatchJob(WatchJobRequest) returns (stream WatchJobResponse) {}
+
+  // ListJobs lists media processing jobs.
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
+
+  // CancelJob cancels a pending or running job.
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
+}
+
+// MediaJobStatus represents the processing state.
+enum MediaJobStatus {
+  MEDIA_JOB_STATUS_UNSPECIFIED = 0;
+  MEDIA_JOB_STATUS_QUEUED = 1;
+  MEDIA_JOB_STATUS_PROCESSING = 2;
+  MEDIA_JOB_STATUS_COMPLETED = 3;
+  MEDIA_JOB_STATUS_FAILED = 4;
+  MEDIA_JOB_STATUS_CANCELLED = 5;
+}
+
+// MediaJob represents a media processing job.
+message MediaJob {
+  // job_id is the unique identifier.
+  string job_id = 1;
+
+  // status is the current processing state.
+  MediaJobStatus status = 2;
+
+  // progress_percent is the completion percentage (0-100).
+  int32 progress_percent = 3;
+
+  // input_url is the source media URL.
+  string input_url = 4;
+
+  // output_url is the processed media URL (populated on completion).
+  string output_url = 5;
+
+  // error_message contains error details if the job failed.
+  string error_message = 6;
+
+  // created_at is when the job was created.
+  google.protobuf.Timestamp created_at = 7;
+
+  // completed_at is when the job finished.
+  google.protobuf.Timestamp completed_at = 8;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 9;
+}
+
+// TranscodeRequest submits a transcoding job.
+message TranscodeRequest {
+  // input_url is the source media URL.
+  string input_url = 1;
+
+  // output_format is the target format (e.g., "mp4", "webm", "mp3").
+  string output_format = 2;
+
+  // output_bucket is the destination storage bucket/path.
+  string output_bucket = 3;
+
+  // video_codec is the target video codec (e.g., "h264", "vp9", "av1").
+  string video_codec = 4;
+
+  // audio_codec is the target audio codec (e.g., "aac", "opus").
+  string audio_codec = 5;
+
+  // max_bitrate_kbps is the maximum bitrate in kbps (optional).
+  int32 max_bitrate_kbps = 6;
+
+  // resolution is the target resolution (e.g., "1920x1080", optional).
+  string resolution = 7;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 8;
+}
+
+// TranscodeResponse is returned after submitting a transcode job.
+message TranscodeResponse {
+  // job_id is the assigned job identifier.
+  string job_id = 1;
+}
+
+// ResizeRequest resizes an image.
+message ResizeRequest {
+  // input_url is the source image URL.
+  string input_url = 1;
+
+  // width is the target width in pixels.
+  int32 width = 2;
+
+  // height is the target height in pixels.
+  int32 height = 3;
+
+  // output_format is the target format (e.g., "png", "jpeg", "webp").
+  string output_format = 4;
+
+  // output_bucket is the destination storage path.
+  string output_bucket = 5;
+
+  // quality is the compression quality (1-100, JPEG/WebP only).
+  int32 quality = 6;
+}
+
+// ResizeResponse is returned after submitting a resize job.
+message ResizeResponse {
+  // job_id is the assigned job identifier.
+  string job_id = 1;
+}
+
+// GetJobStatusRequest retrieves a job's status.
+message GetJobStatusRequest {
+  // job_id is the job to query.
+  string job_id = 1;
+}
+
+// GetJobStatusResponse contains the job status.
+message GetJobStatusResponse {
+  // job is the media processing job.
+  MediaJob job = 1;
+}
+
+// WatchJobRequest subscribes to job progress updates.
+message WatchJobRequest {
+  // job_id is the job to watch.
+  string job_id = 1;
+}
+
+// WatchJobResponse wraps a job progress event.
+message WatchJobResponse {
+  // job is the current job state.
+  MediaJob job = 1;
+}
+
+// ListJobsRequest lists media processing jobs.
+message ListJobsRequest {
+  // status_filter filters by job status (optional).
+  MediaJobStatus status_filter = 1;
+
+  // page_size is the maximum number of jobs to return.
+  int32 page_size = 2;
+
+  // page_token is the pagination cursor.
+  string page_token = 3;
+}
+
+// ListJobsResponse contains a page of jobs.
+message ListJobsResponse {
+  // jobs is the list of media processing jobs.
+  repeated MediaJob jobs = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// CancelJobRequest cancels a job.
+message CancelJobRequest {
+  // job_id is the job to cancel.
+  string job_id = 1;
+}
+
+// CancelJobResponse is returned after cancellation.
+message CancelJobResponse {}

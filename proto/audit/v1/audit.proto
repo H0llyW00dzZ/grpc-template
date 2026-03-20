@@ -1,0 +1,185 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package audit.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/audit/v1;auditv1";
+
+// AuditService provides audit logging and compliance event tracking.
+//
+// Suitable for systems that require tamper-evident logging, compliance
+// auditing, security event tracking, and forensic analysis.
+service AuditService {
+  // LogEvent records a single audit event.
+  rpc LogEvent(LogEventRequest) returns (LogEventResponse) {}
+
+  // BatchLogEvents records multiple audit events in a single call.
+  rpc BatchLogEvents(BatchLogEventsRequest) returns (BatchLogEventsResponse) {}
+
+  // QueryEvents searches audit events with filters.
+  rpc QueryEvents(QueryEventsRequest) returns (QueryEventsResponse) {}
+
+  // StreamEvents opens a server-streaming connection to receive
+  // audit events in real time.
+  rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
+}
+
+// AuditEventSeverity categorizes the severity of an audit event.
+enum AuditEventSeverity {
+  AUDIT_EVENT_SEVERITY_UNSPECIFIED = 0;
+  AUDIT_EVENT_SEVERITY_INFO = 1;
+  AUDIT_EVENT_SEVERITY_WARNING = 2;
+  AUDIT_EVENT_SEVERITY_ERROR = 3;
+  AUDIT_EVENT_SEVERITY_CRITICAL = 4;
+}
+
+// AuditEvent represents a single audit log entry.
+message AuditEvent {
+  // event_id is the unique identifier for this event.
+  string event_id = 1;
+
+  // action is the operation performed (e.g., "user.login", "resource.delete").
+  string action = 2;
+
+  // actor is the identifier of who performed the action (user ID, service name).
+  string actor = 3;
+
+  // resource_type is the type of resource acted upon (e.g., "user", "order").
+  string resource_type = 4;
+
+  // resource_id is the identifier of the specific resource.
+  string resource_id = 5;
+
+  // severity is the event severity level.
+  AuditEventSeverity severity = 6;
+
+  // outcome indicates whether the action succeeded or failed.
+  string outcome = 7;
+
+  // details contains structured event data.
+  google.protobuf.Struct details = 8;
+
+  // source_ip is the IP address of the request origin.
+  string source_ip = 9;
+
+  // user_agent is the client user agent string.
+  string user_agent = 10;
+
+  // timestamp is when the event occurred.
+  google.protobuf.Timestamp timestamp = 11;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 12;
+}
+
+// LogEventRequest records a single audit event.
+message LogEventRequest {
+  // action is the operation performed.
+  string action = 1;
+
+  // actor is who performed the action.
+  string actor = 2;
+
+  // resource_type is the type of resource acted upon.
+  string resource_type = 3;
+
+  // resource_id is the specific resource identifier.
+  string resource_id = 4;
+
+  // severity is the event severity level.
+  AuditEventSeverity severity = 5;
+
+  // outcome indicates whether the action succeeded or failed.
+  string outcome = 6;
+
+  // details contains structured event data.
+  google.protobuf.Struct details = 7;
+
+  // source_ip is the request origin IP address.
+  string source_ip = 8;
+
+  // user_agent is the client user agent string.
+  string user_agent = 9;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 10;
+}
+
+// LogEventResponse is returned after recording an audit event.
+message LogEventResponse {
+  // event_id is the assigned event identifier.
+  string event_id = 1;
+}
+
+// BatchLogEventsRequest records multiple audit events.
+message BatchLogEventsRequest {
+  // events is the list of audit events to record.
+  repeated LogEventRequest events = 1;
+}
+
+// BatchLogEventsResponse is returned after recording a batch.
+message BatchLogEventsResponse {
+  // event_ids is the list of assigned event identifiers.
+  repeated string event_ids = 1;
+}
+
+// QueryEventsRequest searches audit events.
+message QueryEventsRequest {
+  // actor_filter filters by actor (optional).
+  string actor_filter = 1;
+
+  // action_filter filters by action (optional).
+  string action_filter = 2;
+
+  // resource_type_filter filters by resource type (optional).
+  string resource_type_filter = 3;
+
+  // severity_filter filters by minimum severity (optional).
+  AuditEventSeverity severity_filter = 4;
+
+  // start_time is the beginning of the time range.
+  google.protobuf.Timestamp start_time = 5;
+
+  // end_time is the end of the time range.
+  google.protobuf.Timestamp end_time = 6;
+
+  // page_size is the maximum number of events to return.
+  int32 page_size = 7;
+
+  // page_token is the pagination cursor.
+  string page_token = 8;
+}
+
+// QueryEventsResponse contains a page of audit events.
+message QueryEventsResponse {
+  // events is the list of matching audit events.
+  repeated AuditEvent events = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// StreamEventsRequest subscribes to real-time audit events.
+message StreamEventsRequest {
+  // action_filter filters by action (optional).
+  string action_filter = 1;
+
+  // severity_filter filters by minimum severity (optional).
+  AuditEventSeverity severity_filter = 2;
+
+  // resource_type_filter filters by resource type (optional).
+  string resource_type_filter = 3;
+}
+
+// StreamEventsResponse wraps an audit event in the streaming response.
+message StreamEventsResponse {
+  // event is the audit event.
+  AuditEvent event = 1;
+}

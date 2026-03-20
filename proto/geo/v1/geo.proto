@@ -1,0 +1,225 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package geo.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/geo/v1;geov1";
+
+// GeoService provides geospatial operations.
+//
+// Suitable for location-based services, delivery tracking, geofencing,
+// fleet management, and any workload requiring spatial queries.
+service GeoService {
+  // NearbySearch finds points of interest within a radius.
+  rpc NearbySearch(NearbySearchRequest) returns (NearbySearchResponse) {}
+
+  // ReverseGeocode converts coordinates to a human-readable address.
+  rpc ReverseGeocode(ReverseGeocodeRequest) returns (ReverseGeocodeResponse) {}
+
+  // Geocode converts an address to coordinates.
+  rpc Geocode(GeocodeRequest) returns (GeocodeResponse) {}
+
+  // CreateGeofence defines a geographic boundary for monitoring.
+  rpc CreateGeofence(CreateGeofenceRequest) returns (CreateGeofenceResponse) {}
+
+  // CheckGeofence checks whether a point is inside a geofence.
+  rpc CheckGeofence(CheckGeofenceRequest) returns (CheckGeofenceResponse) {}
+
+  // TrackLocation streams real-time location updates.
+  rpc TrackLocation(stream TrackLocationRequest) returns (stream TrackLocationResponse) {}
+
+  // CalculateRoute computes a route between two or more points.
+  rpc CalculateRoute(CalculateRouteRequest) returns (CalculateRouteResponse) {}
+}
+
+// LatLng represents a geographic coordinate.
+message LatLng {
+  // latitude in degrees.
+  double latitude = 1;
+
+  // longitude in degrees.
+  double longitude = 2;
+}
+
+// GeoPoint represents a named location.
+message GeoPoint {
+  // id is the unique identifier.
+  string id = 1;
+
+  // location is the geographic coordinate.
+  LatLng location = 2;
+
+  // name is a human-readable label.
+  string name = 3;
+
+  // category is the point category (e.g., "restaurant", "warehouse").
+  string category = 4;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 5;
+}
+
+// NearbySearchRequest finds points within a radius.
+message NearbySearchRequest {
+  // center is the search origin.
+  LatLng center = 1;
+
+  // radius_meters is the search radius.
+  double radius_meters = 2;
+
+  // category_filter filters by category (optional).
+  string category_filter = 3;
+
+  // page_size is the maximum number of results.
+  int32 page_size = 4;
+
+  // page_token is the pagination cursor.
+  string page_token = 5;
+}
+
+// NearbySearchResult is a point with distance from the search center.
+message NearbySearchResult {
+  // point is the matched location.
+  GeoPoint point = 1;
+
+  // distance_meters is the distance from the search center.
+  double distance_meters = 2;
+}
+
+// NearbySearchResponse contains nearby search results.
+message NearbySearchResponse {
+  // results is the list of nearby points.
+  repeated NearbySearchResult results = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// ReverseGeocodeRequest converts coordinates to an address.
+message ReverseGeocodeRequest {
+  // location is the coordinate to look up.
+  LatLng location = 1;
+}
+
+// ReverseGeocodeResponse contains the resolved address.
+message ReverseGeocodeResponse {
+  // formatted_address is the full human-readable address.
+  string formatted_address = 1;
+
+  // components are the address parts.
+  map<string, string> components = 2;
+}
+
+// GeocodeRequest converts an address to coordinates.
+message GeocodeRequest {
+  // address is the address to geocode.
+  string address = 1;
+}
+
+// GeocodeResponse contains the resolved coordinates.
+message GeocodeResponse {
+  // location is the geographic coordinate.
+  LatLng location = 1;
+
+  // formatted_address is the normalized address string.
+  string formatted_address = 2;
+}
+
+// CreateGeofenceRequest defines a geofence boundary.
+message CreateGeofenceRequest {
+  // name is a human-readable label.
+  string name = 1;
+
+  // center is the center of a circular geofence.
+  LatLng center = 2;
+
+  // radius_meters is the radius of the circular geofence.
+  double radius_meters = 3;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 4;
+}
+
+// CreateGeofenceResponse is returned after creating a geofence.
+message CreateGeofenceResponse {
+  // geofence_id is the assigned identifier.
+  string geofence_id = 1;
+}
+
+// CheckGeofenceRequest checks whether a point is inside a geofence.
+message CheckGeofenceRequest {
+  // geofence_id is the geofence to check against.
+  string geofence_id = 1;
+
+  // location is the point to check.
+  LatLng location = 2;
+}
+
+// CheckGeofenceResponse contains the geofence check result.
+message CheckGeofenceResponse {
+  // inside indicates whether the point is within the geofence.
+  bool inside = 1;
+
+  // distance_meters is the distance from the geofence boundary (negative = inside).
+  double distance_meters = 2;
+}
+
+// TrackLocationRequest sends a location update in a bidirectional stream.
+message TrackLocationRequest {
+  // entity_id is the tracked entity (vehicle, user, device).
+  string entity_id = 1;
+
+  // location is the current position.
+  LatLng location = 2;
+
+  // speed_mps is the speed in meters per second (optional).
+  double speed_mps = 3;
+
+  // heading_degrees is the heading in degrees (0-360, optional).
+  double heading_degrees = 4;
+
+  // timestamp is when the position was recorded.
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+// TrackLocationResponse may contain geofence alerts or tracking acknowledgments.
+message TrackLocationResponse {
+  // entity_id is the tracked entity.
+  string entity_id = 1;
+
+  // geofence_alerts contains geofence IDs that triggered (entered/exited).
+  repeated string geofence_alerts = 2;
+
+  // acknowledged indicates the location was recorded.
+  bool acknowledged = 3;
+}
+
+// CalculateRouteRequest computes a route.
+message CalculateRouteRequest {
+  // origin is the starting point.
+  LatLng origin = 1;
+
+  // destination is the end point.
+  LatLng destination = 2;
+
+  // waypoints are intermediate stops (optional).
+  repeated LatLng waypoints = 3;
+}
+
+// CalculateRouteResponse contains the computed route.
+message CalculateRouteResponse {
+  // distance_meters is the total route distance.
+  double distance_meters = 1;
+
+  // duration_seconds is the estimated travel time.
+  double duration_seconds = 2;
+
+  // polyline is the encoded route geometry.
+  repeated LatLng polyline = 3;
+}

@@ -1,0 +1,231 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package identity.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/identity/v1;identityv1";
+
+// IdentityService provides user management and role-based access control.
+//
+// Suitable for user registration, profile management, RBAC,
+// permission checking, and any workload requiring identity governance.
+service IdentityService {
+  // CreateUser creates a new user.
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
+
+  // GetUser retrieves a user by ID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+
+  // UpdateUser updates a user's profile.
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {}
+
+  // DeleteUser removes a user.
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {}
+
+  // ListUsers lists users with optional filtering.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}
+
+  // AssignRole assigns a role to a user.
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse) {}
+
+  // RevokeRole removes a role from a user.
+  rpc RevokeRole(RevokeRoleRequest) returns (RevokeRoleResponse) {}
+
+  // CheckPermission checks whether a user has a specific permission.
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse) {}
+
+  // ListRoles lists all available roles.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {}
+}
+
+// User represents a user in the identity system.
+message User {
+  // user_id is the unique identifier.
+  string user_id = 1;
+
+  // email is the user's email address.
+  string email = 2;
+
+  // display_name is the user's display name.
+  string display_name = 3;
+
+  // status is the account status (e.g., "active", "suspended", "pending").
+  string status = 4;
+
+  // roles is the list of assigned role names.
+  repeated string roles = 5;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 6;
+
+  // created_at is when the user was created.
+  google.protobuf.Timestamp created_at = 7;
+
+  // updated_at is when the user was last modified.
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// Role represents a named set of permissions.
+message Role {
+  // role_id is the unique identifier.
+  string role_id = 1;
+
+  // name is the role name (e.g., "admin", "editor", "viewer").
+  string name = 2;
+
+  // description is a human-readable description.
+  string description = 3;
+
+  // permissions is the list of permissions granted by this role.
+  repeated string permissions = 4;
+}
+
+// CreateUserRequest creates a new user.
+message CreateUserRequest {
+  // email is the user's email address.
+  string email = 1;
+
+  // display_name is the user's display name.
+  string display_name = 2;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 3;
+}
+
+// CreateUserResponse is returned after creating a user.
+message CreateUserResponse {
+  // user_id is the assigned user identifier.
+  string user_id = 1;
+}
+
+// GetUserRequest retrieves a user.
+message GetUserRequest {
+  // user_id is the user to retrieve.
+  string user_id = 1;
+}
+
+// GetUserResponse contains the user.
+message GetUserResponse {
+  // user is the requested user.
+  User user = 1;
+}
+
+// UpdateUserRequest updates a user's profile.
+message UpdateUserRequest {
+  // user_id is the user to update.
+  string user_id = 1;
+
+  // display_name is the new display name (optional).
+  string display_name = 2;
+
+  // status is the new account status (optional).
+  string status = 3;
+
+  // metadata replaces the existing metadata.
+  map<string, string> metadata = 4;
+}
+
+// UpdateUserResponse contains the updated user.
+message UpdateUserResponse {
+  // user is the updated user.
+  User user = 1;
+}
+
+// DeleteUserRequest removes a user.
+message DeleteUserRequest {
+  // user_id is the user to delete.
+  string user_id = 1;
+}
+
+// DeleteUserResponse is returned after deletion.
+message DeleteUserResponse {}
+
+// ListUsersRequest lists users.
+message ListUsersRequest {
+  // status_filter filters by account status (optional).
+  string status_filter = 1;
+
+  // role_filter filters by role name (optional, users with this role).
+  string role_filter = 2;
+
+  // page_size is the maximum number of users to return.
+  int32 page_size = 3;
+
+  // page_token is the pagination cursor.
+  string page_token = 4;
+}
+
+// ListUsersResponse contains a page of users.
+message ListUsersResponse {
+  // users is the list of users.
+  repeated User users = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// AssignRoleRequest assigns a role to a user.
+message AssignRoleRequest {
+  // user_id is the target user.
+  string user_id = 1;
+
+  // role_name is the role to assign.
+  string role_name = 2;
+}
+
+// AssignRoleResponse is returned after assigning a role.
+message AssignRoleResponse {}
+
+// RevokeRoleRequest removes a role from a user.
+message RevokeRoleRequest {
+  // user_id is the target user.
+  string user_id = 1;
+
+  // role_name is the role to revoke.
+  string role_name = 2;
+}
+
+// RevokeRoleResponse is returned after revoking a role.
+message RevokeRoleResponse {}
+
+// CheckPermissionRequest checks whether a user has a permission.
+message CheckPermissionRequest {
+  // user_id is the user to check.
+  string user_id = 1;
+
+  // permission is the permission to check (e.g., "documents.write").
+  string permission = 2;
+
+  // resource is the optional resource context (e.g., "document:123").
+  string resource = 3;
+}
+
+// CheckPermissionResponse contains the permission check result.
+message CheckPermissionResponse {
+  // allowed indicates whether the user has the permission.
+  bool allowed = 1;
+}
+
+// ListRolesRequest lists all available roles.
+message ListRolesRequest {
+  // page_size is the maximum number of roles to return.
+  int32 page_size = 1;
+
+  // page_token is the pagination cursor.
+  string page_token = 2;
+}
+
+// ListRolesResponse contains a page of roles.
+message ListRolesResponse {
+  // roles is the list of roles.
+  repeated Role roles = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}

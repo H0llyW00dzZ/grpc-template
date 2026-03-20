@@ -1,0 +1,154 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package ratelimit.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/ratelimit/v1;ratelimitv1";
+
+// RateLimitService provides rate limiting and quota enforcement.
+//
+// Suitable for API gateways, load balancers, and any service that needs
+// to enforce request quotas and protect backend systems from overload.
+service RateLimitService {
+  // Check evaluates whether a request should be allowed or rate-limited.
+  rpc Check(CheckRequest) returns (CheckResponse) {}
+
+  // Report records usage against a quota (for async/batch reporting).
+  rpc Report(ReportRequest) returns (ReportResponse) {}
+
+  // GetQuota retrieves the current quota status for a key.
+  rpc GetQuota(GetQuotaRequest) returns (GetQuotaResponse) {}
+
+  // SetRule creates or updates a rate limit rule.
+  rpc SetRule(SetRuleRequest) returns (SetRuleResponse) {}
+
+  // ListRules lists all configured rate limit rules.
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
+}
+
+// RateLimitDecision is the result of a rate limit check.
+enum RateLimitDecision {
+  RATE_LIMIT_DECISION_UNSPECIFIED = 0;
+  RATE_LIMIT_DECISION_ALLOW = 1;
+  RATE_LIMIT_DECISION_DENY = 2;
+  RATE_LIMIT_DECISION_THROTTLE = 3;
+}
+
+// RateLimitRule defines a rate limiting rule.
+message RateLimitRule {
+  // rule_id is the unique identifier for this rule.
+  string rule_id = 1;
+
+  // name is a human-readable name for the rule.
+  string name = 2;
+
+  // requests_per_window is the maximum number of requests allowed per window.
+  int64 requests_per_window = 3;
+
+  // window is the time window for the rate limit.
+  google.protobuf.Duration window = 4;
+
+  // burst_size is the maximum burst size above the steady-state rate (optional).
+  int64 burst_size = 5;
+
+  // match_keys defines which request attributes this rule applies to.
+  // (e.g., ["user_id"], ["ip_address", "endpoint"]).
+  repeated string match_keys = 6;
+}
+
+// CheckRequest evaluates whether a request should be allowed.
+message CheckRequest {
+  // domain is the rate limit domain (e.g., "api", "auth").
+  string domain = 1;
+
+  // descriptors are the key-value pairs that identify the request.
+  map<string, string> descriptors = 2;
+
+  // cost is the number of tokens to consume (default: 1).
+  int64 cost = 3;
+}
+
+// CheckResponse contains the rate limit decision.
+message CheckResponse {
+  // decision is whether the request is allowed, denied, or throttled.
+  RateLimitDecision decision = 1;
+
+  // remaining is the number of requests remaining in the current window.
+  int64 remaining = 2;
+
+  // limit is the maximum requests allowed in the current window.
+  int64 limit = 3;
+
+  // reset_at is when the current window resets.
+  google.protobuf.Timestamp reset_at = 4;
+
+  // retry_after is the duration to wait before retrying (if denied).
+  google.protobuf.Duration retry_after = 5;
+}
+
+// ReportRequest records usage against a quota.
+message ReportRequest {
+  // domain is the rate limit domain.
+  string domain = 1;
+
+  // descriptors are the key-value pairs that identify the request.
+  map<string, string> descriptors = 2;
+
+  // cost is the number of tokens consumed.
+  int64 cost = 3;
+}
+
+// ReportResponse is returned after recording usage.
+message ReportResponse {}
+
+// GetQuotaRequest retrieves the current quota status.
+message GetQuotaRequest {
+  // domain is the rate limit domain.
+  string domain = 1;
+
+  // descriptors are the key-value pairs to look up.
+  map<string, string> descriptors = 2;
+}
+
+// GetQuotaResponse contains the current quota status.
+message GetQuotaResponse {
+  // remaining is the number of requests remaining.
+  int64 remaining = 1;
+
+  // limit is the maximum requests allowed in the current window.
+  int64 limit = 2;
+
+  // reset_at is when the current window resets.
+  google.protobuf.Timestamp reset_at = 3;
+}
+
+// SetRuleRequest creates or updates a rate limit rule.
+message SetRuleRequest {
+  // rule is the rate limit rule to set.
+  RateLimitRule rule = 1;
+}
+
+// SetRuleResponse is returned after setting a rule.
+message SetRuleResponse {
+  // rule_id is the identifier of the created/updated rule.
+  string rule_id = 1;
+}
+
+// ListRulesRequest lists all rate limit rules.
+message ListRulesRequest {
+  // domain_filter filters rules by domain (optional, empty = all).
+  string domain_filter = 1;
+}
+
+// ListRulesResponse contains the configured rules.
+message ListRulesResponse {
+  // rules is the list of rate limit rules.
+  repeated RateLimitRule rules = 1;
+}

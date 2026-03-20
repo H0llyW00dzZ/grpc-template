@@ -1,0 +1,204 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package analytics.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/analytics/v1;analyticsv1";
+
+// AnalyticsService provides event tracking, metrics aggregation, and reporting.
+//
+// Suitable for product analytics, user behavior tracking, business intelligence,
+// and any workload requiring event ingestion with aggregated querying.
+service AnalyticsService {
+  // TrackEvent records a single analytics event.
+  rpc TrackEvent(TrackEventRequest) returns (TrackEventResponse) {}
+
+  // TrackEvents records multiple events via client streaming (for batching).
+  rpc TrackEvents(stream TrackEventsRequest) returns (TrackEventsResponse) {}
+
+  // Query runs an aggregation query over tracked events.
+  rpc Query(QueryRequest) returns (QueryResponse) {}
+
+  // GetReport generates a pre-defined report.
+  rpc GetReport(GetReportRequest) returns (GetReportResponse) {}
+
+  // ListEvents lists raw events with optional filtering.
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse) {}
+}
+
+// AnalyticsEvent represents a single tracked event.
+message AnalyticsEvent {
+  // event_id is the unique event identifier.
+  string event_id = 1;
+
+  // event_type is the event name (e.g., "page_view", "purchase", "signup").
+  string event_type = 2;
+
+  // user_id is the user who triggered the event (optional).
+  string user_id = 3;
+
+  // session_id is the session identifier (optional).
+  string session_id = 4;
+
+  // properties contains event-specific data.
+  google.protobuf.Struct properties = 5;
+
+  // timestamp is when the event occurred.
+  google.protobuf.Timestamp timestamp = 6;
+
+  // source is where the event originated (e.g., "web", "ios", "api").
+  string source = 7;
+}
+
+// TrackEventRequest records a single event.
+message TrackEventRequest {
+  // event_type is the event name.
+  string event_type = 1;
+
+  // user_id is the user who triggered the event.
+  string user_id = 2;
+
+  // session_id is the session identifier.
+  string session_id = 3;
+
+  // properties contains event-specific data.
+  google.protobuf.Struct properties = 4;
+
+  // source is where the event originated.
+  string source = 5;
+}
+
+// TrackEventResponse is returned after recording an event.
+message TrackEventResponse {
+  // event_id is the assigned event identifier.
+  string event_id = 1;
+}
+
+// TrackEventsRequest sends events via client streaming.
+message TrackEventsRequest {
+  // event is the event to record.
+  TrackEventRequest event = 1;
+}
+
+// TrackEventsResponse is returned after the stream closes.
+message TrackEventsResponse {
+  // ingested_count is the number of events successfully ingested.
+  int64 ingested_count = 1;
+}
+
+// AggregationType defines how to aggregate values.
+enum AggregationType {
+  AGGREGATION_TYPE_UNSPECIFIED = 0;
+  AGGREGATION_TYPE_COUNT = 1;
+  AGGREGATION_TYPE_SUM = 2;
+  AGGREGATION_TYPE_AVERAGE = 3;
+  AGGREGATION_TYPE_MIN = 4;
+  AGGREGATION_TYPE_MAX = 5;
+  AGGREGATION_TYPE_COUNT_DISTINCT = 6;
+}
+
+// QueryRequest runs an aggregation query.
+message QueryRequest {
+  // event_type_filter filters by event type.
+  string event_type_filter = 1;
+
+  // aggregation is the aggregation function to apply.
+  AggregationType aggregation = 2;
+
+  // aggregation_field is the field to aggregate on (for SUM, AVG, etc.).
+  string aggregation_field = 3;
+
+  // group_by is the field to group results by (optional).
+  string group_by = 4;
+
+  // start_time is the beginning of the time range.
+  google.protobuf.Timestamp start_time = 5;
+
+  // end_time is the end of the time range.
+  google.protobuf.Timestamp end_time = 6;
+
+  // filters are additional property-based filters.
+  map<string, string> filters = 7;
+}
+
+// QueryResult represents a single aggregation result row.
+message QueryResult {
+  // group_value is the group-by value (empty if no grouping).
+  string group_value = 1;
+
+  // value is the aggregated value.
+  double value = 2;
+}
+
+// QueryResponse contains aggregation results.
+message QueryResponse {
+  // results is the list of aggregation results.
+  repeated QueryResult results = 1;
+
+  // total is the overall aggregate across all groups.
+  double total = 2;
+}
+
+// GetReportRequest generates a pre-defined report.
+message GetReportRequest {
+  // report_type is the report identifier (e.g., "daily_active_users", "revenue").
+  string report_type = 1;
+
+  // start_time is the report start date.
+  google.protobuf.Timestamp start_time = 2;
+
+  // end_time is the report end date.
+  google.protobuf.Timestamp end_time = 3;
+
+  // parameters are report-specific parameters.
+  map<string, string> parameters = 4;
+}
+
+// GetReportResponse contains the generated report.
+message GetReportResponse {
+  // report_type is the report identifier.
+  string report_type = 1;
+
+  // data contains the report data as structured JSON.
+  google.protobuf.Struct data = 2;
+
+  // generated_at is when the report was generated.
+  google.protobuf.Timestamp generated_at = 3;
+}
+
+// ListEventsRequest lists raw events.
+message ListEventsRequest {
+  // event_type_filter filters by event type (optional).
+  string event_type_filter = 1;
+
+  // user_id_filter filters by user ID (optional).
+  string user_id_filter = 2;
+
+  // start_time is the beginning of the time range.
+  google.protobuf.Timestamp start_time = 3;
+
+  // end_time is the end of the time range.
+  google.protobuf.Timestamp end_time = 4;
+
+  // page_size is the maximum number of events to return.
+  int32 page_size = 5;
+
+  // page_token is the pagination cursor.
+  string page_token = 6;
+}
+
+// ListEventsResponse contains a page of events.
+message ListEventsResponse {
+  // events is the list of analytics events.
+  repeated AnalyticsEvent events = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}

@@ -1,0 +1,187 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package kv.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/kv/v1;kvv1";
+
+// KvService provides key-value store operations.
+//
+// Suitable for caching layers, configuration stores, feature flags,
+// session storage, and any workload requiring fast key-based access
+// with optional real-time change notifications (watch).
+service KvService {
+  // Get retrieves the value for a key.
+  rpc Get(GetRequest) returns (GetResponse) {}
+
+  // Set stores a key-value pair with optional TTL.
+  rpc Set(SetRequest) returns (SetResponse) {}
+
+  // Delete removes a key-value pair.
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+
+  // BatchGet retrieves multiple keys in a single call.
+  rpc BatchGet(BatchGetRequest) returns (BatchGetResponse) {}
+
+  // BatchSet stores multiple key-value pairs in a single call.
+  rpc BatchSet(BatchSetRequest) returns (BatchSetResponse) {}
+
+  // Watch opens a server-streaming connection to receive real-time
+  // change notifications for a set of keys or key prefixes.
+  rpc Watch(WatchRequest) returns (stream WatchResponse) {}
+
+  // ListKeys lists keys matching a prefix with pagination.
+  rpc ListKeys(ListKeysRequest) returns (ListKeysResponse) {}
+}
+
+// KeyValue represents a single key-value entry.
+message KeyValue {
+  // key is the unique key.
+  string key = 1;
+
+  // value is the stored value (binary-safe).
+  bytes value = 2;
+
+  // version is the entry version for optimistic concurrency control.
+  int64 version = 3;
+
+  // expires_at is when the entry expires (optional, zero = no expiry).
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// GetRequest identifies the key to retrieve.
+message GetRequest {
+  // key is the key to look up.
+  string key = 1;
+}
+
+// GetResponse contains the retrieved value.
+message GetResponse {
+  // item is the key-value pair (nil if not found).
+  KeyValue item = 1;
+
+  // found indicates whether the key exists.
+  bool found = 2;
+}
+
+// SetRequest stores a key-value pair.
+message SetRequest {
+  // key is the key to store.
+  string key = 1;
+
+  // value is the value to store.
+  bytes value = 2;
+
+  // ttl_seconds is the time-to-live in seconds (0 = no expiry).
+  int64 ttl_seconds = 3;
+
+  // expected_version is for optimistic locking (0 = unconditional write).
+  int64 expected_version = 4;
+}
+
+// SetResponse is returned after a successful set.
+message SetResponse {
+  // version is the new version of the entry.
+  int64 version = 1;
+}
+
+// DeleteRequest identifies the key to delete.
+message DeleteRequest {
+  // key is the key to delete.
+  string key = 1;
+}
+
+// DeleteResponse is returned after a successful delete.
+message DeleteResponse {
+  // deleted indicates whether the key existed and was removed.
+  bool deleted = 1;
+}
+
+// BatchGetRequest retrieves multiple keys.
+message BatchGetRequest {
+  // keys is the list of keys to retrieve.
+  repeated string keys = 1;
+}
+
+// BatchGetResponse contains the results for a batch get.
+message BatchGetResponse {
+  // items maps each requested key to its value (missing keys are omitted).
+  map<string, KeyValue> items = 1;
+}
+
+// BatchSetRequest stores multiple key-value pairs.
+message BatchSetRequest {
+  // items is the list of key-value pairs to store.
+  repeated SetRequest items = 1;
+}
+
+// BatchSetResponse is returned after a batch set.
+message BatchSetResponse {
+  // versions maps each key to its new version.
+  map<string, int64> versions = 1;
+}
+
+// WatchEventType describes the type of change.
+enum WatchEventType {
+  WATCH_EVENT_TYPE_UNSPECIFIED = 0;
+  WATCH_EVENT_TYPE_PUT = 1;
+  WATCH_EVENT_TYPE_DELETE = 2;
+  WATCH_EVENT_TYPE_EXPIRE = 3;
+}
+
+// WatchRequest subscribes to changes for keys or key prefixes.
+message WatchRequest {
+  // keys is the list of exact keys to watch.
+  repeated string keys = 1;
+
+  // prefixes is the list of key prefixes to watch.
+  repeated string prefixes = 2;
+}
+
+// WatchEvent is emitted when a watched key changes.
+message WatchEvent {
+  // type is the kind of change.
+  WatchEventType type = 1;
+
+  // item is the new key-value pair (present for PUT events).
+  KeyValue item = 2;
+
+  // key is the affected key (always present).
+  string key = 3;
+
+  // timestamp is when the change occurred.
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// WatchResponse wraps a watch event in the streaming response.
+message WatchResponse {
+  // event is the change event.
+  WatchEvent event = 1;
+}
+
+// ListKeysRequest lists keys matching a prefix.
+message ListKeysRequest {
+  // prefix filters keys by prefix.
+  string prefix = 1;
+
+  // page_size is the maximum number of keys to return.
+  int32 page_size = 2;
+
+  // page_token is the pagination cursor from a previous call.
+  string page_token = 3;
+}
+
+// ListKeysResponse contains a page of keys.
+message ListKeysResponse {
+  // keys is the list of matching keys.
+  repeated string keys = 1;
+
+  // next_page_token is the cursor for the next page (empty if no more).
+  string next_page_token = 2;
+}

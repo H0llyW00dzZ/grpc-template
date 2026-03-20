@@ -1,0 +1,266 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package scheduler.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/scheduler/v1;schedulerv1";
+
+// SchedulerService manages scheduled and recurring jobs.
+//
+// Suitable for cron-like job scheduling, periodic tasks, delayed execution,
+// and any workload requiring time-based triggers.
+service SchedulerService {
+  // CreateSchedule creates a new scheduled job.
+  rpc CreateSchedule(CreateScheduleRequest) returns (CreateScheduleResponse) {}
+
+  // GetSchedule retrieves a schedule by ID.
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse) {}
+
+  // ListSchedules lists all schedules with optional filtering.
+  rpc ListSchedules(ListSchedulesRequest) returns (ListSchedulesResponse) {}
+
+  // UpdateSchedule updates an existing schedule.
+  rpc UpdateSchedule(UpdateScheduleRequest) returns (UpdateScheduleResponse) {}
+
+  // DeleteSchedule removes a schedule.
+  rpc DeleteSchedule(DeleteScheduleRequest) returns (DeleteScheduleResponse) {}
+
+  // PauseSchedule pauses a running schedule.
+  rpc PauseSchedule(PauseScheduleRequest) returns (PauseScheduleResponse) {}
+
+  // ResumeSchedule resumes a paused schedule.
+  rpc ResumeSchedule(ResumeScheduleRequest) returns (ResumeScheduleResponse) {}
+
+  // ListExecutions lists past and upcoming executions for a schedule.
+  rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse) {}
+}
+
+// ScheduleStatus represents the lifecycle state of a schedule.
+enum ScheduleStatus {
+  SCHEDULE_STATUS_UNSPECIFIED = 0;
+  SCHEDULE_STATUS_ACTIVE = 1;
+  SCHEDULE_STATUS_PAUSED = 2;
+  SCHEDULE_STATUS_COMPLETED = 3;
+  SCHEDULE_STATUS_FAILED = 4;
+}
+
+// ExecutionStatus represents the outcome of a single execution.
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  EXECUTION_STATUS_PENDING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
+  EXECUTION_STATUS_SUCCEEDED = 3;
+  EXECUTION_STATUS_FAILED = 4;
+  EXECUTION_STATUS_SKIPPED = 5;
+}
+
+// Schedule represents a scheduled job definition.
+message Schedule {
+  // schedule_id is the unique identifier.
+  string schedule_id = 1;
+
+  // name is a human-readable name for the schedule.
+  string name = 2;
+
+  // description is an optional description.
+  string description = 3;
+
+  // cron_expression is the cron schedule (e.g., "0 */5 * * *" for every 5 minutes).
+  string cron_expression = 4;
+
+  // timezone is the timezone for the cron expression (e.g., "UTC", "America/New_York").
+  string timezone = 5;
+
+  // payload is the data passed to the job when triggered.
+  google.protobuf.Any payload = 6;
+
+  // status is the current schedule state.
+  ScheduleStatus status = 7;
+
+  // max_retries is the number of retry attempts on failure.
+  int32 max_retries = 8;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 9;
+
+  // created_at is when the schedule was created.
+  google.protobuf.Timestamp created_at = 10;
+
+  // updated_at is when the schedule was last modified.
+  google.protobuf.Timestamp updated_at = 11;
+
+  // next_run_at is the next scheduled execution time.
+  google.protobuf.Timestamp next_run_at = 12;
+}
+
+// Execution represents a single execution of a schedule.
+message Execution {
+  // execution_id is the unique identifier.
+  string execution_id = 1;
+
+  // schedule_id is the parent schedule.
+  string schedule_id = 2;
+
+  // status is the execution outcome.
+  ExecutionStatus status = 3;
+
+  // started_at is when the execution started.
+  google.protobuf.Timestamp started_at = 4;
+
+  // completed_at is when the execution finished.
+  google.protobuf.Timestamp completed_at = 5;
+
+  // error_detail contains error info if the execution failed.
+  string error_detail = 6;
+
+  // attempt is the retry attempt number (1-based).
+  int32 attempt = 7;
+}
+
+// CreateScheduleRequest creates a new schedule.
+message CreateScheduleRequest {
+  // name is the schedule name.
+  string name = 1;
+
+  // description is an optional description.
+  string description = 2;
+
+  // cron_expression is the cron schedule.
+  string cron_expression = 3;
+
+  // timezone is the timezone for the cron expression.
+  string timezone = 4;
+
+  // payload is the data passed to the job.
+  google.protobuf.Any payload = 5;
+
+  // max_retries is the number of retry attempts on failure.
+  int32 max_retries = 6;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 7;
+}
+
+// CreateScheduleResponse is returned after creating a schedule.
+message CreateScheduleResponse {
+  // schedule_id is the assigned schedule identifier.
+  string schedule_id = 1;
+}
+
+// GetScheduleRequest retrieves a schedule by ID.
+message GetScheduleRequest {
+  // schedule_id is the schedule to retrieve.
+  string schedule_id = 1;
+}
+
+// GetScheduleResponse contains the schedule.
+message GetScheduleResponse {
+  // schedule is the requested schedule.
+  Schedule schedule = 1;
+}
+
+// ListSchedulesRequest lists schedules.
+message ListSchedulesRequest {
+  // status_filter filters by schedule status (optional).
+  ScheduleStatus status_filter = 1;
+
+  // page_size is the maximum number of schedules to return.
+  int32 page_size = 2;
+
+  // page_token is the pagination cursor.
+  string page_token = 3;
+}
+
+// ListSchedulesResponse contains a page of schedules.
+message ListSchedulesResponse {
+  // schedules is the list of schedules.
+  repeated Schedule schedules = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// UpdateScheduleRequest updates an existing schedule.
+message UpdateScheduleRequest {
+  // schedule_id is the schedule to update.
+  string schedule_id = 1;
+
+  // cron_expression is the new cron schedule (optional).
+  string cron_expression = 2;
+
+  // timezone is the new timezone (optional).
+  string timezone = 3;
+
+  // payload is the new payload (optional).
+  google.protobuf.Any payload = 4;
+
+  // max_retries is the new retry count (optional).
+  int32 max_retries = 5;
+
+  // metadata replaces the existing metadata.
+  map<string, string> metadata = 6;
+}
+
+// UpdateScheduleResponse is returned after updating a schedule.
+message UpdateScheduleResponse {
+  // schedule is the updated schedule.
+  Schedule schedule = 1;
+}
+
+// DeleteScheduleRequest removes a schedule.
+message DeleteScheduleRequest {
+  // schedule_id is the schedule to delete.
+  string schedule_id = 1;
+}
+
+// DeleteScheduleResponse is returned after deletion.
+message DeleteScheduleResponse {}
+
+// PauseScheduleRequest pauses a schedule.
+message PauseScheduleRequest {
+  // schedule_id is the schedule to pause.
+  string schedule_id = 1;
+}
+
+// PauseScheduleResponse is returned after pausing.
+message PauseScheduleResponse {}
+
+// ResumeScheduleRequest resumes a paused schedule.
+message ResumeScheduleRequest {
+  // schedule_id is the schedule to resume.
+  string schedule_id = 1;
+}
+
+// ResumeScheduleResponse is returned after resuming.
+message ResumeScheduleResponse {}
+
+// ListExecutionsRequest lists executions for a schedule.
+message ListExecutionsRequest {
+  // schedule_id is the schedule to list executions for.
+  string schedule_id = 1;
+
+  // status_filter filters by execution status (optional).
+  ExecutionStatus status_filter = 2;
+
+  // page_size is the maximum number of executions to return.
+  int32 page_size = 3;
+
+  // page_token is the pagination cursor.
+  string page_token = 4;
+}
+
+// ListExecutionsResponse contains a page of executions.
+message ListExecutionsResponse {
+  // executions is the list of executions.
+  repeated Execution executions = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}

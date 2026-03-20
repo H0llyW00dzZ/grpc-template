@@ -1,0 +1,146 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package storage.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/storage/v1;storagev1";
+
+// StorageService provides file and object storage operations over gRPC.
+//
+// Uses streaming RPCs for efficient upload and download of large files,
+// suitable for AI model storage, media processing pipelines, and
+// any workload requiring high-throughput binary data transfer.
+service StorageService {
+  // Upload streams file chunks from the client to the server.
+  // Returns metadata about the stored object on completion.
+  rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+
+  // Download streams file chunks from the server to the client.
+  rpc Download(DownloadRequest) returns (stream DownloadResponse) {}
+
+  // GetObjectInfo retrieves metadata about a stored object without downloading it.
+  rpc GetObjectInfo(GetObjectInfoRequest) returns (GetObjectInfoResponse) {}
+
+  // DeleteObject removes a stored object.
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
+
+  // ListObjects lists objects in a bucket/prefix with pagination.
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+}
+
+// ObjectInfo contains metadata about a stored object.
+message ObjectInfo {
+  // key is the unique object identifier (path/key).
+  string key = 1;
+
+  // size_bytes is the total size of the object in bytes.
+  int64 size_bytes = 2;
+
+  // content_type is the MIME type of the object.
+  string content_type = 3;
+
+  // checksum is the integrity hash (e.g., SHA-256) of the object.
+  string checksum = 4;
+
+  // created_at is when the object was stored.
+  google.protobuf.Timestamp created_at = 5;
+
+  // metadata contains optional key-value pairs (user-defined tags).
+  map<string, string> metadata = 6;
+}
+
+// UploadRequest streams file data from the client.
+// The first message should contain the metadata; subsequent messages carry data chunks.
+message UploadRequest {
+  oneof content {
+    // metadata is sent in the first message to describe the upload.
+    UploadMetadata metadata = 1;
+
+    // chunk is a piece of the file data.
+    bytes chunk = 2;
+  }
+}
+
+// UploadMetadata describes the file being uploaded.
+message UploadMetadata {
+  // key is the destination object key/path.
+  string key = 1;
+
+  // content_type is the MIME type of the file.
+  string content_type = 2;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 3;
+}
+
+// UploadResponse is returned after a successful upload.
+message UploadResponse {
+  // key is the stored object key.
+  string key = 1;
+
+  // size_bytes is the total size of the uploaded object.
+  int64 size_bytes = 2;
+
+  // checksum is the integrity hash of the stored object.
+  string checksum = 3;
+}
+
+// DownloadRequest identifies the object to download.
+message DownloadRequest {
+  // key is the object key/path to download.
+  string key = 1;
+}
+
+// DownloadResponse streams file data to the client.
+message DownloadResponse {
+  // chunk is a piece of the file data.
+  bytes chunk = 1;
+}
+
+// GetObjectInfoRequest identifies the object to query.
+message GetObjectInfoRequest {
+  // key is the object key/path.
+  string key = 1;
+}
+
+// GetObjectInfoResponse contains metadata about the requested object.
+message GetObjectInfoResponse {
+  // info is the object metadata.
+  ObjectInfo info = 1;
+}
+
+// DeleteObjectRequest identifies the object to delete.
+message DeleteObjectRequest {
+  // key is the object key/path to delete.
+  string key = 1;
+}
+
+// DeleteObjectResponse is the response after deleting an object.
+message DeleteObjectResponse {}
+
+// ListObjectsRequest lists objects with optional prefix filtering and pagination.
+message ListObjectsRequest {
+  // prefix filters objects by key prefix.
+  string prefix = 1;
+
+  // page_size is the maximum number of objects to return.
+  int32 page_size = 2;
+
+  // page_token is the pagination cursor from a previous call.
+  string page_token = 3;
+}
+
+// ListObjectsResponse contains a page of objects.
+message ListObjectsResponse {
+  // objects is the list of object metadata.
+  repeated ObjectInfo objects = 1;
+
+  // next_page_token is the cursor for the next page (empty if no more).
+  string next_page_token = 2;
+}

@@ -1,0 +1,104 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package messaging.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/messaging/v1;messagingv1";
+
+// MessagingService provides real-time messaging capabilities.
+//
+// Suitable for chat systems, event buses, pub-sub patterns, and
+// any application requiring low-latency message delivery.
+service MessagingService {
+  // SendMessage sends a single message to a channel.
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {}
+
+  // Subscribe opens a server-streaming connection to receive messages
+  // from one or more channels in real time.
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse) {}
+
+  // StreamMessages opens a bidirectional stream for full-duplex messaging.
+  // Both client and server can send messages concurrently.
+  rpc StreamMessages(stream StreamMessagesRequest) returns (stream StreamMessagesResponse) {}
+}
+
+// Message represents a single message in a channel.
+message Message {
+  // id is the unique identifier for this message.
+  string id = 1;
+
+  // channel is the target channel or topic.
+  string channel = 2;
+
+  // sender is the identifier of the message sender.
+  string sender = 3;
+
+  // payload is the message content (text, JSON, binary, etc.).
+  bytes payload = 4;
+
+  // content_type describes the payload format (e.g., "text/plain", "application/json").
+  string content_type = 5;
+
+  // created_at is when the message was created.
+  google.protobuf.Timestamp created_at = 6;
+
+  // metadata contains optional key-value pairs for routing, filtering, etc.
+  map<string, string> metadata = 7;
+}
+
+// SendMessageRequest is the request to send a single message.
+message SendMessageRequest {
+  // channel is the target channel or topic.
+  string channel = 1;
+
+  // payload is the message content.
+  bytes payload = 2;
+
+  // content_type describes the payload format.
+  string content_type = 3;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 4;
+}
+
+// SendMessageResponse is the response after sending a message.
+message SendMessageResponse {
+  // message_id is the assigned ID of the sent message.
+  string message_id = 1;
+
+  // created_at is the server timestamp when the message was accepted.
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// SubscribeRequest is the request to subscribe to one or more channels.
+message SubscribeRequest {
+  // channels is the list of channels to subscribe to.
+  repeated string channels = 1;
+
+  // last_message_id is an optional cursor to resume from (replay missed messages).
+  string last_message_id = 2;
+}
+
+// SubscribeResponse wraps a message delivered to a subscriber.
+message SubscribeResponse {
+  // message is the received message.
+  Message message = 1;
+}
+
+// StreamMessagesRequest wraps a message sent in a bidirectional stream.
+message StreamMessagesRequest {
+  // message is the message to send.
+  Message message = 1;
+}
+
+// StreamMessagesResponse wraps a message received in a bidirectional stream.
+message StreamMessagesResponse {
+  // message is the received message.
+  Message message = 1;
+}

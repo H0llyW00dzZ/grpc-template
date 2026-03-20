@@ -1,0 +1,137 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/auth/v1;authv1";
+
+// AuthService handles authentication operations.
+//
+// The service supports multiple credential types through a oneof pattern,
+// making it easy to add new authentication methods without breaking existing
+// clients.
+service AuthService {
+  // Login authenticates a user and returns tokens.
+  // Supports multiple credential types: username/password, API key, OAuth.
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+
+  // RefreshToken issues a new access token using a refresh token.
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {}
+
+  // ValidateToken checks whether an access token is still valid.
+  // Useful for gateways and middleware to verify tokens without re-authenticating.
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {}
+
+  // Logout invalidates the current session.
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {}
+}
+
+// UsernamePassword is the standard username and password credential.
+message UsernamePassword {
+  // username is the user's login name.
+  string username = 1;
+
+  // password is the user's password.
+  string password = 2;
+}
+
+// ApiKeyCredential authenticates using an API key.
+// Typically used for service-to-service communication.
+message ApiKeyCredential {
+  // api_key is the API key string.
+  string api_key = 1;
+
+  // key_id is an optional identifier for the key, useful when rotating keys.
+  string key_id = 2;
+}
+
+// OAuthCredential authenticates using an OAuth2 provider token.
+// Used for social login flows (e.g., Google, GitHub, Apple).
+message OAuthCredential {
+  // provider is the OAuth provider name (e.g., "google", "github", "apple").
+  string provider = 1;
+
+  // token is the OAuth access token or ID token from the provider.
+  string token = 2;
+
+  // redirect_uri is the redirect URI used during the OAuth flow (if required).
+  string redirect_uri = 3;
+}
+
+// LoginRequest is the request to authenticate a user.
+// Use exactly one credential type.
+message LoginRequest {
+  oneof credential {
+    // Username and password login.
+    UsernamePassword username_password = 1;
+
+    // API key authentication.
+    ApiKeyCredential api_key = 2;
+
+    // OAuth2 / social provider token.
+    OAuthCredential oauth = 3;
+  }
+}
+
+// LoginResponse contains the authentication tokens.
+message LoginResponse {
+  // access_token is the short-lived JWT access token.
+  string access_token = 1;
+
+  // refresh_token is the long-lived refresh token.
+  string refresh_token = 2;
+
+  // expires_at is when the access token expires.
+  google.protobuf.Timestamp expires_at = 3;
+
+  // token_type is the type of token issued (e.g., "Bearer").
+  string token_type = 4;
+}
+
+// RefreshTokenRequest is the request to refresh an access token.
+message RefreshTokenRequest {
+  // refresh_token is the refresh token from a previous login.
+  string refresh_token = 1;
+}
+
+// RefreshTokenResponse contains the new access token.
+message RefreshTokenResponse {
+  // access_token is the new short-lived JWT access token.
+  string access_token = 1;
+
+  // expires_at is when the new access token expires.
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+// ValidateTokenRequest is the request to check if a token is valid.
+message ValidateTokenRequest {
+  // access_token is the token to validate.
+  string access_token = 1;
+}
+
+// ValidateTokenResponse contains the validation result.
+message ValidateTokenResponse {
+  // valid indicates whether the token is still valid.
+  bool valid = 1;
+
+  // subject is the authenticated subject (e.g., user ID) if valid.
+  string subject = 2;
+
+  // expires_at is when the token expires (if valid).
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// LogoutRequest is the request to end a session.
+message LogoutRequest {
+  // refresh_token is the refresh token to invalidate.
+  string refresh_token = 1;
+}
+
+// LogoutResponse is the response after logging out.
+message LogoutResponse {}

@@ -1,0 +1,148 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package notification.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/notification/v1;notificationv1";
+
+// NotificationService provides push notification and event broadcasting.
+//
+// Suitable for alerting systems, activity feeds, webhook-style event delivery,
+// and real-time user notifications.
+service NotificationService {
+  // Send delivers a notification to one or more recipients.
+  rpc Send(SendRequest) returns (SendResponse) {}
+
+  // Subscribe opens a server-streaming connection to receive notifications
+  // in real time for the authenticated user or topic.
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse) {}
+
+  // Acknowledge marks a notification as read/processed.
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse) {}
+
+  // ListNotifications retrieves past notifications with pagination.
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse) {}
+}
+
+// NotificationType categorizes the notification.
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_INFO = 1;
+  NOTIFICATION_TYPE_WARNING = 2;
+  NOTIFICATION_TYPE_ERROR = 3;
+  NOTIFICATION_TYPE_ALERT = 4;
+}
+
+// Notification represents a single notification.
+message Notification {
+  // id is the unique notification identifier.
+  string id = 1;
+
+  // type is the notification category.
+  NotificationType type = 2;
+
+  // title is a short summary.
+  string title = 3;
+
+  // body is the notification content.
+  string body = 4;
+
+  // topic is the channel or topic this notification belongs to.
+  string topic = 5;
+
+  // acknowledged indicates whether the notification has been read/processed.
+  bool acknowledged = 6;
+
+  // created_at is when the notification was created.
+  google.protobuf.Timestamp created_at = 7;
+
+  // metadata contains optional key-value pairs for routing or display.
+  map<string, string> metadata = 8;
+}
+
+// SendRequest delivers a notification.
+message SendRequest {
+  // recipients is the list of user/device IDs to notify.
+  repeated string recipients = 1;
+
+  // topic is an optional broadcast topic (if set, recipients may be empty).
+  string topic = 2;
+
+  // type is the notification category.
+  NotificationType type = 3;
+
+  // title is a short summary.
+  string title = 4;
+
+  // body is the notification content.
+  string body = 5;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 6;
+}
+
+// SendResponse is returned after delivering a notification.
+message SendResponse {
+  // notification_id is the assigned notification identifier.
+  string notification_id = 1;
+
+  // delivered_count is the number of recipients who received the notification.
+  int32 delivered_count = 2;
+}
+
+// SubscribeRequest opens a real-time notification stream.
+message SubscribeRequest {
+  // topics is the list of topics to subscribe to.
+  repeated string topics = 1;
+
+  // types filters by notification type (optional, empty = all).
+  repeated NotificationType types = 2;
+}
+
+// SubscribeResponse wraps a notification delivered to a subscriber.
+message SubscribeResponse {
+  // notification is the received notification.
+  Notification notification = 1;
+}
+
+// AcknowledgeRequest marks a notification as read/processed.
+message AcknowledgeRequest {
+  // notification_ids is the list of notification IDs to acknowledge.
+  repeated string notification_ids = 1;
+}
+
+// AcknowledgeResponse is the response after acknowledging.
+message AcknowledgeResponse {
+  // acknowledged_count is the number of notifications acknowledged.
+  int32 acknowledged_count = 1;
+}
+
+// ListNotificationsRequest retrieves past notifications.
+message ListNotificationsRequest {
+  // topic_filter filters by topic (optional, empty = all).
+  string topic_filter = 1;
+
+  // unacknowledged_only filters for unread notifications only.
+  bool unacknowledged_only = 2;
+
+  // page_size is the maximum number of notifications to return.
+  int32 page_size = 3;
+
+  // page_token is the pagination cursor from a previous call.
+  string page_token = 4;
+}
+
+// ListNotificationsResponse contains a page of notifications.
+message ListNotificationsResponse {
+  // notifications is the list of notifications.
+  repeated Notification notifications = 1;
+
+  // next_page_token is the cursor for the next page (empty if no more).
+  string next_page_token = 2;
+}

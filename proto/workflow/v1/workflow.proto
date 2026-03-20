@@ -1,0 +1,216 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package workflow.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/workflow/v1;workflowv1";
+
+// WorkflowService manages state machine and workflow orchestration.
+//
+// Suitable for multi-step business processes, approval chains,
+// saga patterns, and any workload requiring durable state transitions.
+service WorkflowService {
+  // StartWorkflow creates and starts a new workflow execution.
+  rpc StartWorkflow(StartWorkflowRequest) returns (StartWorkflowResponse) {}
+
+  // GetWorkflow retrieves the current state of a workflow.
+  rpc GetWorkflow(GetWorkflowRequest) returns (GetWorkflowResponse) {}
+
+  // Signal sends an external signal/event to a running workflow.
+  rpc Signal(SignalRequest) returns (SignalResponse) {}
+
+  // Query retrieves data from a running workflow without mutating state.
+  rpc Query(QueryRequest) returns (QueryResponse) {}
+
+  // CancelWorkflow requests cancellation of a running workflow.
+  rpc CancelWorkflow(CancelWorkflowRequest) returns (CancelWorkflowResponse) {}
+
+  // ListWorkflows lists workflows with optional filtering.
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse) {}
+
+  // WatchWorkflow streams real-time state transitions for a workflow.
+  rpc WatchWorkflow(WatchWorkflowRequest) returns (stream WatchWorkflowResponse) {}
+}
+
+// WorkflowStatus represents the lifecycle state of a workflow.
+enum WorkflowStatus {
+  WORKFLOW_STATUS_UNSPECIFIED = 0;
+  WORKFLOW_STATUS_RUNNING = 1;
+  WORKFLOW_STATUS_COMPLETED = 2;
+  WORKFLOW_STATUS_FAILED = 3;
+  WORKFLOW_STATUS_CANCELLED = 4;
+  WORKFLOW_STATUS_PAUSED = 5;
+  WORKFLOW_STATUS_TIMED_OUT = 6;
+}
+
+// WorkflowExecution represents a workflow instance.
+message WorkflowExecution {
+  // workflow_id is the unique identifier.
+  string workflow_id = 1;
+
+  // workflow_type is the workflow definition name (e.g., "order-fulfillment").
+  string workflow_type = 2;
+
+  // status is the current workflow state.
+  WorkflowStatus status = 3;
+
+  // current_step is the name of the currently executing step.
+  string current_step = 4;
+
+  // input is the workflow input data.
+  google.protobuf.Any input = 5;
+
+  // result is the workflow output (populated on completion).
+  google.protobuf.Any result = 6;
+
+  // error_message contains error details if the workflow failed.
+  string error_message = 7;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 8;
+
+  // started_at is when the workflow started.
+  google.protobuf.Timestamp started_at = 9;
+
+  // completed_at is when the workflow finished (if applicable).
+  google.protobuf.Timestamp completed_at = 10;
+}
+
+// StartWorkflowRequest creates a new workflow.
+message StartWorkflowRequest {
+  // workflow_type is the workflow definition name.
+  string workflow_type = 1;
+
+  // workflow_id is an optional client-specified ID (generated if empty).
+  string workflow_id = 2;
+
+  // input is the workflow input data.
+  google.protobuf.Any input = 3;
+
+  // metadata contains optional key-value pairs.
+  map<string, string> metadata = 4;
+}
+
+// StartWorkflowResponse is returned after starting a workflow.
+message StartWorkflowResponse {
+  // workflow_id is the assigned workflow identifier.
+  string workflow_id = 1;
+}
+
+// GetWorkflowRequest retrieves a workflow by ID.
+message GetWorkflowRequest {
+  // workflow_id is the workflow to retrieve.
+  string workflow_id = 1;
+}
+
+// GetWorkflowResponse contains the workflow execution.
+message GetWorkflowResponse {
+  // execution is the workflow execution.
+  WorkflowExecution execution = 1;
+}
+
+// SignalRequest sends an external signal to a running workflow.
+message SignalRequest {
+  // workflow_id is the target workflow.
+  string workflow_id = 1;
+
+  // signal_name is the signal type (e.g., "approve", "reject").
+  string signal_name = 2;
+
+  // payload is optional data accompanying the signal.
+  google.protobuf.Any payload = 3;
+}
+
+// SignalResponse is returned after sending a signal.
+message SignalResponse {}
+
+// QueryRequest queries a running workflow's state without mutation.
+message QueryRequest {
+  // workflow_id is the target workflow.
+  string workflow_id = 1;
+
+  // query_type is the type of query (e.g., "current_balance").
+  string query_type = 2;
+
+  // args is optional query arguments.
+  google.protobuf.Any args = 3;
+}
+
+// QueryResponse contains the query result.
+message QueryResponse {
+  // result is the query result.
+  google.protobuf.Any result = 1;
+}
+
+// CancelWorkflowRequest cancels a running workflow.
+message CancelWorkflowRequest {
+  // workflow_id is the workflow to cancel.
+  string workflow_id = 1;
+
+  // reason is the cancellation reason.
+  string reason = 2;
+}
+
+// CancelWorkflowResponse is returned after cancellation.
+message CancelWorkflowResponse {}
+
+// ListWorkflowsRequest lists workflows.
+message ListWorkflowsRequest {
+  // workflow_type_filter filters by workflow type (optional).
+  string workflow_type_filter = 1;
+
+  // status_filter filters by status (optional).
+  WorkflowStatus status_filter = 2;
+
+  // page_size is the maximum number of workflows to return.
+  int32 page_size = 3;
+
+  // page_token is the pagination cursor.
+  string page_token = 4;
+}
+
+// ListWorkflowsResponse contains a page of workflows.
+message ListWorkflowsResponse {
+  // executions is the list of workflow executions.
+  repeated WorkflowExecution executions = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// WorkflowTransitionType describes the type of state change.
+enum WorkflowTransitionType {
+  WORKFLOW_TRANSITION_TYPE_UNSPECIFIED = 0;
+  WORKFLOW_TRANSITION_TYPE_STEP_STARTED = 1;
+  WORKFLOW_TRANSITION_TYPE_STEP_COMPLETED = 2;
+  WORKFLOW_TRANSITION_TYPE_SIGNAL_RECEIVED = 3;
+  WORKFLOW_TRANSITION_TYPE_STATUS_CHANGED = 4;
+}
+
+// WatchWorkflowRequest subscribes to workflow state changes.
+message WatchWorkflowRequest {
+  // workflow_id is the workflow to watch.
+  string workflow_id = 1;
+}
+
+// WatchWorkflowResponse wraps a workflow state transition event.
+message WatchWorkflowResponse {
+  // type is the kind of transition.
+  WorkflowTransitionType type = 1;
+
+  // execution is the current workflow state after the transition.
+  WorkflowExecution execution = 2;
+
+  // timestamp is when the transition occurred.
+  google.protobuf.Timestamp timestamp = 3;
+
+  // description is a human-readable description of the transition.
+  string description = 4;
+}

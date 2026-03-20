@@ -1,0 +1,207 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package config.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/config/v1;configv1";
+
+// ConfigService provides remote configuration and feature flag management.
+//
+// Suitable for distributed systems that need centralized configuration,
+// feature flags, A/B testing toggles, and real-time config updates
+// without redeployment.
+service ConfigService {
+  // GetConfig retrieves a configuration entry by key.
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse) {}
+
+  // SetConfig creates or updates a configuration entry.
+  rpc SetConfig(SetConfigRequest) returns (SetConfigResponse) {}
+
+  // DeleteConfig removes a configuration entry.
+  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse) {}
+
+  // ListConfigs lists configuration entries with optional prefix filtering.
+  rpc ListConfigs(ListConfigsRequest) returns (ListConfigsResponse) {}
+
+  // WatchConfig opens a server-streaming connection to receive real-time
+  // updates when configuration entries change.
+  rpc WatchConfig(WatchConfigRequest) returns (stream WatchConfigResponse) {}
+
+  // GetFeatureFlag evaluates a feature flag for a given context.
+  rpc GetFeatureFlag(GetFeatureFlagRequest) returns (GetFeatureFlagResponse) {}
+}
+
+// ConfigEntry represents a single configuration entry.
+message ConfigEntry {
+  // key is the configuration key (e.g., "app.database.pool_size").
+  string key = 1;
+
+  // value is the configuration value (stored as string, parsed by the consumer).
+  string value = 2;
+
+  // content_type hints at the value format (e.g., "text/plain", "application/json").
+  string content_type = 3;
+
+  // version is the entry version for optimistic concurrency.
+  int64 version = 4;
+
+  // environment is the target environment (e.g., "production", "staging").
+  string environment = 5;
+
+  // labels contains optional key-value pairs for filtering and grouping.
+  map<string, string> labels = 6;
+
+  // updated_at is when the entry was last modified.
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// GetConfigRequest retrieves a configuration entry.
+message GetConfigRequest {
+  // key is the configuration key to look up.
+  string key = 1;
+
+  // environment is the target environment (optional).
+  string environment = 2;
+}
+
+// GetConfigResponse contains the retrieved configuration entry.
+message GetConfigResponse {
+  // entry is the configuration entry.
+  ConfigEntry entry = 1;
+
+  // found indicates whether the key exists.
+  bool found = 2;
+}
+
+// SetConfigRequest creates or updates a configuration entry.
+message SetConfigRequest {
+  // key is the configuration key.
+  string key = 1;
+
+  // value is the configuration value.
+  string value = 2;
+
+  // content_type hints at the value format.
+  string content_type = 3;
+
+  // environment is the target environment.
+  string environment = 4;
+
+  // labels contains optional key-value pairs.
+  map<string, string> labels = 5;
+
+  // expected_version is for optimistic locking (0 = unconditional write).
+  int64 expected_version = 6;
+}
+
+// SetConfigResponse is returned after setting a config entry.
+message SetConfigResponse {
+  // version is the new version of the entry.
+  int64 version = 1;
+}
+
+// DeleteConfigRequest removes a configuration entry.
+message DeleteConfigRequest {
+  // key is the configuration key to delete.
+  string key = 1;
+
+  // environment is the target environment.
+  string environment = 2;
+}
+
+// DeleteConfigResponse is returned after deletion.
+message DeleteConfigResponse {
+  // deleted indicates whether the key existed and was removed.
+  bool deleted = 1;
+}
+
+// ListConfigsRequest lists configuration entries.
+message ListConfigsRequest {
+  // prefix filters keys by prefix.
+  string prefix = 1;
+
+  // environment filters by environment.
+  string environment = 2;
+
+  // labels_filter filters by labels.
+  map<string, string> labels_filter = 3;
+
+  // page_size is the maximum number of entries to return.
+  int32 page_size = 4;
+
+  // page_token is the pagination cursor.
+  string page_token = 5;
+}
+
+// ListConfigsResponse contains a page of configuration entries.
+message ListConfigsResponse {
+  // entries is the list of configuration entries.
+  repeated ConfigEntry entries = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// WatchConfigChangeType describes the type of config change.
+enum WatchConfigChangeType {
+  WATCH_CONFIG_CHANGE_TYPE_UNSPECIFIED = 0;
+  WATCH_CONFIG_CHANGE_TYPE_SET = 1;
+  WATCH_CONFIG_CHANGE_TYPE_DELETE = 2;
+}
+
+// WatchConfigRequest subscribes to configuration changes.
+message WatchConfigRequest {
+  // keys is the list of exact keys to watch (optional).
+  repeated string keys = 1;
+
+  // prefix watches all keys matching a prefix (optional).
+  string prefix = 2;
+
+  // environment filters by environment.
+  string environment = 3;
+}
+
+// WatchConfigResponse wraps a configuration change event.
+message WatchConfigResponse {
+  // type is the kind of change.
+  WatchConfigChangeType type = 1;
+
+  // entry is the new/updated configuration entry (present for SET events).
+  ConfigEntry entry = 2;
+
+  // key is the affected key (always present).
+  string key = 3;
+
+  // timestamp is when the change occurred.
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// GetFeatureFlagRequest evaluates a feature flag.
+message GetFeatureFlagRequest {
+  // flag_key is the feature flag identifier.
+  string flag_key = 1;
+
+  // context contains evaluation context (e.g., user_id, region, plan).
+  map<string, string> context = 2;
+
+  // environment is the target environment.
+  string environment = 3;
+}
+
+// GetFeatureFlagResponse contains the feature flag evaluation result.
+message GetFeatureFlagResponse {
+  // enabled indicates whether the flag is active for the given context.
+  bool enabled = 1;
+
+  // variant is the assigned variant (for multi-variate flags, e.g., "control", "experiment-a").
+  string variant = 2;
+
+  // payload is optional data attached to the flag variant.
+  string payload = 3;
+}

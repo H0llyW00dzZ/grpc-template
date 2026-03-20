@@ -1,0 +1,232 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package queue.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/queue/v1;queuev1";
+
+// QueueService provides message queue operations with acknowledgment and dead-letter support.
+//
+// Suitable for asynchronous message passing, event-driven architectures,
+// work distribution, and any workload requiring reliable message delivery
+// with at-least-once or at-most-once semantics.
+service QueueService {
+  // Publish sends a message to a queue.
+  rpc Publish(PublishRequest) returns (PublishResponse) {}
+
+  // BatchPublish sends multiple messages to a queue.
+  rpc BatchPublish(BatchPublishRequest) returns (BatchPublishResponse) {}
+
+  // Consume opens a server-streaming connection to receive messages from a queue.
+  rpc Consume(ConsumeRequest) returns (stream ConsumeResponse) {}
+
+  // Ack acknowledges successful processing of a message.
+  rpc Ack(AckRequest) returns (AckResponse) {}
+
+  // Nack negatively acknowledges a message (returns it to the queue or sends to DLQ).
+  rpc Nack(NackRequest) returns (NackResponse) {}
+
+  // CreateQueue creates a new queue.
+  rpc CreateQueue(CreateQueueRequest) returns (CreateQueueResponse) {}
+
+  // GetQueueInfo retrieves queue metadata and stats.
+  rpc GetQueueInfo(GetQueueInfoRequest) returns (GetQueueInfoResponse) {}
+
+  // ListQueues lists all queues.
+  rpc ListQueues(ListQueuesRequest) returns (ListQueuesResponse) {}
+
+  // PurgeQueue removes all messages from a queue.
+  rpc PurgeQueue(PurgeQueueRequest) returns (PurgeQueueResponse) {}
+}
+
+// QueueMessage represents a message in a queue.
+message QueueMessage {
+  // message_id is the unique message identifier.
+  string message_id = 1;
+
+  // queue_name is the queue this message belongs to.
+  string queue_name = 2;
+
+  // payload is the message body.
+  google.protobuf.Any payload = 3;
+
+  // headers contain message metadata/routing information.
+  map<string, string> headers = 4;
+
+  // delivery_count is the number of times this message has been delivered.
+  int32 delivery_count = 5;
+
+  // published_at is when the message was published.
+  google.protobuf.Timestamp published_at = 6;
+
+  // expires_at is when the message expires (optional).
+  google.protobuf.Timestamp expires_at = 7;
+}
+
+// QueueInfo contains queue metadata and statistics.
+message QueueInfo {
+  // queue_name is the queue name.
+  string queue_name = 1;
+
+  // message_count is the number of messages currently in the queue.
+  int64 message_count = 2;
+
+  // dead_letter_count is the number of messages in the dead-letter queue.
+  int64 dead_letter_count = 3;
+
+  // consumer_count is the number of active consumers.
+  int32 consumer_count = 4;
+
+  // max_retries is the maximum delivery attempts before dead-lettering.
+  int32 max_retries = 5;
+
+  // created_at is when the queue was created.
+  google.protobuf.Timestamp created_at = 6;
+}
+
+// PublishRequest sends a message to a queue.
+message PublishRequest {
+  // queue_name is the target queue.
+  string queue_name = 1;
+
+  // payload is the message body.
+  google.protobuf.Any payload = 2;
+
+  // headers contain message metadata.
+  map<string, string> headers = 3;
+
+  // delay is the optional delay before the message becomes visible.
+  google.protobuf.Duration delay = 4;
+
+  // ttl is the optional time-to-live for the message.
+  google.protobuf.Duration ttl = 5;
+}
+
+// PublishResponse is returned after publishing a message.
+message PublishResponse {
+  // message_id is the assigned message identifier.
+  string message_id = 1;
+}
+
+// BatchPublishRequest sends multiple messages.
+message BatchPublishRequest {
+  // messages is the list of messages to publish.
+  repeated PublishRequest messages = 1;
+}
+
+// BatchPublishResponse is returned after batch publishing.
+message BatchPublishResponse {
+  // message_ids is the list of assigned message identifiers.
+  repeated string message_ids = 1;
+}
+
+// ConsumeRequest subscribes to messages from a queue.
+message ConsumeRequest {
+  // queue_name is the queue to consume from.
+  string queue_name = 1;
+
+  // max_messages is the maximum number of messages to receive per batch (optional).
+  int32 max_messages = 2;
+
+  // visibility_timeout is how long a message is hidden after delivery before
+  // it becomes available again (if not acknowledged).
+  google.protobuf.Duration visibility_timeout = 3;
+}
+
+// ConsumeResponse wraps a delivered message.
+message ConsumeResponse {
+  // message is the delivered queue message.
+  QueueMessage message = 1;
+}
+
+// AckRequest acknowledges a message.
+message AckRequest {
+  // queue_name is the queue the message belongs to.
+  string queue_name = 1;
+
+  // message_id is the message to acknowledge.
+  string message_id = 2;
+}
+
+// AckResponse is returned after acknowledging.
+message AckResponse {}
+
+// NackRequest negatively acknowledges a message.
+message NackRequest {
+  // queue_name is the queue the message belongs to.
+  string queue_name = 1;
+
+  // message_id is the message to nack.
+  string message_id = 2;
+
+  // requeue indicates whether to requeue the message or send it to DLQ.
+  bool requeue = 3;
+}
+
+// NackResponse is returned after nacking.
+message NackResponse {}
+
+// CreateQueueRequest creates a new queue.
+message CreateQueueRequest {
+  // queue_name is the queue name.
+  string queue_name = 1;
+
+  // max_retries is the maximum delivery attempts before dead-lettering.
+  int32 max_retries = 2;
+
+  // dead_letter_queue is the name of the dead-letter queue (optional).
+  string dead_letter_queue = 3;
+}
+
+// CreateQueueResponse is returned after creating a queue.
+message CreateQueueResponse {}
+
+// GetQueueInfoRequest retrieves queue info.
+message GetQueueInfoRequest {
+  // queue_name is the queue to query.
+  string queue_name = 1;
+}
+
+// GetQueueInfoResponse contains the queue metadata.
+message GetQueueInfoResponse {
+  // info is the queue metadata and statistics.
+  QueueInfo info = 1;
+}
+
+// ListQueuesRequest lists all queues.
+message ListQueuesRequest {
+  // page_size is the maximum number of queues to return.
+  int32 page_size = 1;
+
+  // page_token is the pagination cursor.
+  string page_token = 2;
+}
+
+// ListQueuesResponse contains a page of queues.
+message ListQueuesResponse {
+  // queues is the list of queue info.
+  repeated QueueInfo queues = 1;
+
+  // next_page_token is the cursor for the next page.
+  string next_page_token = 2;
+}
+
+// PurgeQueueRequest removes all messages from a queue.
+message PurgeQueueRequest {
+  // queue_name is the queue to purge.
+  string queue_name = 1;
+}
+
+// PurgeQueueResponse is returned after purging.
+message PurgeQueueResponse {
+  // purged_count is the number of messages removed.
+  int64 purged_count = 1;
+}
