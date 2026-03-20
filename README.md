@@ -21,6 +21,12 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Proto Collection** — ready-to-use proto templates for common patterns
 - **Example RPCs** — unary, server streaming, client streaming, and bidirectional
 
+## Showcase
+
+The demo below shows the [`cmd/server`](cmd/server) and [`cmd/client`](cmd/client) in action — unary and server-streaming RPCs over gRPC:
+
+![gRPC Go Demo](assets/image/grpc-go.gif)
+
 ## Project Structure
 
 ```text
