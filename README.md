@@ -1,6 +1,6 @@
 # gRPC Template
 
-A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC projects. Designed as a template repository for any Git provider.
+A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC projects. Designed as a template repository for any Git code hosting (e.g., GitHub).
 
 > **Actively maintained** — I built this template from my own experience with high-performance and critical systems that rely on gRPC. Proto definitions are added as I encounter real-world patterns worth templating. Use this repo as a template to bootstrap your next project without writing boilerplate from scratch.
 
