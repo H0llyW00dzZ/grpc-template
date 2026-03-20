@@ -239,6 +239,76 @@ func TestRecoveryInterceptor_NoPanic(t *testing.T) {
 	}
 }
 
+func TestStreamLoggingInterceptor(t *testing.T) {
+	interceptor := server.StreamLoggingInterceptor()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return nil
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/TestStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := interceptor(nil, ss, info, handler)
+	if err != nil {
+		t.Fatalf("StreamLoggingInterceptor: unexpected error: %v", err)
+	}
+}
+
+func TestStreamLoggingInterceptor_Error(t *testing.T) {
+	interceptor := server.StreamLoggingInterceptor()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return status.Error(codes.Internal, "stream error")
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/TestStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := interceptor(nil, ss, info, handler)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if st, ok := status.FromError(err); !ok || st.Code() != codes.Internal {
+		t.Errorf("got status %v, want Internal", err)
+	}
+}
+
+func TestStreamRecoveryInterceptor(t *testing.T) {
+	interceptor := server.StreamRecoveryInterceptor()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		panic("test stream panic")
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/PanicStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := interceptor(nil, ss, info, handler)
+	if err == nil {
+		t.Fatal("expected error after panic, got nil")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("got code %v, want Internal", st.Code())
+	}
+}
+
+func TestStreamRecoveryInterceptor_NoPanic(t *testing.T) {
+	interceptor := server.StreamRecoveryInterceptor()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return nil
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/SafeStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := interceptor(nil, ss, info, handler)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestRegisterService(t *testing.T) {
 	called := false
 	registrar := func(gs *grpc.Server) {

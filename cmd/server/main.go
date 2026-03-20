@@ -26,6 +26,10 @@ func main() {
 			server.RecoveryInterceptor(),
 			server.LoggingInterceptor(),
 		),
+		server.WithStreamInterceptors(
+			server.StreamRecoveryInterceptor(),
+			server.StreamLoggingInterceptor(),
+		),
 	)
 
 	// Register services.

@@ -14,7 +14,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript and PHP client code
 - **Functional Options** — clean, extensible server configuration
 - **TLS / mTLS** — secure connections with a single option
-- **Built-in Interceptors** — logging (slog) and panic recovery
+- **Built-in Interceptors** — logging (slog) and panic recovery for both unary and streaming RPCs
 - **Health Checks** — standard [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 - **Server Reflection** — debug with [grpcurl](https://github.com/fullstorydev/grpcurl) out of the box
 - **Graceful Shutdown** — handles `SIGINT`/`SIGTERM` and drains connections
@@ -184,7 +184,8 @@ srv.RegisterService(
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
 | Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
 | Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
-| Add interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(...)` |
+| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(...)` |
+| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(...)` |
 | Enable reflection | `cmd/server/main.go` | `server.WithReflection()` |
 | Set keepalives | `cmd/server/main.go` | `server.WithKeepalive(...)` |
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
