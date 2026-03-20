@@ -10,7 +10,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/service"
+	service "github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	pb "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1"
 	"google.golang.org/grpc"
