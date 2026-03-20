@@ -69,3 +69,57 @@ func RecoveryInterceptor() grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
+
+// StreamLoggingInterceptor returns a stream server interceptor that logs
+// the method name, duration, and any error for each streaming RPC call.
+func StreamLoggingInterceptor() grpc.StreamServerInterceptor {
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		start := time.Now()
+
+		err := handler(srv, ss)
+		duration := time.Since(start)
+
+		attrs := []slog.Attr{
+			slog.String("method", info.FullMethod),
+			slog.Duration("duration", duration),
+		}
+
+		if err != nil {
+			attrs = append(attrs, slog.String("error", err.Error()))
+			slog.LogAttrs(ss.Context(), slog.LevelError, "stream rpc failed", attrs...)
+		} else {
+			slog.LogAttrs(ss.Context(), slog.LevelInfo, "stream rpc completed", attrs...)
+		}
+
+		return err
+	}
+}
+
+// StreamRecoveryInterceptor returns a stream server interceptor that recovers
+// from panics in streaming RPC handlers and returns an Internal error to the client.
+func StreamRecoveryInterceptor() grpc.StreamServerInterceptor {
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("panic recovered in gRPC stream handler",
+					"method", info.FullMethod,
+					"panic", r,
+					"stack", string(debug.Stack()),
+				)
+				err = status.Errorf(codes.Internal, "internal server error")
+			}
+		}()
+
+		return handler(srv, ss)
+	}
+}
