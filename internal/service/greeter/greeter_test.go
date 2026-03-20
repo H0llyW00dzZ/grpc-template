@@ -3,27 +3,27 @@
 // By accessing or using this software, you agree to be bound by the terms
 // of the License Agreement, which you can find at LICENSE files.
 
-package service_test
+package greeter_test
 
 import (
 	"context"
 	"io"
 	"testing"
 
-	service "github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
+	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	pb "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-// startGreeterServer starts a gRPC server with the GreeterService registered
+// startGreeterServer starts a gRPC server with the greeter Service registered
 // on an in-memory bufconn listener for testing.
 func startGreeterServer(t *testing.T) *bufconn.Listener {
 	t.Helper()
 	lis := testutil.NewBufListener()
 	srv := grpc.NewServer()
-	svc := service.NewGreeterService()
+	svc := greeter.NewService()
 	svc.Register(srv)
 	go func() {
 		if err := srv.Serve(lis); err != nil {

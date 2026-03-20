@@ -11,12 +11,12 @@ import (
 	"log"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
-	service "github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
+	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 )
 
 func main() {
 	// Create the greeter service.
-	greeterSvc := service.NewGreeterService()
+	greeterSvc := greeter.NewService()
 
 	// Create and configure the gRPC server.
 	srv := server.New(

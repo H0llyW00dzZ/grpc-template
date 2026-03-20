@@ -3,7 +3,9 @@
 // By accessing or using this software, you agree to be bound by the terms
 // of the License Agreement, which you can find at LICENSE files.
 
-package service
+// Package greeter provides the Greeter gRPC service implementation.
+// It handles unary and server-streaming RPCs defined in the helloworld/v1 proto.
+package greeter
 
 import (
 	"context"
@@ -15,24 +17,24 @@ import (
 	"google.golang.org/grpc"
 )
 
-// GreeterService implements the Greeter gRPC service.
-type GreeterService struct {
+// Service implements the Greeter gRPC service.
+type Service struct {
 	pb.UnimplementedGreeterServer
 }
 
-// NewGreeterService returns a new GreeterService.
-func NewGreeterService() *GreeterService {
-	return &GreeterService{}
+// NewService returns a new greeter Service.
+func NewService() *Service {
+	return &Service{}
 }
 
-// Register registers the GreeterService on the given gRPC server.
+// Register registers the greeter Service on the given gRPC server.
 // This satisfies the server.ServiceRegistrar function signature.
-func (s *GreeterService) Register(srv *grpc.Server) {
+func (s *Service) Register(srv *grpc.Server) {
 	pb.RegisterGreeterServer(srv, s)
 }
 
 // SayHello handles a unary RPC and returns a greeting.
-func (s *GreeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (s *Service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
 	slog.Info("received SayHello request", "name", req.GetName())
 
 	return &pb.HelloReply{
@@ -41,7 +43,7 @@ func (s *GreeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*p
 }
 
 // SayHelloServerStream handles a server-streaming RPC by sending multiple greetings.
-func (s *GreeterService) SayHelloServerStream(req *pb.HelloRequest, stream pb.Greeter_SayHelloServerStreamServer) error {
+func (s *Service) SayHelloServerStream(req *pb.HelloRequest, stream pb.Greeter_SayHelloServerStreamServer) error {
 	slog.Info("received SayHelloServerStream request", "name", req.GetName())
 
 	greetings := []string{
