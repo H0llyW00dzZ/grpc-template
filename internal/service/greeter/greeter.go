@@ -3,6 +3,8 @@
 // By accessing or using this software, you agree to be bound by the terms
 // of the License Agreement, which you can find at LICENSE files.
 
+// Package greeter provides the Greeter gRPC service implementation.
+// It handles unary and server-streaming RPCs defined in the helloworld/v1 proto.
 package greeter
 
 import (

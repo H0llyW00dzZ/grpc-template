@@ -21,6 +21,20 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Proto Collection** — ready-to-use proto templates for common patterns
 - **Example RPCs** — unary, server streaming, client streaming, and bidirectional
 
+## Why gRPC in 2026?
+
+In 2026, gRPC is the clear winner for service-to-service communication — and **especially for AI / AI-tool workloads**:
+
+| | REST / JSON (HTTP/1.1) | gRPC (HTTP/2 + Protobuf) |
+|---|---|---|
+| **Serialization** | Text-based JSON — parse overhead on every call | Binary Protobuf — 5-10× smaller payloads, near-zero parse cost |
+| **Transport** | One request per connection (or clunky keep-alive) | Multiplexed streams over a single HTTP/2 connection |
+| **Streaming** | Workarounds (SSE, WebSockets, chunked transfer) | Native bidirectional streaming, first-class support |
+| **Latency** | Higher per-call overhead from headers + JSON encoding | Minimal framing; ideal for high-frequency AI inference calls |
+| **Code generation** | Manual client SDKs or OpenAPI generators | Strongly-typed stubs generated from `.proto` files for any language |
+
+Modern AI systems — LLM orchestrators, inference pipelines, tool-calling agents (MCP), embedding services — make **thousands of low-latency calls** between components. The overhead of REST/JSON serialization and HTTP/1.1 connection management adds up fast. gRPC eliminates that overhead with binary serialization, persistent multiplexed connections, and native streaming, making it the natural transport layer for AI-native architectures.
+
 ## Showcase
 
 The demo below shows the [`cmd/server`](cmd/server) and [`cmd/client`](cmd/client) in action — unary and server-streaming RPCs over gRPC:
