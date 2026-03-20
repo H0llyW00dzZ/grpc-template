@@ -27,6 +27,10 @@ The demo below shows the [`cmd/server`](cmd/server) and [`cmd/client`](cmd/clien
 
 ![gRPC Go Demo](assets/image/grpc-go.gif)
 
+With streaming interceptors enabled, both unary and streaming RPCs are logged with method, duration, and error details:
+
+![gRPC Streaming Interceptor Demo](assets/image/grpc-go-streaming-Interceptor.gif)
+
 ## Project Structure
 
 ```text
