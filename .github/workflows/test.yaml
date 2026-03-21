@@ -1,0 +1,95 @@
+# Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+# 
+# By accessing or using this software, you agree to be bound by the terms
+# of the License Agreement, which you can find at LICENSE files.
+
+name: 🧪 Vet & Test Coverage
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+      - '**/docs.go'
+      - '**/doc.go'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.ignore'
+      - '**/Makefile'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CODE_OF_CONDUCT.id.md'
+      - 'CONTRIBUTING.md'
+      - 'CONTRIBUTING.id.md'
+      - 'examples/*'
+      - 'skills/*'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+      - '**/docs.go'
+      - '**/doc.go'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.ignore'
+      - '**/Makefile'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CODE_OF_CONDUCT.id.md'
+      - 'CONTRIBUTING.md'
+      - 'CONTRIBUTING.id.md'
+      - 'examples/*'
+      - 'skills/*'
+jobs:
+  coverage:
+    name: 🔢 Vet & Test Coverage on ${{ matrix.os }} (Go ${{ matrix.go-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-22.04
+          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
+          - macos-latest
+          - windows-latest
+          - windows-2022
+          - windows-11-arm
+        go-version:
+          - '1.26.0'
+          - '1.26.1'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Run go vet
+      run: go vet ./...
+      shell: bash
+
+    - name: Run tests with coverage (with race detector)
+      if: matrix.os != 'windows-11-arm'
+      run: |
+        go test $(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$') -race -v -coverprofile=coverage.txt -covermode=atomic -count=1
+      shell: bash
+
+    - name: Run tests with coverage (without race detector)
+      if: matrix.os == 'windows-11-arm'
+      run: |
+        go test $(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$') -v -coverprofile=coverage.txt -covermode=atomic -count=1
+      shell: bash
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      # Only upload coverage for the starter/minimum Go version (1.26.0)
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.26.0'
+      # continue-on-error: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      with:
+        files: ./coverage.txt
+        flags: unittests
+        name: codecov-umbrella
