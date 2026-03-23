@@ -210,9 +210,9 @@ srv.RegisterService(
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
 | Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
 | Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
-| Custom logger | `cmd/server/main.go` | `logging.SetDefault(myHandler)` or pass to interceptors/services directly |
-| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(l), ...)` |
-| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(l), ...)` |
+| Custom logger | `cmd/server/main.go` | `logging.SetDefault(myHandler)` or via server option `server.WithLogger(myHandler)` |
+| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(...)` (Logging & Recovery are auto-injected by the Server) |
+| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(...)` (Logging & Recovery are auto-injected by the Server) |
 | Request ID tracing | `cmd/server/main.go` | `interceptor.RequestID()` / `interceptor.StreamRequestID()` |
 | Auth / token validation | `cmd/server/main.go` | `interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods(...))` |
 | Request validation | `cmd/server/main.go` | `interceptor.Validation()` (works with `protoc-gen-validate`) |

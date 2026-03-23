@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -131,5 +132,12 @@ func WithGrpcOptions(opts ...grpc.ServerOption) Option {
 func WithListener(lis net.Listener) Option {
 	return func(s *Server) {
 		s.listener = lis
+	}
+}
+
+// WithLogger sets the logger used by the gRPC server and its default interceptors.
+func WithLogger(l logging.Handler) Option {
+	return func(s *Server) {
+		s.logger = l
 	}
 }

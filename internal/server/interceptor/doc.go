@@ -29,20 +29,19 @@
 //
 // # Usage
 //
-//	l := logging.Default()
+//	// To use custom loggers, pass your `logging.Handler` to the server:
+//	myLogger := &CustomJSONLogger{}
+//
 //	srv := server.New(
-//	    server.WithUnaryInterceptors(
-//	        interceptor.Recovery(l),
-//	        interceptor.RequestID(),
-//	        interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
-//	        interceptor.Validation(),
-//	        interceptor.Logging(l),
-//	    ),
-//	    server.WithStreamInterceptors(
-//	        interceptor.StreamRecovery(l),
-//	        interceptor.StreamRequestID(),
-//	        interceptor.StreamAuth(myAuthFunc),
-//	        interceptor.StreamLogging(l),
-//	    ),
+//		server.WithLogger(myLogger),
+//		server.WithUnaryInterceptors(
+//			interceptor.RequestID(),
+//			interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
+//			interceptor.Validation(),
+//		),
+//		server.WithStreamInterceptors(
+//			interceptor.StreamRequestID(),
+//			interceptor.StreamAuth(myAuthFunc),
+//		),
 //	)
 package interceptor
