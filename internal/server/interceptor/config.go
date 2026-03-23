@@ -64,7 +64,9 @@ func WithAuthFunc(fn AuthFunc) Option {
 func WithExcludedMethods(methods ...string) Option {
 	return func(c *config) {
 		for _, m := range methods {
-			c.excludedMethods[m] = struct{}{}
+			if m != "" {
+				c.excludedMethods[m] = struct{}{}
+			}
 		}
 	}
 }
