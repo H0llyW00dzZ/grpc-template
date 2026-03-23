@@ -6,7 +6,6 @@
 package server_test
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -18,22 +17,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"google.golang.org/grpc/metadata"
 )
-
-// fakeServerStream is a minimal grpc.ServerStream implementation for testing
-// stream interceptors without a real gRPC connection.
-type fakeServerStream struct {
-	ctx context.Context
-}
-
-func (f *fakeServerStream) SetHeader(metadata.MD) error  { return nil }
-func (f *fakeServerStream) SendHeader(metadata.MD) error { return nil }
-func (f *fakeServerStream) SetTrailer(metadata.MD)       {}
-func (f *fakeServerStream) Context() context.Context     { return f.ctx }
-func (f *fakeServerStream) SendMsg(any) error            { return nil }
-func (f *fakeServerStream) RecvMsg(any) error            { return nil }
 
 // generateTestCert creates a self-signed CA and a leaf certificate in dir.
 // Returns paths to (certFile, keyFile, caCertFile).

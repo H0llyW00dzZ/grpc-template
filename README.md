@@ -14,7 +14,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript and PHP client code
 - **Functional Options** — clean, extensible server configuration
 - **TLS / mTLS** — secure connections with a single option
-- **Built-in Interceptors** — logging (slog) and panic recovery for both unary and streaming RPCs
+- **Built-in Interceptors** — modular interceptor package with logging (slog + status code + peer), panic recovery, request ID correlation, auth/token validation, and request validation for both unary and streaming RPCs
 - **Health Checks** — standard [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 - **Server Reflection** — debug with [grpcurl](https://github.com/fullstorydev/grpcurl) out of the box
 - **Graceful Shutdown** — handles `SIGINT`/`SIGTERM` and drains connections
@@ -56,7 +56,7 @@ grpc-template/
 │   ├── server/                 # gRPC server lifecycle
 │   │   ├── server.go           # Server with graceful shutdown
 │   │   ├── option.go           # Functional options (TLS, mTLS)
-│   │   └── interceptor.go      # Logging & recovery interceptors
+│   │   └── interceptor/        # Modular interceptors (logging, recovery, auth, request ID, validation)
 │   ├── service/
 │   │   └── greeter/            # Example service implementation
 │   │       ├── greeter.go      # Greeter service
@@ -204,8 +204,11 @@ srv.RegisterService(
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
 | Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
 | Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
-| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(...)` |
-| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(...)` |
+| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(), ...)` |
+| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(), ...)` |
+| Request ID tracing | `cmd/server/main.go` | `interceptor.RequestID()` / `interceptor.StreamRequestID()` |
+| Auth / token validation | `cmd/server/main.go` | `interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods(...))` |
+| Request validation | `cmd/server/main.go` | `interceptor.Validation()` (works with `protoc-gen-validate`) |
 | Enable reflection | `cmd/server/main.go` | `server.WithReflection()` |
 | Set keepalives | `cmd/server/main.go` | `server.WithKeepalive(...)` |
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |

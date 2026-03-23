@@ -60,7 +60,7 @@ run-client:
 # Run all tests (excludes helper-only packages like testutil).
 test: proto
 	@echo "==> Running tests..."
-	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -v -count=1
+	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -race -v -count=1
 	@echo "==> Done."
 
 # Run go vet.
