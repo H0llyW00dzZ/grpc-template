@@ -36,6 +36,7 @@ type Server struct {
 	registrars         []ServiceRegistrar
 	grpcOpts           []grpc.ServerOption
 	listener           net.Listener
+	healthSrv          *health.Server
 }
 
 // New creates a new Server with the given functional options.
@@ -53,6 +54,24 @@ func New(opts ...Option) *Server {
 // Logger returns the configured logger for the server.
 func (s *Server) Logger() logging.Handler {
 	return s.logger
+}
+
+// Health returns the gRPC health server, allowing callers to toggle
+// per-service serving status at runtime (e.g., for maintenance).
+//
+//	// Mark a service as temporarily unavailable:
+//	srv.Health().SetServingStatus(
+//	    "helloworld.v1.GreeterService",
+//	    healthgrpc.HealthCheckResponse_NOT_SERVING,
+//	)
+//
+//	// Restore it:
+//	srv.Health().SetServingStatus(
+//	    "helloworld.v1.GreeterService",
+//	    healthgrpc.HealthCheckResponse_SERVING,
+//	)
+func (s *Server) Health() *health.Server {
+	return s.healthSrv
 }
 
 // RegisterService adds one or more service registrars that will be called
@@ -87,7 +106,7 @@ func (s *Server) buildOptions() []grpc.ServerOption {
 	return opts
 }
 
-func (s *Server) setupServer() (*grpc.Server, *health.Server) {
+func (s *Server) setupServer() *grpc.Server {
 	opts := s.buildOptions()
 	grpcServer := grpc.NewServer(opts...)
 
@@ -95,16 +114,16 @@ func (s *Server) setupServer() (*grpc.Server, *health.Server) {
 		registrar(grpcServer)
 	}
 
-	healthServer := health.NewServer()
-	healthgrpc.RegisterHealthServer(grpcServer, healthServer)
-	healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_SERVING)
+	s.healthSrv = health.NewServer()
+	healthgrpc.RegisterHealthServer(grpcServer, s.healthSrv)
+	s.healthSrv.SetServingStatus("", healthgrpc.HealthCheckResponse_SERVING)
 
 	if s.reflection {
 		reflection.Register(grpcServer)
 		s.logger.Info("gRPC server reflection enabled")
 	}
 
-	return grpcServer, healthServer
+	return grpcServer
 }
 
 // Run starts the gRPC server and blocks until the context is cancelled
@@ -116,7 +135,7 @@ func (s *Server) Run(ctx context.Context) error {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	grpcServer, healthServer := s.setupServer()
+	grpcServer := s.setupServer()
 
 	// Use injected listener or start a new TCP listener.
 	lis := s.listener
@@ -142,7 +161,7 @@ func (s *Server) Run(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		s.logger.Info("shutdown signal received, draining connections...")
-		healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
+		s.healthSrv.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
 		grpcServer.GracefulStop()
 		s.logger.Info("gRPC server stopped gracefully")
 		return nil

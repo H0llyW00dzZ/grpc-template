@@ -45,6 +45,21 @@ func TestServer_WithLoggerAndGetter(t *testing.T) {
 	assert.Equal(t, l, srv.Logger())
 }
 
+func TestServer_HealthGetter(t *testing.T) {
+	srv := server.New(server.WithPort("0"))
+	// Health is nil before Run/setupServer.
+	assert.Nil(t, srv.Health())
+
+	// After Run starts (and then cancels), Health is populated.
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+	require.NoError(t, <-errCh)
+
+	assert.NotNil(t, srv.Health())
+}
+
 func TestServer_WithAuthFuncAndExcludedMethods(t *testing.T) {
 	authFn := func(ctx context.Context, token string) (context.Context, error) {
 		return ctx, nil
