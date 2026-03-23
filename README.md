@@ -8,6 +8,9 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 
 > **Actively maintained** — I built this template from my own experience with high-performance and critical systems that rely on gRPC. Proto definitions are added as I encounter real-world patterns worth templating. Use this repo as a template to bootstrap your next project without writing boilerplate from scratch.
 
+> [!WARNING]
+> **Breaking Changes Notice** — This template repository is under active development. Proto definitions, service interfaces, generated code structure, and interceptor APIs may change without prior deprecation. Pin to a specific commit if you need stability.
+
 ## Features
 
 - **Proto-first** — [Buf](https://buf.build/) for proto linting and code generation
@@ -72,7 +75,7 @@ grpc-template/
 │   ├── discovery/v1/           # Service registry & discovery
 │   ├── echo/v1/                # All 4 RPC patterns
 │   ├── geo/v1/                 # Geospatial operations
-│   ├── helloworld/v1/          # Greeter (unary + server streaming)
+│   ├── helloworld/v1/          # GreeterService (unary + server streaming)
 │   ├── identity/v1/            # User management & RBAC
 │   ├── kv/v1/                  # Key-value store with watch
 │   ├── media/v1/               # Media processing pipelines
@@ -147,8 +150,8 @@ This template ships with ready-to-use proto definitions so you never have to wri
 
 | Proto | Package | What It Covers |
 |-------|---------|----------------|
-| `helloworld/v1` | Greeter | Unary + server-streaming RPCs |
-| `echo/v1` | Echo | All 4 RPC patterns (unary, server stream, client stream, bidirectional) |
+| `helloworld/v1` | GreeterService | Unary + server-streaming RPCs |
+| `echo/v1` | EchoService | All 4 RPC patterns (unary, server stream, client stream, bidirectional) |
 | `crud/v1` | CrudService | Create, Get, List (pagination), Update (field mask), Delete |
 | `auth/v1` | AuthService | Multi-credential login (`oneof`: password, API key, OAuth), refresh, validate, logout |
 | `messaging/v1` | MessagingService | Send, subscribe (server stream), full-duplex streaming, channels, metadata |

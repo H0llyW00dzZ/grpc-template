@@ -10,6 +10,8 @@ package kv.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/kv/v1;kvv1";
+option php_namespace = "Kv\\V1";
+option php_metadata_namespace = "GPBMetadata\\Kv\\V1";
 
 // KvService provides key-value store operations.
 //

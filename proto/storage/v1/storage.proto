@@ -10,6 +10,8 @@ package storage.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/storage/v1;storagev1";
+option php_namespace = "Storage\\V1";
+option php_metadata_namespace = "GPBMetadata\\Storage\\V1";
 
 // StorageService provides file and object storage operations over gRPC.
 //

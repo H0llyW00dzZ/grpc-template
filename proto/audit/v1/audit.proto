@@ -11,6 +11,8 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/audit/v1;auditv1";
+option php_namespace = "Audit\\V1";
+option php_metadata_namespace = "GPBMetadata\\Audit\\V1";
 
 // AuditService provides audit logging and compliance event tracking.
 //

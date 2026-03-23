@@ -10,6 +10,8 @@ package config.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/config/v1;configv1";
+option php_namespace = "Config\\V1";
+option php_metadata_namespace = "GPBMetadata\\Config\\V1";
 
 // ConfigService provides remote configuration and feature flag management.
 //

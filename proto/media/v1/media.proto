@@ -10,6 +10,8 @@ package media.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/media/v1;mediav1";
+option php_namespace = "Media\\V1";
+option php_metadata_namespace = "GPBMetadata\\Media\\V1";
 
 // MediaService provides media processing and transformation pipelines.
 //

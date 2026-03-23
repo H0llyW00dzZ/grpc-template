@@ -11,6 +11,8 @@ import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/workflow/v1;workflowv1";
+option php_namespace = "Workflow\\V1";
+option php_metadata_namespace = "GPBMetadata\\Workflow\\V1";
 
 // WorkflowService manages state machine and workflow orchestration.
 //

@@ -11,6 +11,8 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/ratelimit/v1;ratelimitv1";
+option php_namespace = "Ratelimit\\V1";
+option php_metadata_namespace = "GPBMetadata\\Ratelimit\\V1";
 
 // RateLimitService provides rate limiting and quota enforcement.
 //

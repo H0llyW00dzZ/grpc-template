@@ -8,24 +8,38 @@ syntax = "proto3";
 package helloworld.v1;
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1;helloworldv1";
+option php_namespace = "Helloworld\\V1";
+option php_metadata_namespace = "GPBMetadata\\Helloworld\\V1";
 
-// Greeter is a sample gRPC service demonstrating unary and server-streaming RPCs.
-service Greeter {
+// GreeterService is a sample gRPC service demonstrating unary and server-streaming RPCs.
+service GreeterService {
   // SayHello sends a single greeting (unary RPC).
-  rpc SayHello(HelloRequest) returns (HelloReply) {}
+  rpc SayHello(SayHelloRequest) returns (SayHelloResponse) {}
 
   // SayHelloServerStream sends multiple greetings over a server stream.
-  rpc SayHelloServerStream(HelloRequest) returns (stream HelloReply) {}
+  rpc SayHelloServerStream(SayHelloServerStreamRequest) returns (stream SayHelloServerStreamResponse) {}
 }
 
-// HelloRequest is the request message for the Greeter service.
-message HelloRequest {
+// SayHelloRequest is the request message for the SayHello RPC.
+message SayHelloRequest {
   // name is the name to greet.
   string name = 1;
 }
 
-// HelloReply is the response message for the Greeter service.
-message HelloReply {
+// SayHelloResponse is the response message for the SayHello RPC.
+message SayHelloResponse {
+  // message is the greeting text.
+  string message = 1;
+}
+
+// SayHelloServerStreamRequest is the request message for the SayHelloServerStream RPC.
+message SayHelloServerStreamRequest {
+  // name is the name to greet.
+  string name = 1;
+}
+
+// SayHelloServerStreamResponse is the response message for the SayHelloServerStream RPC.
+message SayHelloServerStreamResponse {
   // message is the greeting text.
   string message = 1;
 }

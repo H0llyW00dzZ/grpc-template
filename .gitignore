@@ -20,8 +20,13 @@ go.work.sum
 # Ignore everything under pkg/gen/ except helloworld (ships with the template).
 pkg/gen/*
 !pkg/gen/helloworld/
-pkg/gen-ts/
-pkg/gen-php/
+pkg/gen-ts/*
+!pkg/gen-ts/helloworld/
+pkg/gen-php/*
+!pkg/gen-php/Helloworld/
+!pkg/gen-php/composer.json
+pkg/gen-php/vendor/
+pkg/gen-php/composer.lock
 
 # Node
 node_modules/

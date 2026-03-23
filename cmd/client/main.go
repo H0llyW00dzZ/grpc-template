@@ -34,14 +34,14 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := pb.NewGreeterClient(conn)
+	client := pb.NewGreeterServiceClient(conn)
 
 	// --- Unary RPC ---
 	slog.Info("calling SayHello (unary)...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	reply, err := client.SayHello(ctx, &pb.HelloRequest{Name: defaultName})
+	reply, err := client.SayHello(ctx, &pb.SayHelloRequest{Name: defaultName})
 	if err != nil {
 		log.Fatalf("SayHello failed: %v", err)
 	}
@@ -52,7 +52,7 @@ func main() {
 	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel2()
 
-	stream, err := client.SayHelloServerStream(ctx2, &pb.HelloRequest{Name: defaultName})
+	stream, err := client.SayHelloServerStream(ctx2, &pb.SayHelloServerStreamRequest{Name: defaultName})
 	if err != nil {
 		log.Fatalf("SayHelloServerStream failed: %v", err)
 	}
