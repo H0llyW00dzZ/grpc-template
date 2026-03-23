@@ -196,6 +196,9 @@ Shared test helpers live in `internal/testutil/`. See `internal/service/greeter/
 4. **Register the service** — Add to `srv.RegisterService(...)` in `cmd/server/main.go`
 
 ```go
+// In cmd/server/main.go
+yourSvc := yourservice.NewService(srv.Logger()) // Use the server's logger!
+
 srv.RegisterService(
     greeterSvc.Register,
     authSvc.Register,
