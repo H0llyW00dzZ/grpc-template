@@ -15,58 +15,36 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// AuthFunc is a user-provided function that validates a token string
-// and returns an enriched context (e.g., with user claims) or an error.
-// The interceptor extracts the bearer token from the "authorization"
-// metadata key and passes it to this function.
-type AuthFunc func(ctx context.Context, token string) (context.Context, error)
-
-// AuthOption configures the auth interceptor.
-type AuthOption func(*authConfig)
-
-type authConfig struct {
-	excludedMethods map[string]struct{}
-}
-
-// WithExcludedMethods returns an AuthOption that skips authentication
-// for the given fully-qualified gRPC method names.
-//
-//	interceptor.Auth(myAuthFunc,
-//	    interceptor.WithExcludedMethods(
-//	        "/grpc.health.v1.Health/Check",
-//	        "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
-//	    ),
-//	)
-func WithExcludedMethods(methods ...string) AuthOption {
-	return func(c *authConfig) {
-		for _, m := range methods {
-			c.excludedMethods[m] = struct{}{}
-		}
-	}
-}
-
 // Auth returns a unary server interceptor that extracts a bearer
-// token from the "authorization" metadata and validates it using the provided
-// [AuthFunc]. Use [WithExcludedMethods] to skip authentication for specific
+// token from the "authorization" metadata and validates it using the
+// [AuthFunc] configured via [Configure] with [WithAuthFunc].
+//
+// Use [WithExcludedMethods] to skip authentication for specific
 // methods (e.g., health checks, reflection).
 //
-//	interceptor.Auth(func(ctx context.Context, token string) (context.Context, error) {
-//	    claims, err := validateJWT(token)
-//	    if err != nil {
-//	        return ctx, err
-//	    }
-//	    return context.WithValue(ctx, claimsKey{}, claims), nil
-//	})
-func Auth(fn AuthFunc, opts ...AuthOption) grpc.UnaryServerInterceptor {
-	cfg := newAuthConfig(opts)
-
+//	interceptor.Configure(
+//	    interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+//	        claims, err := validateJWT(token)
+//	        if err != nil {
+//	            return ctx, err
+//	        }
+//	        return context.WithValue(ctx, claimsKey{}, claims), nil
+//	    }),
+//	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
+//	)
+func Auth() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		if _, excluded := cfg.excludedMethods[info.FullMethod]; excluded {
+		if _, excluded := defaultConfig.excludedMethods[info.FullMethod]; excluded {
+			return handler(ctx, req)
+		}
+
+		fn := defaultConfig.authFunc
+		if fn == nil {
 			return handler(ctx, req)
 		}
 
@@ -81,17 +59,20 @@ func Auth(fn AuthFunc, opts ...AuthOption) grpc.UnaryServerInterceptor {
 
 // StreamAuth returns a stream server interceptor that extracts a
 // bearer token from the "authorization" metadata and validates it using the
-// provided [AuthFunc].
-func StreamAuth(fn AuthFunc, opts ...AuthOption) grpc.StreamServerInterceptor {
-	cfg := newAuthConfig(opts)
-
+// [AuthFunc] configured via [Configure] with [WithAuthFunc].
+func StreamAuth() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		if _, excluded := cfg.excludedMethods[info.FullMethod]; excluded {
+		if _, excluded := defaultConfig.excludedMethods[info.FullMethod]; excluded {
+			return handler(srv, ss)
+		}
+
+		fn := defaultConfig.authFunc
+		if fn == nil {
 			return handler(srv, ss)
 		}
 
@@ -102,14 +83,6 @@ func StreamAuth(fn AuthFunc, opts ...AuthOption) grpc.StreamServerInterceptor {
 
 		return handler(srv, &wrappedServerStream{ServerStream: ss, ctx: ctx})
 	}
-}
-
-func newAuthConfig(opts []AuthOption) *authConfig {
-	cfg := &authConfig{excludedMethods: make(map[string]struct{})}
-	for _, opt := range opts {
-		opt(cfg)
-	}
-	return cfg
 }
 
 // authenticateContext extracts the bearer token from metadata and calls the

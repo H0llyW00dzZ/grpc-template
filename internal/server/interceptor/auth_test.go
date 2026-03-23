@@ -20,14 +20,16 @@ import (
 )
 
 func TestAuth_Valid(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		if token != "valid-token" {
-			return ctx, fmt.Errorf("bad token")
-		}
-		return context.WithValue(ctx, "user", "alice"), nil
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			if token != "valid-token" {
+				return ctx, fmt.Errorf("bad token")
+			}
+			return context.WithValue(ctx, "user", "alice"), nil
+		}),
+	)
 
-	i := interceptor.Auth(authFunc)
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -44,11 +46,13 @@ func TestAuth_Valid(t *testing.T) {
 }
 
 func TestAuth_MissingToken(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		return ctx, nil
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			return ctx, nil
+		}),
+	)
 
-	i := interceptor.Auth(authFunc)
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -64,11 +68,13 @@ func TestAuth_MissingToken(t *testing.T) {
 }
 
 func TestAuth_InvalidToken(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		return ctx, fmt.Errorf("invalid")
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			return ctx, fmt.Errorf("invalid")
+		}),
+	)
 
-	i := interceptor.Auth(authFunc)
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -87,14 +93,15 @@ func TestAuth_InvalidToken(t *testing.T) {
 }
 
 func TestAuth_ExcludedMethod(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		t.Fatal("authFunc should not be called for excluded methods")
-		return ctx, nil
-	}
-
-	i := interceptor.Auth(authFunc,
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			t.Fatal("authFunc should not be called for excluded methods")
+			return ctx, nil
+		}),
 		interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 	)
+
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/grpc.health.v1.Health/Check"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -107,14 +114,16 @@ func TestAuth_ExcludedMethod(t *testing.T) {
 }
 
 func TestAuth_BearerCaseInsensitive(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		if token != "my-token" {
-			return ctx, fmt.Errorf("unexpected token: %s", token)
-		}
-		return ctx, nil
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			if token != "my-token" {
+				return ctx, fmt.Errorf("unexpected token: %s", token)
+			}
+			return ctx, nil
+		}),
+	)
 
-	i := interceptor.Auth(authFunc)
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -129,11 +138,13 @@ func TestAuth_BearerCaseInsensitive(t *testing.T) {
 }
 
 func TestAuth_EmptyBearer(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		return ctx, nil
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			return ctx, nil
+		}),
+	)
 
-	i := interceptor.Auth(authFunc)
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -150,15 +161,32 @@ func TestAuth_EmptyBearer(t *testing.T) {
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
 
-func TestStreamAuth_Valid(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		if token != "stream-token" {
-			return ctx, fmt.Errorf("bad token")
-		}
-		return context.WithValue(ctx, "user", "bob"), nil
+func TestAuth_NoAuthFunc(t *testing.T) {
+	interceptor.Configure(interceptor.WithAuthFunc(nil))
+
+	i := interceptor.Auth()
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Open"}
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "passthrough", nil
 	}
 
-	i := interceptor.StreamAuth(authFunc)
+	resp, err := i(context.Background(), "req", info, handler)
+	require.NoError(t, err)
+	assert.Equal(t, "passthrough", resp)
+}
+
+func TestStreamAuth_Valid(t *testing.T) {
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			if token != "stream-token" {
+				return ctx, fmt.Errorf("bad token")
+			}
+			return context.WithValue(ctx, "user", "bob"), nil
+		}),
+	)
+
+	i := interceptor.StreamAuth()
 	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/SecureStream"}
 
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -175,14 +203,15 @@ func TestStreamAuth_Valid(t *testing.T) {
 }
 
 func TestStreamAuth_ExcludedMethod(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		t.Fatal("authFunc should not be called for excluded methods")
-		return ctx, nil
-	}
-
-	i := interceptor.StreamAuth(authFunc,
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			t.Fatal("authFunc should not be called for excluded methods")
+			return ctx, nil
+		}),
 		interceptor.WithExcludedMethods("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"),
 	)
+
+	i := interceptor.StreamAuth()
 	info := &grpc.StreamServerInfo{FullMethod: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"}
 	ss := &fakeServerStream{ctx: context.Background()}
 
@@ -195,11 +224,13 @@ func TestStreamAuth_ExcludedMethod(t *testing.T) {
 }
 
 func TestStreamAuth_InvalidToken(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		return ctx, fmt.Errorf("invalid token")
-	}
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			return ctx, fmt.Errorf("invalid token")
+		}),
+	)
 
-	i := interceptor.StreamAuth(authFunc)
+	i := interceptor.StreamAuth()
 	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/SecureStream"}
 
 	handler := func(srv any, stream grpc.ServerStream) error {
@@ -218,12 +249,29 @@ func TestStreamAuth_InvalidToken(t *testing.T) {
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
 
-func TestAuth_EmptyAuthKey(t *testing.T) {
-	authFunc := func(ctx context.Context, token string) (context.Context, error) {
-		return ctx, nil
+func TestStreamAuth_NoAuthFunc(t *testing.T) {
+	interceptor.Configure(interceptor.WithAuthFunc(nil))
+
+	i := interceptor.StreamAuth()
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/Open"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return nil
 	}
 
-	i := interceptor.Auth(authFunc)
+	err := i(nil, ss, info, handler)
+	require.NoError(t, err)
+}
+
+func TestAuth_EmptyAuthKey(t *testing.T) {
+	interceptor.Configure(
+		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
+			return ctx, nil
+		}),
+	)
+
+	i := interceptor.Auth()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {

@@ -148,3 +148,20 @@ func WithLogger(l logging.Handler) Option {
 		}
 	}
 }
+
+// WithAuthFunc sets the authentication function used by interceptors.
+// It delegates to [interceptor.Configure] with [interceptor.WithAuthFunc].
+func WithAuthFunc(fn interceptor.AuthFunc) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithAuthFunc(fn))
+	}
+}
+
+// WithExcludedMethods configures the auth interceptor to skip authentication
+// for the given fully-qualified gRPC method names.
+// It delegates to [interceptor.Configure] with [interceptor.WithExcludedMethods].
+func WithExcludedMethods(methods ...string) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithExcludedMethods(methods...))
+	}
+}
