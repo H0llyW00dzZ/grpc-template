@@ -17,15 +17,15 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
 
 func TestNewServer_DefaultPort(t *testing.T) {
 	srv := server.New()
-	if srv == nil {
-		t.Fatal("New() returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestNewServer_WithOptions(t *testing.T) {
@@ -35,9 +35,7 @@ func TestNewServer_WithOptions(t *testing.T) {
 		server.WithUnaryInterceptors(interceptor.Logging(logging.Default())),
 		server.WithStreamInterceptors(),
 	)
-	if srv == nil {
-		t.Fatal("New() with options returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestWithTLS(t *testing.T) {
@@ -45,22 +43,18 @@ func TestWithTLS(t *testing.T) {
 	certFile, keyFile, _ := generateTestCert(t, dir)
 
 	srv := server.New(server.WithTLS(certFile, keyFile), server.WithPort("0"))
-	if srv == nil {
-		t.Fatal("New() with TLS returned nil")
-	}
+	require.NotNil(t, srv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.Run(ctx) }()
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run with TLS: %v", err)
-	}
+	require.NoError(t, <-errCh)
 }
 
 func TestWithTLS_InvalidFiles(t *testing.T) {
-	assertPanics(t, "WithTLS bad paths", func() {
+	require.Panics(t, func() {
 		server.New(server.WithTLS("/no/such/cert.pem", "/no/such/key.pem"))
 	})
 }
@@ -70,22 +64,18 @@ func TestWithMutualTLS(t *testing.T) {
 	certFile, keyFile, caCertFile := generateTestCert(t, dir)
 
 	srv := server.New(server.WithMutualTLS(certFile, keyFile, caCertFile), server.WithPort("0"))
-	if srv == nil {
-		t.Fatal("New() with mTLS returned nil")
-	}
+	require.NotNil(t, srv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.Run(ctx) }()
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run with mTLS: %v", err)
-	}
+	require.NoError(t, <-errCh)
 }
 
 func TestWithMutualTLS_InvalidCert(t *testing.T) {
-	assertPanics(t, "WithMutualTLS bad cert", func() {
+	require.Panics(t, func() {
 		server.New(server.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"))
 	})
 }
@@ -94,7 +84,7 @@ func TestWithMutualTLS_InvalidCA(t *testing.T) {
 	dir := t.TempDir()
 	certFile, keyFile, _ := generateTestCert(t, dir)
 
-	assertPanics(t, "WithMutualTLS bad CA path", func() {
+	require.Panics(t, func() {
 		server.New(server.WithMutualTLS(certFile, keyFile, "/no/such/ca.pem"))
 	})
 }
@@ -104,11 +94,9 @@ func TestWithMutualTLS_InvalidCAPEM(t *testing.T) {
 	certFile, keyFile, _ := generateTestCert(t, dir)
 
 	badCA := filepath.Join(dir, "bad_ca.pem")
-	if err := os.WriteFile(badCA, []byte("not a PEM"), 0o600); err != nil {
-		t.Fatalf("write bad CA: %v", err)
-	}
+	require.NoError(t, os.WriteFile(badCA, []byte("not a PEM"), 0o600))
 
-	assertPanics(t, "WithMutualTLS invalid PEM", func() {
+	require.Panics(t, func() {
 		server.New(server.WithMutualTLS(certFile, keyFile, badCA))
 	})
 }
@@ -121,23 +109,17 @@ func TestWithKeepalive(t *testing.T) {
 		),
 		server.WithPort("0"),
 	)
-	if srv == nil {
-		t.Fatal("New() with keepalive returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestWithMaxMsgSize(t *testing.T) {
 	srv := server.New(server.WithMaxMsgSize(8*1024*1024), server.WithPort("0"))
-	if srv == nil {
-		t.Fatal("New() with max msg size returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestWithMaxConcurrentStreams(t *testing.T) {
 	srv := server.New(server.WithMaxConcurrentStreams(100), server.WithPort("0"))
-	if srv == nil {
-		t.Fatal("New() with max concurrent streams returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestWithGrpcOptions(t *testing.T) {
@@ -145,9 +127,7 @@ func TestWithGrpcOptions(t *testing.T) {
 		server.WithGrpcOptions(grpc.MaxRecvMsgSize(1024)),
 		server.WithPort("0"),
 	)
-	if srv == nil {
-		t.Fatal("New() with raw grpc options returned nil")
-	}
+	require.NotNil(t, srv)
 }
 
 func TestRegisterService(t *testing.T) {
@@ -164,16 +144,12 @@ func TestRegisterService(t *testing.T) {
 	go func() { errCh <- srv.Run(ctx) }()
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if !called {
-		t.Error("RegisterService registrar was never called")
-	}
+	require.NoError(t, <-errCh)
+	assert.True(t, called)
 }
 
 func TestServer_RunAndShutdown(t *testing.T) {
-	_ = testutil.NewBufListener() // ensure testutil compiles with server tests
+	_ = testutil.NewBufListener()
 
 	srv := server.New(server.WithPort("0"))
 
@@ -186,9 +162,7 @@ func TestServer_RunAndShutdown(t *testing.T) {
 
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run: %v", err)
-	}
+	require.NoError(t, <-errCh)
 }
 
 func TestServer_RunWithAllOptions(t *testing.T) {
@@ -224,12 +198,8 @@ func TestServer_RunWithAllOptions(t *testing.T) {
 	go func() { errCh <- srv.Run(ctx) }()
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run with all options: %v", err)
-	}
-	if !registrarCalled {
-		t.Error("registrar was not called")
-	}
+	require.NoError(t, <-errCh)
+	assert.True(t, registrarCalled)
 }
 
 func TestServer_RunInvalidPort(t *testing.T) {
@@ -238,16 +208,12 @@ func TestServer_RunInvalidPort(t *testing.T) {
 	ctx := t.Context()
 
 	err := srv.Run(ctx)
-	if err == nil {
-		t.Fatal("expected error for invalid port, got nil")
-	}
+	require.Error(t, err)
 }
 
 func TestServer_ServeError(t *testing.T) {
 	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("create listener: %v", err)
-	}
+	require.NoError(t, err)
 	lis.Close()
 
 	srv := server.New(server.WithListener(lis))
@@ -255,28 +221,20 @@ func TestServer_ServeError(t *testing.T) {
 	ctx := t.Context()
 
 	err = srv.Run(ctx)
-	if err == nil {
-		t.Fatal("expected serve error with closed listener, got nil")
-	}
+	require.Error(t, err)
 }
 
 func TestWithListener(t *testing.T) {
 	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("create listener: %v", err)
-	}
+	require.NoError(t, err)
 
 	srv := server.New(server.WithListener(lis))
-	if srv == nil {
-		t.Fatal("New() with listener returned nil")
-	}
+	require.NotNil(t, srv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.Run(ctx) }()
 	cancel()
 
-	if err := <-errCh; err != nil {
-		t.Fatalf("Run with listener: %v", err)
-	}
+	require.NoError(t, <-errCh)
 }

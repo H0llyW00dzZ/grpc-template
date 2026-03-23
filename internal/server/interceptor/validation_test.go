@@ -11,17 +11,17 @@ import (
 	"testing"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// validMessage implements interceptor.Validator and returns nil from Validate.
 type validMessage struct{}
 
 func (v *validMessage) Validate() error { return nil }
 
-// invalidMessage implements interceptor.Validator and returns an error.
 type invalidMessage struct{}
 
 func (v *invalidMessage) Validate() error { return fmt.Errorf("field 'name' is required") }
@@ -35,12 +35,8 @@ func TestValidation_Valid(t *testing.T) {
 	}
 
 	resp, err := i(context.Background(), &validMessage{}, info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "created" {
-		t.Errorf("got %v, want %q", resp, "created")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "created", resp)
 }
 
 func TestValidation_Invalid(t *testing.T) {
@@ -53,13 +49,10 @@ func TestValidation_Invalid(t *testing.T) {
 	}
 
 	_, err := i(context.Background(), &invalidMessage{}, info, handler)
-	if err == nil {
-		t.Fatal("expected InvalidArgument error, got nil")
-	}
+	require.Error(t, err)
 	st, ok := status.FromError(err)
-	if !ok || st.Code() != codes.InvalidArgument {
-		t.Errorf("got code %v, want InvalidArgument", st.Code())
-	}
+	require.True(t, ok)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
 }
 
 func TestValidation_NoValidateMethod(t *testing.T) {
@@ -71,10 +64,6 @@ func TestValidation_NoValidateMethod(t *testing.T) {
 	}
 
 	resp, err := i(context.Background(), "plain-request", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "passed" {
-		t.Errorf("got %v, want %q", resp, "passed")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "passed", resp)
 }

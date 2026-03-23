@@ -101,14 +101,3 @@ func writePEM(t *testing.T, path, blockType string, data []byte) {
 		t.Fatalf("encode PEM %s: %v", path, err)
 	}
 }
-
-// assertPanics verifies that fn panics.
-func assertPanics(t *testing.T, name string, fn func()) {
-	t.Helper()
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("%s: expected panic, did not panic", name)
-		}
-	}()
-	fn()
-}

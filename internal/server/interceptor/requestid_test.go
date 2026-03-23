@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -25,20 +27,12 @@ func TestRequestID_GeneratesID(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
 
 	resp, err := i(context.Background(), "req", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "ok" {
-		t.Errorf("got %v, want %q", resp, "ok")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
 
 	id := interceptor.RequestIDFromContext(capturedCtx)
-	if id == "" {
-		t.Fatal("expected generated request ID, got empty string")
-	}
-	if len(id) < 32 {
-		t.Errorf("request ID %q looks too short for a UUID", id)
-	}
+	require.NotEmpty(t, id)
+	assert.GreaterOrEqual(t, len(id), 32, "request ID %q looks too short for a UUID", id)
 }
 
 func TestRequestID_PreservesExisting(t *testing.T) {
@@ -55,14 +49,8 @@ func TestRequestID_PreservesExisting(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	_, err := i(ctx, "req", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	id := interceptor.RequestIDFromContext(capturedCtx)
-	if id != "my-trace-id-123" {
-		t.Errorf("got request ID %q, want %q", id, "my-trace-id-123")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "my-trace-id-123", interceptor.RequestIDFromContext(capturedCtx))
 }
 
 func TestStreamRequestID(t *testing.T) {
@@ -77,19 +65,11 @@ func TestStreamRequestID(t *testing.T) {
 	ss := &fakeServerStream{ctx: context.Background()}
 
 	err := i(nil, ss, info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	id := interceptor.RequestIDFromContext(capturedCtx)
-	if id == "" {
-		t.Fatal("expected generated request ID in stream context, got empty string")
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, interceptor.RequestIDFromContext(capturedCtx))
 }
 
 func TestRequestIDFromContext_Empty(t *testing.T) {
 	id := interceptor.RequestIDFromContext(context.Background())
-	if id != "" {
-		t.Errorf("expected empty string, got %q", id)
-	}
+	assert.Empty(t, id)
 }

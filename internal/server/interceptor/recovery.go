@@ -18,6 +18,10 @@ import (
 // Recovery returns a unary server interceptor that recovers
 // from panics in RPC handlers and returns an Internal error to the client.
 func Recovery(l logging.Handler) grpc.UnaryServerInterceptor {
+	if l == nil {
+		l = logging.Default()
+	}
+
 	return func(
 		ctx context.Context,
 		req any,
@@ -42,6 +46,9 @@ func Recovery(l logging.Handler) grpc.UnaryServerInterceptor {
 // StreamRecovery returns a stream server interceptor that recovers
 // from panics in streaming RPC handlers and returns an Internal error to the client.
 func StreamRecovery(l logging.Handler) grpc.StreamServerInterceptor {
+	if l == nil {
+		l = logging.Default()
+	}
 	return func(
 		srv any,
 		ss grpc.ServerStream,
