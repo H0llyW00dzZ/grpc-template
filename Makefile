@@ -58,7 +58,7 @@ run-client:
 ## ──────────────────────────────────────────────
 
 # Run all tests (excludes helper-only packages like testutil).
-test: proto
+test:
 	@echo "==> Running tests..."
 	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -race -v -count=1
 	@echo "==> Done."
@@ -66,7 +66,7 @@ test: proto
 # Run tests and evaluate coverage.
 # Note: To view the detailed coverage report in your browser, run:
 #   go tool cover -html=coverage.out
-test-cover: proto
+test-cover:
 	@echo "==> Running tests with coverage..."
 	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -coverprofile=coverage.out
 	go tool cover -func=coverage.out

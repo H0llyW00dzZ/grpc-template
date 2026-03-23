@@ -88,3 +88,23 @@ func TestSayHelloServerStream(t *testing.T) {
 	require.Len(t, got, len(want))
 	assert.Equal(t, want, got)
 }
+
+func TestSayHelloServerStream_ClientCancel(t *testing.T) {
+	lis := startGreeterServer(t)
+	client := newGreeterClient(t, lis)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	stream, err := client.SayHelloServerStream(ctx, &pb.SayHelloServerStreamRequest{Name: "Cancel"})
+	require.NoError(t, err)
+
+	// Receive first message successfully
+	_, err = stream.Recv()
+	require.NoError(t, err)
+
+	// Cancel context to force stream.Send() to fail on the server
+	cancel()
+
+	// Subsequent reads fail on the client
+	_, err = stream.Recv()
+	require.Error(t, err)
+}

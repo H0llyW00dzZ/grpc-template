@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
+	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -135,9 +136,15 @@ func WithListener(lis net.Listener) Option {
 	}
 }
 
-// WithLogger sets the logger used by the gRPC server and its default interceptors.
+// WithLogger sets the logger used by the gRPC server and its interceptors.
+// It also calls [interceptor.Configure] with [interceptor.WithLogger] so that
+// all interceptors in the package automatically use the same logger.
 func WithLogger(l logging.Handler) Option {
 	return func(s *Server) {
-		s.logger = l
+		if l != nil {
+			s.logger = l
+			logging.SetDefault(l)
+			interceptor.Configure(interceptor.WithLogger(l))
+		}
 	}
 }

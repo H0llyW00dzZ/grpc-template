@@ -193,3 +193,49 @@ func TestStreamAuth_ExcludedMethod(t *testing.T) {
 	err := i(nil, ss, info, handler)
 	require.NoError(t, err)
 }
+
+func TestStreamAuth_InvalidToken(t *testing.T) {
+	authFunc := func(ctx context.Context, token string) (context.Context, error) {
+		return ctx, fmt.Errorf("invalid token")
+	}
+
+	i := interceptor.StreamAuth(authFunc)
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/SecureStream"}
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		t.Fatal("handler should not be called")
+		return nil
+	}
+
+	md := metadata.Pairs("authorization", "Bearer bad-token")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ss := &fakeServerStream{ctx: ctx}
+
+	err := i(nil, ss, info, handler)
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Unauthenticated, st.Code())
+}
+
+func TestAuth_EmptyAuthKey(t *testing.T) {
+	authFunc := func(ctx context.Context, token string) (context.Context, error) {
+		return ctx, nil
+	}
+
+	i := interceptor.Auth(authFunc)
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		t.Fatal("handler should not be called")
+		return nil, nil
+	}
+
+	md := metadata.Pairs("other", "value")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	_, err := i(ctx, "req", info, handler)
+	require.Error(t, err)
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.Unauthenticated, st.Code())
+}

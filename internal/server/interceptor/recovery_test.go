@@ -9,7 +9,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ import (
 )
 
 func TestRecovery(t *testing.T) {
-	i := interceptor.Recovery(logging.Default())
+	i := interceptor.Recovery()
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		panic("test panic")
@@ -35,7 +34,7 @@ func TestRecovery(t *testing.T) {
 }
 
 func TestRecovery_NoPanic(t *testing.T) {
-	i := interceptor.Recovery(logging.Default())
+	i := interceptor.Recovery()
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "safe", nil
@@ -48,7 +47,7 @@ func TestRecovery_NoPanic(t *testing.T) {
 }
 
 func TestStreamRecovery(t *testing.T) {
-	i := interceptor.StreamRecovery(logging.Default())
+	i := interceptor.StreamRecovery()
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		panic("test stream panic")
@@ -64,7 +63,7 @@ func TestStreamRecovery(t *testing.T) {
 }
 
 func TestStreamRecovery_NoPanic(t *testing.T) {
-	i := interceptor.StreamRecovery(logging.Default())
+	i := interceptor.StreamRecovery()
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return nil
@@ -74,4 +73,30 @@ func TestStreamRecovery_NoPanic(t *testing.T) {
 
 	err := i(nil, ss, info, handler)
 	require.NoError(t, err)
+}
+
+func TestRecovery_NilLogger(t *testing.T) {
+	i := interceptor.Recovery()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		panic("test panic")
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/PanicMethod"}
+
+	resp, err := i(context.Background(), "request", info, handler)
+	require.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestStreamRecovery_NilLogger(t *testing.T) {
+	i := interceptor.StreamRecovery()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		panic("test stream panic")
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/PanicStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := i(nil, ss, info, handler)
+	require.Error(t, err)
 }

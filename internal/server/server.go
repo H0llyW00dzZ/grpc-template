@@ -14,7 +14,6 @@ import (
 	"syscall"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
-	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
@@ -73,22 +72,12 @@ func (s *Server) buildOptions() []grpc.ServerOption {
 		s.logger.Info("gRPC TLS enabled")
 	}
 
-	unaryInts := []grpc.UnaryServerInterceptor{
-		interceptor.Recovery(s.logger),
-		interceptor.Logging(s.logger),
-	}
-	unaryInts = append(unaryInts, s.unaryInterceptors...)
-	if len(unaryInts) > 0 {
-		opts = append(opts, grpc.ChainUnaryInterceptor(unaryInts...))
+	if len(s.unaryInterceptors) > 0 {
+		opts = append(opts, grpc.ChainUnaryInterceptor(s.unaryInterceptors...))
 	}
 
-	streamInts := []grpc.StreamServerInterceptor{
-		interceptor.StreamRecovery(s.logger),
-		interceptor.StreamLogging(s.logger),
-	}
-	streamInts = append(streamInts, s.streamInterceptors...)
-	if len(streamInts) > 0 {
-		opts = append(opts, grpc.ChainStreamInterceptor(streamInts...))
+	if len(s.streamInterceptors) > 0 {
+		opts = append(opts, grpc.ChainStreamInterceptor(s.streamInterceptors...))
 	}
 
 	if len(s.grpcOpts) > 0 {
