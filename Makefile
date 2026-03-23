@@ -1,4 +1,4 @@
-.PHONY: all proto build clean deps run-server run-client lint vet test
+.PHONY: all proto build clean deps run-server run-client lint vet test test-cover
 
 # Binary output directory.
 BIN_DIR := bin
@@ -62,6 +62,15 @@ test: proto
 	@echo "==> Running tests..."
 	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -race -v -count=1
 	@echo "==> Done."
+
+# Run tests and evaluate coverage.
+# Note: To view the detailed coverage report in your browser, run:
+#   go tool cover -html=coverage.out
+test-cover: proto
+	@echo "==> Running tests with coverage..."
+	go test $$(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$') -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+	@echo "==> Done. (To view in browser: go tool cover -html=coverage.out)"
 
 # Run go vet.
 vet:
