@@ -11,8 +11,18 @@
 // can be composed via [server.WithUnaryInterceptors] and
 // [server.WithStreamInterceptors].
 //
-// All interceptors that perform logging accept a [logging.Handler], allowing
-// callers to plug in any logging backend (slog, zap, zerolog, …).
+// # Shared Configuration
+//
+// Interceptors that need shared dependencies (such as a logger) read them
+// from a package-level configuration. Use [Configure] with functional options
+// to set up the shared state once at startup:
+//
+//	interceptor.Configure(
+//	    interceptor.WithLogger(myLogger),
+//	)
+//
+// When using the [server] package, [server.WithLogger] calls [Configure]
+// automatically — no manual setup needed.
 //
 // # Available Interceptors
 //
@@ -29,20 +39,20 @@
 //
 // # Usage
 //
-//	l := logging.Default()
 //	srv := server.New(
-//	    server.WithUnaryInterceptors(
-//	        interceptor.Recovery(l),
-//	        interceptor.RequestID(),
-//	        interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
-//	        interceptor.Validation(),
-//	        interceptor.Logging(l),
-//	    ),
-//	    server.WithStreamInterceptors(
-//	        interceptor.StreamRecovery(l),
-//	        interceptor.StreamRequestID(),
-//	        interceptor.StreamAuth(myAuthFunc),
-//	        interceptor.StreamLogging(l),
-//	    ),
+//		server.WithLogger(myLogger), // syncs to interceptor package automatically
+//		server.WithUnaryInterceptors(
+//			interceptor.Recovery(),
+//			interceptor.Logging(),
+//			interceptor.RequestID(),
+//			interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
+//			interceptor.Validation(),
+//		),
+//		server.WithStreamInterceptors(
+//			interceptor.StreamRecovery(),
+//			interceptor.StreamLogging(),
+//			interceptor.StreamRequestID(),
+//			interceptor.StreamAuth(myAuthFunc),
+//		),
 //	)
 package interceptor

@@ -196,6 +196,9 @@ Shared test helpers live in `internal/testutil/`. See `internal/service/greeter/
 4. **Register the service** — Add to `srv.RegisterService(...)` in `cmd/server/main.go`
 
 ```go
+// In cmd/server/main.go
+yourSvc := yourservice.NewService(srv.Logger()) // Use the server's logger!
+
 srv.RegisterService(
     greeterSvc.Register,
     authSvc.Register,
@@ -210,9 +213,9 @@ srv.RegisterService(
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
 | Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
 | Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
-| Custom logger | `cmd/server/main.go` | `logging.SetDefault(myHandler)` or pass to interceptors/services directly |
-| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(l), ...)` |
-| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(l), ...)` |
+| Custom logger | `cmd/server/main.go` | `server.WithLogger(myHandler)` — auto-syncs to `interceptor.Configure()` |
+| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(), interceptor.Logging(), ...)` |
+| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(), interceptor.StreamLogging(), ...)` |
 | Request ID tracing | `cmd/server/main.go` | `interceptor.RequestID()` / `interceptor.StreamRequestID()` |
 | Auth / token validation | `cmd/server/main.go` | `interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods(...))` |
 | Request validation | `cmd/server/main.go` | `interceptor.Validation()` (works with `protoc-gen-validate`) |

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
-	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,10 +32,41 @@ func TestNewServer_WithOptions(t *testing.T) {
 	srv := server.New(
 		server.WithPort("9090"),
 		server.WithReflection(),
-		server.WithUnaryInterceptors(interceptor.Logging(logging.Default())),
+		server.WithUnaryInterceptors(),
 		server.WithStreamInterceptors(),
 	)
 	require.NotNil(t, srv)
+}
+
+func TestServer_WithLoggerAndGetter(t *testing.T) {
+	l := logging.Default()
+	srv := server.New(server.WithLogger(l))
+	require.NotNil(t, srv)
+	assert.Equal(t, l, srv.Logger())
+}
+
+func TestServer_WithUnaryAndStreamInterceptors(t *testing.T) {
+	srv := server.New(
+		server.WithPort("0"),
+		server.WithUnaryInterceptors(func(
+			ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+		) (any, error) {
+			return handler(ctx, req)
+		}),
+		server.WithStreamInterceptors(func(
+			srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler,
+		) error {
+			return handler(srv, ss)
+		}),
+	)
+	require.NotNil(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
 }
 
 func TestWithTLS(t *testing.T) {
@@ -175,7 +206,7 @@ func TestServer_RunWithAllOptions(t *testing.T) {
 		server.WithPort("0"),
 		server.WithTLS(certFile, keyFile),
 		server.WithReflection(),
-		server.WithUnaryInterceptors(interceptor.Logging(logging.Default()), interceptor.Recovery(logging.Default())),
+
 		server.WithStreamInterceptors(func(
 			srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler,
 		) error {

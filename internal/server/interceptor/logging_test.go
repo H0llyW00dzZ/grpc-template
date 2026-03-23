@@ -9,17 +9,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"net"
 )
 
 func TestLogging(t *testing.T) {
-	i := interceptor.Logging(logging.Default())
+	i := interceptor.Logging()
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "ok", nil
@@ -32,7 +33,7 @@ func TestLogging(t *testing.T) {
 }
 
 func TestLogging_Error(t *testing.T) {
-	i := interceptor.Logging(logging.Default())
+	i := interceptor.Logging()
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return nil, status.Error(codes.NotFound, "not found")
@@ -47,7 +48,7 @@ func TestLogging_Error(t *testing.T) {
 }
 
 func TestStreamLogging(t *testing.T) {
-	i := interceptor.StreamLogging(logging.Default())
+	i := interceptor.StreamLogging()
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return nil
@@ -60,7 +61,7 @@ func TestStreamLogging(t *testing.T) {
 }
 
 func TestStreamLogging_Error(t *testing.T) {
-	i := interceptor.StreamLogging(logging.Default())
+	i := interceptor.StreamLogging()
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return status.Error(codes.Internal, "stream error")
@@ -73,4 +74,51 @@ func TestStreamLogging_Error(t *testing.T) {
 	st, ok := status.FromError(err)
 	require.True(t, ok)
 	assert.Equal(t, codes.Internal, st.Code())
+}
+
+func TestLogging_NilLogger(t *testing.T) {
+	i := interceptor.Logging()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "ok", nil
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
+
+	resp, err := i(context.Background(), "request", info, handler)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
+}
+
+func TestStreamLogging_NilLogger(t *testing.T) {
+	i := interceptor.StreamLogging()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return nil
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/TestStream"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := i(nil, ss, info, handler)
+	require.NoError(t, err)
+}
+
+func TestLogging_WithPeerAndRequestID(t *testing.T) {
+	reqIDInt := interceptor.RequestID()
+	logInt := interceptor.Logging()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "ok", nil
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
+
+	ctx := context.Background()
+	p := &peer.Peer{Addr: &net.TCPAddr{IP: net.IPv4(192, 168, 1, 1), Port: 50051}}
+	ctx = peer.NewContext(ctx, p)
+
+	resp, err := reqIDInt(ctx, "req", info, func(ctx context.Context, req any) (any, error) {
+		return logInt(ctx, req, info, handler)
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
 }

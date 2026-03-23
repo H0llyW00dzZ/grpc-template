@@ -9,7 +9,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -18,17 +17,14 @@ import (
 // Logging returns a unary server interceptor that logs
 // the method name, duration, gRPC status code, peer address,
 // and any error for each RPC call.
-func Logging(l logging.Handler) grpc.UnaryServerInterceptor {
-	if l == nil {
-		l = logging.Default()
-	}
-
+func Logging() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
+		l := logger()
 		start := time.Now()
 
 		resp, err := handler(ctx, req)
@@ -49,17 +45,14 @@ func Logging(l logging.Handler) grpc.UnaryServerInterceptor {
 // StreamLogging returns a stream server interceptor that logs
 // the method name, duration, gRPC status code, peer address,
 // and any error for each streaming RPC call.
-func StreamLogging(l logging.Handler) grpc.StreamServerInterceptor {
-	if l == nil {
-		l = logging.Default()
-	}
-
+func StreamLogging() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
+		l := logger()
 		start := time.Now()
 
 		err := handler(srv, ss)

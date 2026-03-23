@@ -17,25 +17,26 @@ import (
 )
 
 func main() {
-	// Create the default logger (slog-backed).
+	// Initialize logger
 	l := logging.Default()
-
-	// Create the greeter service.
-	greeterSvc := greeter.NewService(l)
 
 	// Create and configure the gRPC server.
 	srv := server.New(
 		server.WithPort("50051"),
 		server.WithReflection(),
+		server.WithLogger(l),
 		server.WithUnaryInterceptors(
-			interceptor.Recovery(l),
-			interceptor.Logging(l),
+			interceptor.Recovery(),
+			interceptor.Logging(),
 		),
 		server.WithStreamInterceptors(
-			interceptor.StreamRecovery(l),
-			interceptor.StreamLogging(l),
+			interceptor.StreamRecovery(),
+			interceptor.StreamLogging(),
 		),
 	)
+
+	// Create the greeter service utilizing the server's integrated logger.
+	greeterSvc := greeter.NewService(srv.Logger())
 
 	// Register services.
 	srv.RegisterService(greeterSvc.Register)

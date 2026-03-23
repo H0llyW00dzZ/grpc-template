@@ -9,11 +9,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log/slog"
 	"net"
 	"os/signal"
 	"syscall"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
@@ -30,6 +30,7 @@ type Server struct {
 	port               string
 	reflection         bool
 	tlsConfig          *tls.Config
+	logger             logging.Handler
 	unaryInterceptors  []grpc.UnaryServerInterceptor
 	streamInterceptors []grpc.StreamServerInterceptor
 	registrars         []ServiceRegistrar
@@ -40,12 +41,18 @@ type Server struct {
 // New creates a new Server with the given functional options.
 func New(opts ...Option) *Server {
 	s := &Server{
-		port: "50051",
+		port:   "50051",
+		logger: logging.Default(),
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
 	return s
+}
+
+// Logger returns the configured logger for the server.
+func (s *Server) Logger() logging.Handler {
+	return s.logger
 }
 
 // RegisterService adds one or more service registrars that will be called
@@ -62,15 +69,17 @@ func (s *Server) buildOptions() []grpc.ServerOption {
 
 	if s.tlsConfig != nil {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(s.tlsConfig)))
-		slog.Info("gRPC TLS enabled")
+		s.logger.Info("gRPC TLS enabled")
 	}
 
 	if len(s.unaryInterceptors) > 0 {
 		opts = append(opts, grpc.ChainUnaryInterceptor(s.unaryInterceptors...))
 	}
+
 	if len(s.streamInterceptors) > 0 {
 		opts = append(opts, grpc.ChainStreamInterceptor(s.streamInterceptors...))
 	}
+
 	if len(s.grpcOpts) > 0 {
 		opts = append(opts, s.grpcOpts...)
 	}
@@ -92,7 +101,7 @@ func (s *Server) setupServer() (*grpc.Server, *health.Server) {
 
 	if s.reflection {
 		reflection.Register(grpcServer)
-		slog.Info("gRPC server reflection enabled")
+		s.logger.Info("gRPC server reflection enabled")
 	}
 
 	return grpcServer, healthServer
@@ -122,7 +131,7 @@ func (s *Server) Run(ctx context.Context) error {
 	// Start serving in a goroutine.
 	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("gRPC server listening", "port", s.port)
+		s.logger.Info("gRPC server listening", "port", s.port)
 		if err := grpcServer.Serve(lis); err != nil {
 			errCh <- fmt.Errorf("failed to serve: %w", err)
 		}
@@ -132,10 +141,10 @@ func (s *Server) Run(ctx context.Context) error {
 	// Wait for shutdown signal or serve error.
 	select {
 	case <-ctx.Done():
-		slog.Info("shutdown signal received, draining connections...")
+		s.logger.Info("shutdown signal received, draining connections...")
 		healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
 		grpcServer.GracefulStop()
-		slog.Info("gRPC server stopped gracefully")
+		s.logger.Info("gRPC server stopped gracefully")
 		return nil
 	case err := <-errCh:
 		return err
