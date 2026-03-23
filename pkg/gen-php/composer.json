@@ -1,0 +1,16 @@
+{
+    "name": "h0llyw00dzz/grpc-template-php",
+    "description": "Generated PHP gRPC stubs for the grpc-template project.",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "require": {
+        "php": ">=8.1",
+        "grpc/grpc": "^1.57",
+        "google/protobuf": "^3.25"
+    },
+    "autoload": {
+        "psr-4": {
+            "Helloworld\\": "Helloworld/"
+        }
+    }
+}
