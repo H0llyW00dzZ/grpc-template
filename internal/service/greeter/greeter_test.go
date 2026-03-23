@@ -10,6 +10,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	pb "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1"
@@ -23,7 +24,7 @@ func startGreeterServer(t *testing.T) *bufconn.Listener {
 	t.Helper()
 	lis := testutil.NewBufListener()
 	srv := grpc.NewServer()
-	svc := greeter.NewService()
+	svc := greeter.NewService(logging.Default())
 	svc.Register(srv)
 	go func() {
 		if err := srv.Serve(lis); err != nil {

@@ -7,9 +7,9 @@ package interceptor
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -18,7 +18,7 @@ import (
 // Logging returns a unary server interceptor that logs
 // the method name, duration, gRPC status code, peer address,
 // and any error for each RPC call.
-func Logging() grpc.UnaryServerInterceptor {
+func Logging(l logging.Handler) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
@@ -30,12 +30,12 @@ func Logging() grpc.UnaryServerInterceptor {
 		resp, err := handler(ctx, req)
 		duration := time.Since(start)
 
-		attrs := buildLogAttrs(ctx, info.FullMethod, duration, err)
+		attrs := buildLogArgs(ctx, info.FullMethod, duration, err)
 
 		if err != nil {
-			slog.LogAttrs(ctx, slog.LevelError, "rpc failed", attrs...)
+			l.Error("rpc failed", attrs...)
 		} else {
-			slog.LogAttrs(ctx, slog.LevelInfo, "rpc completed", attrs...)
+			l.Info("rpc completed", attrs...)
 		}
 
 		return resp, err
@@ -45,7 +45,7 @@ func Logging() grpc.UnaryServerInterceptor {
 // StreamLogging returns a stream server interceptor that logs
 // the method name, duration, gRPC status code, peer address,
 // and any error for each streaming RPC call.
-func StreamLogging() grpc.StreamServerInterceptor {
+func StreamLogging(l logging.Handler) grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -57,40 +57,40 @@ func StreamLogging() grpc.StreamServerInterceptor {
 		err := handler(srv, ss)
 		duration := time.Since(start)
 
-		attrs := buildLogAttrs(ss.Context(), info.FullMethod, duration, err)
+		attrs := buildLogArgs(ss.Context(), info.FullMethod, duration, err)
 
 		if err != nil {
-			slog.LogAttrs(ss.Context(), slog.LevelError, "stream rpc failed", attrs...)
+			l.Error("stream rpc failed", attrs...)
 		} else {
-			slog.LogAttrs(ss.Context(), slog.LevelInfo, "stream rpc completed", attrs...)
+			l.Info("stream rpc completed", attrs...)
 		}
 
 		return err
 	}
 }
 
-// buildLogAttrs creates the common slog attributes for both unary and stream
+// buildLogArgs creates the common key-value pairs for both unary and stream
 // logging interceptors, including method, duration, gRPC status code, and peer address.
-func buildLogAttrs(ctx context.Context, method string, duration time.Duration, err error) []slog.Attr {
+func buildLogArgs(ctx context.Context, method string, duration time.Duration, err error) []any {
 	st, _ := status.FromError(err)
 
-	attrs := []slog.Attr{
-		slog.String("method", method),
-		slog.Duration("duration", duration),
-		slog.String("code", st.Code().String()),
+	args := []any{
+		"method", method,
+		"duration", duration,
+		"code", st.Code().String(),
 	}
 
 	if p, ok := peer.FromContext(ctx); ok {
-		attrs = append(attrs, slog.String("peer", p.Addr.String()))
+		args = append(args, "peer", p.Addr.String())
 	}
 
 	if id := RequestIDFromContext(ctx); id != "" {
-		attrs = append(attrs, slog.String("request_id", id))
+		args = append(args, "request_id", id)
 	}
 
 	if err != nil {
-		attrs = append(attrs, slog.String("error", err.Error()))
+		args = append(args, "error", err.Error())
 	}
 
-	return attrs
+	return args
 }

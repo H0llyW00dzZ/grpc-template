@@ -9,6 +9,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestLogging(t *testing.T) {
-	i := interceptor.Logging()
+	i := interceptor.Logging(logging.Default())
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "ok", nil
@@ -33,7 +34,7 @@ func TestLogging(t *testing.T) {
 }
 
 func TestLogging_Error(t *testing.T) {
-	i := interceptor.Logging()
+	i := interceptor.Logging(logging.Default())
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return nil, status.Error(codes.NotFound, "not found")
@@ -50,7 +51,7 @@ func TestLogging_Error(t *testing.T) {
 }
 
 func TestStreamLogging(t *testing.T) {
-	i := interceptor.StreamLogging()
+	i := interceptor.StreamLogging(logging.Default())
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return nil
@@ -65,7 +66,7 @@ func TestStreamLogging(t *testing.T) {
 }
 
 func TestStreamLogging_Error(t *testing.T) {
-	i := interceptor.StreamLogging()
+	i := interceptor.StreamLogging(logging.Default())
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return status.Error(codes.Internal, "stream error")

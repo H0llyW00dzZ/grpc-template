@@ -11,6 +11,9 @@
 // can be composed via [server.WithUnaryInterceptors] and
 // [server.WithStreamInterceptors].
 //
+// All interceptors that perform logging accept a [logging.Handler], allowing
+// callers to plug in any logging backend (slog, zap, zerolog, …).
+//
 // # Available Interceptors
 //
 //   - [Logging] / [StreamLogging] — logs method, duration, gRPC status code,
@@ -26,19 +29,20 @@
 //
 // # Usage
 //
+//	l := logging.Default()
 //	srv := server.New(
 //	    server.WithUnaryInterceptors(
-//	        interceptor.Recovery(),
+//	        interceptor.Recovery(l),
 //	        interceptor.RequestID(),
 //	        interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
 //	        interceptor.Validation(),
-//	        interceptor.Logging(),
+//	        interceptor.Logging(l),
 //	    ),
 //	    server.WithStreamInterceptors(
-//	        interceptor.StreamRecovery(),
+//	        interceptor.StreamRecovery(l),
 //	        interceptor.StreamRequestID(),
 //	        interceptor.StreamAuth(myAuthFunc),
-//	        interceptor.StreamLogging(),
+//	        interceptor.StreamLogging(l),
 //	    ),
 //	)
 package interceptor
