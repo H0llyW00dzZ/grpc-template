@@ -50,6 +50,10 @@ func Logging(l logging.Handler) grpc.UnaryServerInterceptor {
 // the method name, duration, gRPC status code, peer address,
 // and any error for each streaming RPC call.
 func StreamLogging(l logging.Handler) grpc.StreamServerInterceptor {
+	if l == nil {
+		l = logging.Default()
+	}
+
 	return func(
 		srv any,
 		ss grpc.ServerStream,
