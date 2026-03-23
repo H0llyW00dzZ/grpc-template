@@ -23,7 +23,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 
 > [!TIP]
 > **New to gRPC?** Interceptors run *before* a request reaches your service handler — think of them as middleware that operates on the raw RPC layer using Go's native `context.Context`. This makes them more robust than most HTTP frameworks that rely on their own custom context types. Auth, logging, and recovery all happen transparently before your business logic is ever invoked.
-- **Health Checks** — standard [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
+- **Health Checks** — standard [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) with runtime per-service status via `srv.Health()`
 - **Server Reflection** — debug with [grpcurl](https://github.com/fullstorydev/grpcurl) out of the box
 - **Graceful Shutdown** — handles `SIGINT`/`SIGTERM` and drains connections
 - **Proto Collection** — ready-to-use proto templates for common patterns
@@ -227,6 +227,7 @@ srv.RegisterService(
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
 | Custom listener | `cmd/server/main.go` | `server.WithListener(lis)` |
+| Health status | runtime | `srv.Health().SetServingStatus(svc, status)` — toggle per-service health at runtime |
 | Proto output path | `buf.gen.yaml` | Change `out` field |
 | Go module path | `go.mod` | `go mod edit -module your/module` |
 
