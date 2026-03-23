@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
@@ -31,7 +32,7 @@ func TestNewServer_WithOptions(t *testing.T) {
 	srv := server.New(
 		server.WithPort("9090"),
 		server.WithReflection(),
-		server.WithUnaryInterceptors(interceptor.Logging()),
+		server.WithUnaryInterceptors(interceptor.Logging(logging.Default())),
 		server.WithStreamInterceptors(),
 	)
 	if srv == nil {
@@ -200,7 +201,7 @@ func TestServer_RunWithAllOptions(t *testing.T) {
 		server.WithPort("0"),
 		server.WithTLS(certFile, keyFile),
 		server.WithReflection(),
-		server.WithUnaryInterceptors(interceptor.Logging(), interceptor.Recovery()),
+		server.WithUnaryInterceptors(interceptor.Logging(logging.Default()), interceptor.Recovery(logging.Default())),
 		server.WithStreamInterceptors(func(
 			srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler,
 		) error {

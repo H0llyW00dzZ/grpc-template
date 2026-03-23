@@ -9,6 +9,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestRecovery(t *testing.T) {
-	i := interceptor.Recovery()
+	i := interceptor.Recovery(logging.Default())
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		panic("test panic")
@@ -40,7 +41,7 @@ func TestRecovery(t *testing.T) {
 }
 
 func TestRecovery_NoPanic(t *testing.T) {
-	i := interceptor.Recovery()
+	i := interceptor.Recovery(logging.Default())
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "safe", nil
@@ -57,7 +58,7 @@ func TestRecovery_NoPanic(t *testing.T) {
 }
 
 func TestStreamRecovery(t *testing.T) {
-	i := interceptor.StreamRecovery()
+	i := interceptor.StreamRecovery(logging.Default())
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		panic("test stream panic")
@@ -79,7 +80,7 @@ func TestStreamRecovery(t *testing.T) {
 }
 
 func TestStreamRecovery_NoPanic(t *testing.T) {
-	i := interceptor.StreamRecovery()
+	i := interceptor.StreamRecovery(logging.Default())
 
 	handler := func(srv any, stream grpc.ServerStream) error {
 		return nil

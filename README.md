@@ -3,6 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D1.26-blue?logo=go)](https://go.dev/dl/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/H0llyW00dzZ/grpc-template.svg)](https://pkg.go.dev/github.com/H0llyW00dzZ/grpc-template)
 [![Go Report Card](https://goreportcard.com/badge/github.com/H0llyW00dzZ/grpc-template)](https://goreportcard.com/report/github.com/H0llyW00dzZ/grpc-template)
+[![codecov](https://codecov.io/gh/H0llyW00dzZ/grpc-template/branch/master/graph/badge.svg?token=ZAS8WCR300)](https://codecov.io/gh/H0llyW00dzZ/grpc-template)
 
 A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC projects. Designed as a template repository for any Git code hosting (e.g., GitHub).
 
@@ -17,7 +18,8 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript and PHP client code
 - **Functional Options** — clean, extensible server configuration
 - **TLS / mTLS** — secure connections with a single option
-- **Built-in Interceptors** — modular interceptor package with logging (slog + status code + peer), panic recovery, request ID correlation, auth/token validation, and request validation for both unary and streaming RPCs
+- **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend
+- **Built-in Interceptors** — modular interceptor package with logging, panic recovery, request ID correlation, auth/token validation, and request validation for both unary and streaming RPCs
 - **Health Checks** — standard [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 - **Server Reflection** — debug with [grpcurl](https://github.com/fullstorydev/grpcurl) out of the box
 - **Graceful Shutdown** — handles `SIGINT`/`SIGTERM` and drains connections
@@ -56,6 +58,7 @@ grpc-template/
 │   ├── server/main.go          # Server entry point
 │   └── client/main.go          # Client demo
 ├── internal/
+│   ├── logging/                # Pluggable logger (logging.Handler interface, slog default)
 │   ├── server/                 # gRPC server lifecycle
 │   │   ├── server.go           # Server with graceful shutdown
 │   │   ├── option.go           # Functional options (TLS, mTLS)
@@ -207,8 +210,9 @@ srv.RegisterService(
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
 | Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
 | Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
-| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(), ...)` |
-| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(), ...)` |
+| Custom logger | `cmd/server/main.go` | `logging.SetDefault(myHandler)` or pass to interceptors/services directly |
+| Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(l), ...)` |
+| Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(l), ...)` |
 | Request ID tracing | `cmd/server/main.go` | `interceptor.RequestID()` / `interceptor.StreamRequestID()` |
 | Auth / token validation | `cmd/server/main.go` | `interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods(...))` |
 | Request validation | `cmd/server/main.go` | `interceptor.Validation()` (works with `protoc-gen-validate`) |

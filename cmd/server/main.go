@@ -10,26 +10,30 @@ import (
 	"context"
 	"log"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 )
 
 func main() {
+	// Create the default logger (slog-backed).
+	l := logging.Default()
+
 	// Create the greeter service.
-	greeterSvc := greeter.NewService()
+	greeterSvc := greeter.NewService(l)
 
 	// Create and configure the gRPC server.
 	srv := server.New(
 		server.WithPort("50051"),
 		server.WithReflection(),
 		server.WithUnaryInterceptors(
-			interceptor.Recovery(),
-			interceptor.Logging(),
+			interceptor.Recovery(l),
+			interceptor.Logging(l),
 		),
 		server.WithStreamInterceptors(
-			interceptor.StreamRecovery(),
-			interceptor.StreamLogging(),
+			interceptor.StreamRecovery(l),
+			interceptor.StreamLogging(l),
 		),
 	)
 
