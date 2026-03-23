@@ -11,21 +11,23 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/crud/v1;crudv1";
+option php_namespace = "Crud\\V1";
+option php_metadata_namespace = "GPBMetadata\\Crud\\V1";
 
 // CrudService is a generic CRUD template demonstrating standard resource
 // lifecycle operations with pagination and field masks.
 service CrudService {
   // CreateItem creates a new item.
-  rpc CreateItem(CreateItemRequest) returns (Item) {}
+  rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {}
 
   // GetItem retrieves a single item by ID.
-  rpc GetItem(GetItemRequest) returns (Item) {}
+  rpc GetItem(GetItemRequest) returns (GetItemResponse) {}
 
   // ListItems lists items with pagination support.
   rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {}
 
   // UpdateItem updates an existing item using a field mask.
-  rpc UpdateItem(UpdateItemRequest) returns (Item) {}
+  rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse) {}
 
   // DeleteItem deletes an item by ID.
   rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {}
@@ -58,10 +60,22 @@ message CreateItemRequest {
   string description = 2;
 }
 
+// CreateItemResponse is the response after creating an item.
+message CreateItemResponse {
+  // item is the created item.
+  Item item = 1;
+}
+
 // GetItemRequest is the request to get a single item.
 message GetItemRequest {
   // id is the unique identifier of the item.
   string id = 1;
+}
+
+// GetItemResponse is the response after getting an item.
+message GetItemResponse {
+  // item is the retrieved item.
+  Item item = 1;
 }
 
 // ListItemsRequest is the request to list items with pagination.
@@ -89,6 +103,12 @@ message UpdateItemRequest {
 
   // update_mask specifies which fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+// UpdateItemResponse is the response after updating an item.
+message UpdateItemResponse {
+  // item is the updated item.
+  Item item = 1;
 }
 
 // DeleteItemRequest is the request to delete an item.

@@ -17,9 +17,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Service implements the Greeter gRPC service.
+// Service implements the GreeterService gRPC service.
 type Service struct {
-	pb.UnimplementedGreeterServer
+	pb.UnimplementedGreeterServiceServer
 }
 
 // NewService returns a new greeter Service.
@@ -30,20 +30,20 @@ func NewService() *Service {
 // Register registers the greeter Service on the given gRPC server.
 // This satisfies the server.ServiceRegistrar function signature.
 func (s *Service) Register(srv *grpc.Server) {
-	pb.RegisterGreeterServer(srv, s)
+	pb.RegisterGreeterServiceServer(srv, s)
 }
 
 // SayHello handles a unary RPC and returns a greeting.
-func (s *Service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (s *Service) SayHello(ctx context.Context, req *pb.SayHelloRequest) (*pb.SayHelloResponse, error) {
 	slog.Info("received SayHello request", "name", req.GetName())
 
-	return &pb.HelloReply{
+	return &pb.SayHelloResponse{
 		Message: fmt.Sprintf("Hello, %s!", req.GetName()),
 	}, nil
 }
 
 // SayHelloServerStream handles a server-streaming RPC by sending multiple greetings.
-func (s *Service) SayHelloServerStream(req *pb.HelloRequest, stream pb.Greeter_SayHelloServerStreamServer) error {
+func (s *Service) SayHelloServerStream(req *pb.SayHelloServerStreamRequest, stream pb.GreeterService_SayHelloServerStreamServer) error {
 	slog.Info("received SayHelloServerStream request", "name", req.GetName())
 
 	greetings := []string{
@@ -53,7 +53,7 @@ func (s *Service) SayHelloServerStream(req *pb.HelloRequest, stream pb.Greeter_S
 	}
 
 	for _, greeting := range greetings {
-		if err := stream.Send(&pb.HelloReply{Message: greeting}); err != nil {
+		if err := stream.Send(&pb.SayHelloServerStreamResponse{Message: greeting}); err != nil {
 			return fmt.Errorf("failed to send greeting: %w", err)
 		}
 		// Simulate some processing delay between messages.

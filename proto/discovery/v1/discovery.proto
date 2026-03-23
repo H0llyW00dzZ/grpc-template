@@ -10,6 +10,8 @@ package discovery.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/discovery/v1;discoveryv1";
+option php_namespace = "Discovery\\V1";
+option php_metadata_namespace = "GPBMetadata\\Discovery\\V1";
 
 // DiscoveryService provides service registration and discovery.
 //

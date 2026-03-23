@@ -10,6 +10,8 @@ package notification.v1;
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/notification/v1;notificationv1";
+option php_namespace = "Notification\\V1";
+option php_metadata_namespace = "GPBMetadata\\Notification\\V1";
 
 // NotificationService provides push notification and event broadcasting.
 //

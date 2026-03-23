@@ -8,30 +8,68 @@ syntax = "proto3";
 package echo.v1;
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/echo/v1;echov1";
+option php_namespace = "Echo\\V1";
+option php_metadata_namespace = "GPBMetadata\\Echo\\V1";
 
-// Echo is a simple service for connectivity testing and debugging.
-service Echo {
+// EchoService is a simple service for connectivity testing and debugging.
+service EchoService {
   // UnaryEcho sends a single message and receives it back.
-  rpc UnaryEcho(EchoRequest) returns (EchoResponse) {}
+  rpc UnaryEcho(UnaryEchoRequest) returns (UnaryEchoResponse) {}
 
   // ServerStreamingEcho sends a single message and receives a stream of responses.
-  rpc ServerStreamingEcho(EchoRequest) returns (stream EchoResponse) {}
+  rpc ServerStreamingEcho(ServerStreamingEchoRequest) returns (stream ServerStreamingEchoResponse) {}
 
   // ClientStreamingEcho receives a stream of messages and returns a single response.
-  rpc ClientStreamingEcho(stream EchoRequest) returns (EchoResponse) {}
+  rpc ClientStreamingEcho(stream ClientStreamingEchoRequest) returns (ClientStreamingEchoResponse) {}
 
   // BidirectionalStreamingEcho sends and receives messages in a full-duplex stream.
-  rpc BidirectionalStreamingEcho(stream EchoRequest) returns (stream EchoResponse) {}
+  rpc BidirectionalStreamingEcho(stream BidirectionalStreamingEchoRequest) returns (stream BidirectionalStreamingEchoResponse) {}
 }
 
-// EchoRequest is the request message.
-message EchoRequest {
+// UnaryEchoRequest is the request message for the UnaryEcho RPC.
+message UnaryEchoRequest {
   // message is the text to echo.
   string message = 1;
 }
 
-// EchoResponse is the response message.
-message EchoResponse {
+// UnaryEchoResponse is the response message for the UnaryEcho RPC.
+message UnaryEchoResponse {
+  // message is the echoed text.
+  string message = 1;
+}
+
+// ServerStreamingEchoRequest is the request message for the ServerStreamingEcho RPC.
+message ServerStreamingEchoRequest {
+  // message is the text to echo.
+  string message = 1;
+}
+
+// ServerStreamingEchoResponse is the response message for the ServerStreamingEcho RPC.
+message ServerStreamingEchoResponse {
+  // message is the echoed text.
+  string message = 1;
+}
+
+// ClientStreamingEchoRequest is the request message for the ClientStreamingEcho RPC.
+message ClientStreamingEchoRequest {
+  // message is the text to echo.
+  string message = 1;
+}
+
+// ClientStreamingEchoResponse is the response message for the ClientStreamingEcho RPC.
+message ClientStreamingEchoResponse {
+  // message is the echoed text.
+  string message = 1;
+}
+
+// BidirectionalStreamingEchoRequest is the request message for the BidirectionalStreamingEcho RPC.
+message BidirectionalStreamingEchoRequest {
+  // message is the text to echo.
+  string message = 1;
+}
+
+// BidirectionalStreamingEchoResponse is the response message for the BidirectionalStreamingEcho RPC.
+message BidirectionalStreamingEchoResponse {
   // message is the echoed text.
   string message = 1;
 }

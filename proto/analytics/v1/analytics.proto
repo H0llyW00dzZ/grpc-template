@@ -11,6 +11,8 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/analytics/v1;analyticsv1";
+option php_namespace = "Analytics\\V1";
+option php_metadata_namespace = "GPBMetadata\\Analytics\\V1";
 
 // AnalyticsService provides event tracking, metrics aggregation, and reporting.
 //

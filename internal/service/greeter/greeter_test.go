@@ -34,8 +34,8 @@ func startGreeterServer(t *testing.T) *bufconn.Listener {
 	return lis
 }
 
-// newGreeterClient creates a GreeterClient connected to the given bufconn listener.
-func newGreeterClient(t *testing.T, lis *bufconn.Listener) pb.GreeterClient {
+// newGreeterClient creates a GreeterServiceClient connected to the given bufconn listener.
+func newGreeterClient(t *testing.T, lis *bufconn.Listener) pb.GreeterServiceClient {
 	t.Helper()
 	ctx := context.Background()
 	conn, err := testutil.DialBufNet(ctx, lis)
@@ -43,14 +43,14 @@ func newGreeterClient(t *testing.T, lis *bufconn.Listener) pb.GreeterClient {
 		t.Fatalf("failed to dial bufconn: %v", err)
 	}
 	t.Cleanup(func() { conn.Close() })
-	return pb.NewGreeterClient(conn)
+	return pb.NewGreeterServiceClient(conn)
 }
 
 func TestSayHello(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	resp, err := client.SayHello(context.Background(), &pb.HelloRequest{Name: "World"})
+	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: "World"})
 	if err != nil {
 		t.Fatalf("SayHello: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestSayHello_EmptyName(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	resp, err := client.SayHello(context.Background(), &pb.HelloRequest{Name: ""})
+	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: ""})
 	if err != nil {
 		t.Fatalf("SayHello: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestSayHelloServerStream(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	stream, err := client.SayHelloServerStream(context.Background(), &pb.HelloRequest{Name: "Alice"})
+	stream, err := client.SayHelloServerStream(context.Background(), &pb.SayHelloServerStreamRequest{Name: "Alice"})
 	if err != nil {
 		t.Fatalf("SayHelloServerStream: %v", err)
 	}

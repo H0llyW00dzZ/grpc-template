@@ -11,6 +11,8 @@ import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/scheduler/v1;schedulerv1";
+option php_namespace = "Scheduler\\V1";
+option php_metadata_namespace = "GPBMetadata\\Scheduler\\V1";
 
 // SchedulerService manages scheduled and recurring jobs.
 //

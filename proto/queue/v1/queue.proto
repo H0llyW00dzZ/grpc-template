@@ -12,6 +12,8 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/queue/v1;queuev1";
+option php_namespace = "Queue\\V1";
+option php_metadata_namespace = "GPBMetadata\\Queue\\V1";
 
 // QueueService provides message queue operations with acknowledgment and dead-letter support.
 //

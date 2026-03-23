@@ -26,8 +26,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HelloRequest is the request message for the Greeter service.
-type HelloRequest struct {
+// SayHelloRequest is the request message for the SayHello RPC.
+type SayHelloRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// name is the name to greet.
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -35,20 +35,20 @@ type HelloRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HelloRequest) Reset() {
-	*x = HelloRequest{}
+func (x *SayHelloRequest) Reset() {
+	*x = SayHelloRequest{}
 	mi := &file_helloworld_v1_helloworld_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HelloRequest) String() string {
+func (x *SayHelloRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HelloRequest) ProtoMessage() {}
+func (*SayHelloRequest) ProtoMessage() {}
 
-func (x *HelloRequest) ProtoReflect() protoreflect.Message {
+func (x *SayHelloRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_helloworld_v1_helloworld_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -60,20 +60,20 @@ func (x *HelloRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HelloRequest.ProtoReflect.Descriptor instead.
-func (*HelloRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SayHelloRequest.ProtoReflect.Descriptor instead.
+func (*SayHelloRequest) Descriptor() ([]byte, []int) {
 	return file_helloworld_v1_helloworld_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HelloRequest) GetName() string {
+func (x *SayHelloRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-// HelloReply is the response message for the Greeter service.
-type HelloReply struct {
+// SayHelloResponse is the response message for the SayHello RPC.
+type SayHelloResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// message is the greeting text.
 	Message       string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -81,20 +81,20 @@ type HelloReply struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HelloReply) Reset() {
-	*x = HelloReply{}
+func (x *SayHelloResponse) Reset() {
+	*x = SayHelloResponse{}
 	mi := &file_helloworld_v1_helloworld_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HelloReply) String() string {
+func (x *SayHelloResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HelloReply) ProtoMessage() {}
+func (*SayHelloResponse) ProtoMessage() {}
 
-func (x *HelloReply) ProtoReflect() protoreflect.Message {
+func (x *SayHelloResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_helloworld_v1_helloworld_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -106,12 +106,104 @@ func (x *HelloReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HelloReply.ProtoReflect.Descriptor instead.
-func (*HelloReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use SayHelloResponse.ProtoReflect.Descriptor instead.
+func (*SayHelloResponse) Descriptor() ([]byte, []int) {
 	return file_helloworld_v1_helloworld_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *HelloReply) GetMessage() string {
+func (x *SayHelloResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// SayHelloServerStreamRequest is the request message for the SayHelloServerStream RPC.
+type SayHelloServerStreamRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// name is the name to greet.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SayHelloServerStreamRequest) Reset() {
+	*x = SayHelloServerStreamRequest{}
+	mi := &file_helloworld_v1_helloworld_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SayHelloServerStreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SayHelloServerStreamRequest) ProtoMessage() {}
+
+func (x *SayHelloServerStreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_helloworld_v1_helloworld_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SayHelloServerStreamRequest.ProtoReflect.Descriptor instead.
+func (*SayHelloServerStreamRequest) Descriptor() ([]byte, []int) {
+	return file_helloworld_v1_helloworld_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SayHelloServerStreamRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+// SayHelloServerStreamResponse is the response message for the SayHelloServerStream RPC.
+type SayHelloServerStreamResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// message is the greeting text.
+	Message       string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SayHelloServerStreamResponse) Reset() {
+	*x = SayHelloServerStreamResponse{}
+	mi := &file_helloworld_v1_helloworld_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SayHelloServerStreamResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SayHelloServerStreamResponse) ProtoMessage() {}
+
+func (x *SayHelloServerStreamResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_helloworld_v1_helloworld_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SayHelloServerStreamResponse.ProtoReflect.Descriptor instead.
+func (*SayHelloServerStreamResponse) Descriptor() ([]byte, []int) {
+	return file_helloworld_v1_helloworld_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SayHelloServerStreamResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -122,15 +214,18 @@ var File_helloworld_v1_helloworld_proto protoreflect.FileDescriptor
 
 const file_helloworld_v1_helloworld_proto_rawDesc = "" +
 	"\n" +
-	"\x1ehelloworld/v1/helloworld.proto\x12\rhelloworld.v1\"\"\n" +
-	"\fHelloRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"&\n" +
-	"\n" +
-	"HelloReply\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2\xa3\x01\n" +
-	"\aGreeter\x12D\n" +
-	"\bSayHello\x12\x1b.helloworld.v1.HelloRequest\x1a\x19.helloworld.v1.HelloReply\"\x00\x12R\n" +
-	"\x14SayHelloServerStream\x12\x1b.helloworld.v1.HelloRequest\x1a\x19.helloworld.v1.HelloReply\"\x000\x01B\xc2\x01\n" +
+	"\x1ehelloworld/v1/helloworld.proto\x12\rhelloworld.v1\"%\n" +
+	"\x0fSayHelloRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\",\n" +
+	"\x10SayHelloResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"1\n" +
+	"\x1bSayHelloServerStreamRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"8\n" +
+	"\x1cSayHelloServerStreamResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\xd4\x01\n" +
+	"\x0eGreeterService\x12M\n" +
+	"\bSayHello\x12\x1e.helloworld.v1.SayHelloRequest\x1a\x1f.helloworld.v1.SayHelloResponse\"\x00\x12s\n" +
+	"\x14SayHelloServerStream\x12*.helloworld.v1.SayHelloServerStreamRequest\x1a+.helloworld.v1.SayHelloServerStreamResponse\"\x000\x01B\xc2\x01\n" +
 	"\x11com.helloworld.v1B\x0fHelloworldProtoP\x01ZGgithub.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1;helloworldv1\xa2\x02\x03HXX\xaa\x02\rHelloworld.V1\xca\x02\rHelloworld\\V1\xe2\x02\x19Helloworld\\V1\\GPBMetadata\xea\x02\x0eHelloworld::V1b\x06proto3"
 
 var (
@@ -145,16 +240,18 @@ func file_helloworld_v1_helloworld_proto_rawDescGZIP() []byte {
 	return file_helloworld_v1_helloworld_proto_rawDescData
 }
 
-var file_helloworld_v1_helloworld_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_helloworld_v1_helloworld_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_helloworld_v1_helloworld_proto_goTypes = []any{
-	(*HelloRequest)(nil), // 0: helloworld.v1.HelloRequest
-	(*HelloReply)(nil),   // 1: helloworld.v1.HelloReply
+	(*SayHelloRequest)(nil),              // 0: helloworld.v1.SayHelloRequest
+	(*SayHelloResponse)(nil),             // 1: helloworld.v1.SayHelloResponse
+	(*SayHelloServerStreamRequest)(nil),  // 2: helloworld.v1.SayHelloServerStreamRequest
+	(*SayHelloServerStreamResponse)(nil), // 3: helloworld.v1.SayHelloServerStreamResponse
 }
 var file_helloworld_v1_helloworld_proto_depIdxs = []int32{
-	0, // 0: helloworld.v1.Greeter.SayHello:input_type -> helloworld.v1.HelloRequest
-	0, // 1: helloworld.v1.Greeter.SayHelloServerStream:input_type -> helloworld.v1.HelloRequest
-	1, // 2: helloworld.v1.Greeter.SayHello:output_type -> helloworld.v1.HelloReply
-	1, // 3: helloworld.v1.Greeter.SayHelloServerStream:output_type -> helloworld.v1.HelloReply
+	0, // 0: helloworld.v1.GreeterService.SayHello:input_type -> helloworld.v1.SayHelloRequest
+	2, // 1: helloworld.v1.GreeterService.SayHelloServerStream:input_type -> helloworld.v1.SayHelloServerStreamRequest
+	1, // 2: helloworld.v1.GreeterService.SayHello:output_type -> helloworld.v1.SayHelloResponse
+	3, // 3: helloworld.v1.GreeterService.SayHelloServerStream:output_type -> helloworld.v1.SayHelloServerStreamResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -173,7 +270,7 @@ func file_helloworld_v1_helloworld_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_helloworld_v1_helloworld_proto_rawDesc), len(file_helloworld_v1_helloworld_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
