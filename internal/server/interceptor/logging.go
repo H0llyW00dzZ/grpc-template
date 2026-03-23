@@ -19,6 +19,10 @@ import (
 // the method name, duration, gRPC status code, peer address,
 // and any error for each RPC call.
 func Logging(l logging.Handler) grpc.UnaryServerInterceptor {
+	if l == nil {
+		l = logging.Default()
+	}
+
 	return func(
 		ctx context.Context,
 		req any,

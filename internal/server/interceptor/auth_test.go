@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -29,9 +31,7 @@ func TestAuth_Valid(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
-		if ctx.Value("user") != "alice" {
-			t.Error("expected enriched context with user=alice")
-		}
+		assert.Equal(t, "alice", ctx.Value("user"))
 		return "ok", nil
 	}
 
@@ -39,12 +39,8 @@ func TestAuth_Valid(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	resp, err := i(ctx, "req", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "ok" {
-		t.Errorf("got %v, want %q", resp, "ok")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
 }
 
 func TestAuth_MissingToken(t *testing.T) {
@@ -61,13 +57,10 @@ func TestAuth_MissingToken(t *testing.T) {
 	}
 
 	_, err := i(context.Background(), "req", info, handler)
-	if err == nil {
-		t.Fatal("expected Unauthenticated error, got nil")
-	}
+	require.Error(t, err)
 	st, ok := status.FromError(err)
-	if !ok || st.Code() != codes.Unauthenticated {
-		t.Errorf("got code %v, want Unauthenticated", st.Code())
-	}
+	require.True(t, ok)
+	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
 
 func TestAuth_InvalidToken(t *testing.T) {
@@ -87,13 +80,10 @@ func TestAuth_InvalidToken(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	_, err := i(ctx, "req", info, handler)
-	if err == nil {
-		t.Fatal("expected Unauthenticated error, got nil")
-	}
+	require.Error(t, err)
 	st, ok := status.FromError(err)
-	if !ok || st.Code() != codes.Unauthenticated {
-		t.Errorf("got code %v, want Unauthenticated", st.Code())
-	}
+	require.True(t, ok)
+	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
 
 func TestAuth_ExcludedMethod(t *testing.T) {
@@ -112,12 +102,8 @@ func TestAuth_ExcludedMethod(t *testing.T) {
 	}
 
 	resp, err := i(context.Background(), "req", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "healthy" {
-		t.Errorf("got %v, want %q", resp, "healthy")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "healthy", resp)
 }
 
 func TestAuth_BearerCaseInsensitive(t *testing.T) {
@@ -139,9 +125,7 @@ func TestAuth_BearerCaseInsensitive(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	_, err := i(ctx, "req", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestAuth_EmptyBearer(t *testing.T) {
@@ -161,13 +145,9 @@ func TestAuth_EmptyBearer(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	_, err := i(ctx, "req", info, handler)
-	if err == nil {
-		t.Fatal("expected Unauthenticated error for empty bearer, got nil")
-	}
+	require.Error(t, err)
 	st, _ := status.FromError(err)
-	if st.Code() != codes.Unauthenticated {
-		t.Errorf("got code %v, want Unauthenticated", st.Code())
-	}
+	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
 
 func TestStreamAuth_Valid(t *testing.T) {
@@ -182,9 +162,7 @@ func TestStreamAuth_Valid(t *testing.T) {
 	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/SecureStream"}
 
 	handler := func(srv any, stream grpc.ServerStream) error {
-		if stream.Context().Value("user") != "bob" {
-			t.Error("expected enriched context with user=bob")
-		}
+		assert.Equal(t, "bob", stream.Context().Value("user"))
 		return nil
 	}
 
@@ -193,9 +171,7 @@ func TestStreamAuth_Valid(t *testing.T) {
 	ss := &fakeServerStream{ctx: ctx}
 
 	err := i(nil, ss, info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestStreamAuth_ExcludedMethod(t *testing.T) {
@@ -215,7 +191,5 @@ func TestStreamAuth_ExcludedMethod(t *testing.T) {
 	}
 
 	err := i(nil, ss, info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }

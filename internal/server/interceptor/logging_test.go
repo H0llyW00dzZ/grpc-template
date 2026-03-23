@@ -11,6 +11,8 @@ import (
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,12 +27,8 @@ func TestLogging(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
 
 	resp, err := i(context.Background(), "request", info, handler)
-	if err != nil {
-		t.Fatalf("LoggingInterceptor: unexpected error: %v", err)
-	}
-	if resp != "ok" {
-		t.Errorf("got %v, want %q", resp, "ok")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
 }
 
 func TestLogging_Error(t *testing.T) {
@@ -42,12 +40,10 @@ func TestLogging_Error(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
 
 	_, err := i(context.Background(), "request", info, handler)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
-		t.Errorf("got status %v, want NotFound", err)
-	}
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.NotFound, st.Code())
 }
 
 func TestStreamLogging(t *testing.T) {
@@ -60,9 +56,7 @@ func TestStreamLogging(t *testing.T) {
 	ss := &fakeServerStream{ctx: context.Background()}
 
 	err := i(nil, ss, info, handler)
-	if err != nil {
-		t.Fatalf("StreamLoggingInterceptor: unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestStreamLogging_Error(t *testing.T) {
@@ -75,10 +69,8 @@ func TestStreamLogging_Error(t *testing.T) {
 	ss := &fakeServerStream{ctx: context.Background()}
 
 	err := i(nil, ss, info, handler)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if st, ok := status.FromError(err); !ok || st.Code() != codes.Internal {
-		t.Errorf("got status %v, want Internal", err)
-	}
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
 }

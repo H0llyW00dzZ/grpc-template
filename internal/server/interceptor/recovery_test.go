@@ -11,6 +11,8 @@ import (
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,19 +27,11 @@ func TestRecovery(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/PanicMethod"}
 
 	resp, err := i(context.Background(), "request", info, handler)
-	if err == nil {
-		t.Fatal("expected error after panic, got nil")
-	}
-	if resp != nil {
-		t.Errorf("expected nil response after panic, got %v", resp)
-	}
+	require.Error(t, err)
+	assert.Nil(t, resp)
 	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatalf("expected gRPC status error, got %v", err)
-	}
-	if st.Code() != codes.Internal {
-		t.Errorf("got code %v, want Internal", st.Code())
-	}
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
 }
 
 func TestRecovery_NoPanic(t *testing.T) {
@@ -49,12 +43,8 @@ func TestRecovery_NoPanic(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/SafeMethod"}
 
 	resp, err := i(context.Background(), "request", info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "safe" {
-		t.Errorf("got %v, want %q", resp, "safe")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "safe", resp)
 }
 
 func TestStreamRecovery(t *testing.T) {
@@ -67,16 +57,10 @@ func TestStreamRecovery(t *testing.T) {
 	ss := &fakeServerStream{ctx: context.Background()}
 
 	err := i(nil, ss, info, handler)
-	if err == nil {
-		t.Fatal("expected error after panic, got nil")
-	}
+	require.Error(t, err)
 	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatalf("expected gRPC status error, got %v", err)
-	}
-	if st.Code() != codes.Internal {
-		t.Errorf("got code %v, want Internal", st.Code())
-	}
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
 }
 
 func TestStreamRecovery_NoPanic(t *testing.T) {
@@ -89,7 +73,5 @@ func TestStreamRecovery_NoPanic(t *testing.T) {
 	ss := &fakeServerStream{ctx: context.Background()}
 
 	err := i(nil, ss, info, handler)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }

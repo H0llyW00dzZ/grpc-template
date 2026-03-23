@@ -14,12 +14,12 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	pb "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-// startGreeterServer starts a gRPC server with the greeter Service registered
-// on an in-memory bufconn listener for testing.
 func startGreeterServer(t *testing.T) *bufconn.Listener {
 	t.Helper()
 	lis := testutil.NewBufListener()
@@ -35,14 +35,11 @@ func startGreeterServer(t *testing.T) *bufconn.Listener {
 	return lis
 }
 
-// newGreeterClient creates a GreeterServiceClient connected to the given bufconn listener.
 func newGreeterClient(t *testing.T, lis *bufconn.Listener) pb.GreeterServiceClient {
 	t.Helper()
 	ctx := context.Background()
 	conn, err := testutil.DialBufNet(ctx, lis)
-	if err != nil {
-		t.Fatalf("failed to dial bufconn: %v", err)
-	}
+	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 	return pb.NewGreeterServiceClient(conn)
 }
@@ -52,13 +49,8 @@ func TestSayHello(t *testing.T) {
 	client := newGreeterClient(t, lis)
 
 	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: "World"})
-	if err != nil {
-		t.Fatalf("SayHello: %v", err)
-	}
-	want := "Hello, World!"
-	if resp.GetMessage() != want {
-		t.Errorf("got %q, want %q", resp.GetMessage(), want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "Hello, World!", resp.GetMessage())
 }
 
 func TestSayHello_EmptyName(t *testing.T) {
@@ -66,13 +58,8 @@ func TestSayHello_EmptyName(t *testing.T) {
 	client := newGreeterClient(t, lis)
 
 	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: ""})
-	if err != nil {
-		t.Fatalf("SayHello: %v", err)
-	}
-	want := "Hello, !"
-	if resp.GetMessage() != want {
-		t.Errorf("got %q, want %q", resp.GetMessage(), want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "Hello, !", resp.GetMessage())
 }
 
 func TestSayHelloServerStream(t *testing.T) {
@@ -80,9 +67,7 @@ func TestSayHelloServerStream(t *testing.T) {
 	client := newGreeterClient(t, lis)
 
 	stream, err := client.SayHelloServerStream(context.Background(), &pb.SayHelloServerStreamRequest{Name: "Alice"})
-	if err != nil {
-		t.Fatalf("SayHelloServerStream: %v", err)
-	}
+	require.NoError(t, err)
 
 	want := []string{
 		"Hello, Alice!",
@@ -96,18 +81,10 @@ func TestSayHelloServerStream(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
-			t.Fatalf("stream.Recv: %v", err)
-		}
+		require.NoError(t, err)
 		got = append(got, resp.GetMessage())
 	}
 
-	if len(got) != len(want) {
-		t.Fatalf("received %d messages, want %d", len(got), len(want))
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("message[%d] = %q, want %q", i, got[i], want[i])
-		}
-	}
+	require.Len(t, got, len(want))
+	assert.Equal(t, want, got)
 }
