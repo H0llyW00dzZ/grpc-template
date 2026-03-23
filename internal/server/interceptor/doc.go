@@ -13,16 +13,19 @@
 //
 // # Shared Configuration
 //
-// Interceptors that need shared dependencies (such as a logger) read them
-// from a package-level configuration. Use [Configure] with functional options
-// to set up the shared state once at startup:
+// Interceptors read shared dependencies (logger, auth function, excluded
+// methods) from a package-level configuration. Use [Configure] with
+// functional options to set up the shared state once at startup:
 //
 //	interceptor.Configure(
 //	    interceptor.WithLogger(myLogger),
+//	    interceptor.WithAuthFunc(myAuthFunc),
+//	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 //	)
 //
-// When using the [server] package, [server.WithLogger] calls [Configure]
-// automatically — no manual setup needed.
+// When using the [server] package, the equivalent server options
+// ([server.WithLogger], [server.WithAuthFunc], [server.WithExcludedMethods])
+// call [Configure] automatically — no manual setup needed.
 //
 // # Available Interceptors
 //
@@ -40,19 +43,21 @@
 // # Usage
 //
 //	srv := server.New(
-//		server.WithLogger(myLogger), // syncs to interceptor package automatically
+//		server.WithLogger(myLogger),
+//		server.WithAuthFunc(myAuthFunc),
+//		server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 //		server.WithUnaryInterceptors(
 //			interceptor.Recovery(),
 //			interceptor.Logging(),
 //			interceptor.RequestID(),
-//			interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check")),
+//			interceptor.Auth(),
 //			interceptor.Validation(),
 //		),
 //		server.WithStreamInterceptors(
 //			interceptor.StreamRecovery(),
 //			interceptor.StreamLogging(),
 //			interceptor.StreamRequestID(),
-//			interceptor.StreamAuth(myAuthFunc),
+//			interceptor.StreamAuth(),
 //		),
 //	)
 package interceptor

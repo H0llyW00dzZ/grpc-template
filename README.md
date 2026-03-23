@@ -220,7 +220,7 @@ srv.RegisterService(
 | Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(), interceptor.Logging(), ...)` |
 | Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(), interceptor.StreamLogging(), ...)` |
 | Request ID tracing | `cmd/server/main.go` | `interceptor.RequestID()` / `interceptor.StreamRequestID()` |
-| Auth / token validation | `cmd/server/main.go` | `interceptor.Auth(myAuthFunc, interceptor.WithExcludedMethods(...))` |
+| Auth / token validation | `cmd/server/main.go` | `server.WithAuthFunc(fn)` + `server.WithExcludedMethods(...)` |
 | Request validation | `cmd/server/main.go` | `interceptor.Validation()` (works with `protoc-gen-validate`) |
 | Enable reflection | `cmd/server/main.go` | `server.WithReflection()` |
 | Set keepalives | `cmd/server/main.go` | `server.WithKeepalive(...)` |

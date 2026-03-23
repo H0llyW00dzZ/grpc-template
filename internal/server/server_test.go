@@ -45,6 +45,17 @@ func TestServer_WithLoggerAndGetter(t *testing.T) {
 	assert.Equal(t, l, srv.Logger())
 }
 
+func TestServer_WithAuthFuncAndExcludedMethods(t *testing.T) {
+	authFn := func(ctx context.Context, token string) (context.Context, error) {
+		return ctx, nil
+	}
+	srv := server.New(
+		server.WithAuthFunc(authFn),
+		server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
+	)
+	require.NotNil(t, srv)
+}
+
 func TestServer_WithUnaryAndStreamInterceptors(t *testing.T) {
 	srv := server.New(
 		server.WithPort("0"),
