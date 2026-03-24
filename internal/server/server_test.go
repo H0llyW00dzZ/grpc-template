@@ -295,3 +295,33 @@ func TestWithListener(t *testing.T) {
 
 	require.NoError(t, <-errCh)
 }
+
+func TestWithRateLimit(t *testing.T) {
+	srv := server.New(
+		server.WithRateLimit(100, 200),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}
+
+func TestWithTrustProxy(t *testing.T) {
+	srv := server.New(
+		server.WithTrustProxy(true),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}
