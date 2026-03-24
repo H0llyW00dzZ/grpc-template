@@ -137,20 +137,34 @@ func (p *peerLimiters) cleanup(ttl time.Duration) {
 	}
 }
 
+// cleanupStop is used to signal the background cleanup goroutine to stop.
+// It is only used for testing purposes; in production the goroutine runs
+// for the lifetime of the process.
+var cleanupStop chan struct{}
+
 // startCleanup ensures the background cleanup goroutine runs exactly once.
 func startCleanup(ttl time.Duration) {
 	if ttl <= 0 {
 		ttl = 10 * time.Minute
 	}
 	cleanupOnce.Do(func() {
-		go func() {
-			ticker := time.NewTicker(ttl)
-			defer ticker.Stop()
-			for range ticker.C {
-				globalLimiters.cleanup(ttl)
-			}
-		}()
+		cleanupStop = make(chan struct{})
+		go runCleanupLoop(ttl, cleanupStop)
 	})
+}
+
+// runCleanupLoop runs the periodic cleanup ticker until stop is closed.
+func runCleanupLoop(ttl time.Duration, stop <-chan struct{}) {
+	ticker := time.NewTicker(ttl)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			globalLimiters.cleanup(ttl)
+		case <-stop:
+			return
+		}
+	}
 }
 
 // peerKey extracts the client IP from the gRPC peer information.
