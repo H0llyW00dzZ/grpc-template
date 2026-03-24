@@ -7,8 +7,10 @@ package interceptor
 
 import (
 	"context"
+	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
+	"golang.org/x/time/rate"
 )
 
 // AuthFunc is a user-provided function that validates a token string
@@ -22,6 +24,9 @@ type config struct {
 	logger          logging.Handler
 	authFunc        AuthFunc
 	excludedMethods map[string]struct{}
+	rateLimit       rate.Limit
+	rateBurst       int
+	rateLimitTTL    time.Duration
 }
 
 // defaultConfig is the package-level configuration used by all interceptors.
@@ -86,6 +91,28 @@ func WithExcludedMethods(methods ...string) Option {
 func Configure(opts ...Option) {
 	for _, opt := range opts {
 		opt(defaultConfig)
+	}
+}
+
+// WithRateLimit sets the per-peer rate limit in requests per second and
+// the burst size (maximum number of requests allowed at once).
+// A rate of 0 or negative disables rate limiting.
+//
+//	interceptor.Configure(
+//	    interceptor.WithRateLimit(100, 200), // 100 req/s, burst up to 200
+//	)
+func WithRateLimit(rps float64, burst int) Option {
+	return func(c *config) {
+		c.rateLimit = rate.Limit(rps)
+		c.rateBurst = burst
+	}
+}
+
+// WithRateLimitTTL sets the duration after which idle per-peer limiters
+// are removed from memory. Default is 10 minutes.
+func WithRateLimitTTL(ttl time.Duration) Option {
+	return func(c *config) {
+		c.rateLimitTTL = ttl
 	}
 }
 

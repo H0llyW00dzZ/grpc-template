@@ -14,18 +14,20 @@
 // # Shared Configuration
 //
 // Interceptors read shared dependencies (logger, auth function, excluded
-// methods) from a package-level configuration. Use [Configure] with
-// functional options to set up the shared state once at startup:
+// methods, rate limit) from a package-level configuration. Use [Configure]
+// with functional options to set up the shared state once at startup:
 //
 //	interceptor.Configure(
 //	    interceptor.WithLogger(myLogger),
 //	    interceptor.WithAuthFunc(myAuthFunc),
 //	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
+//	    interceptor.WithRateLimit(100, 200),
 //	)
 //
 // When using the [server] package, the equivalent server options
-// ([server.WithLogger], [server.WithAuthFunc], [server.WithExcludedMethods])
-// call [Configure] automatically — no manual setup needed.
+// ([server.WithLogger], [server.WithAuthFunc], [server.WithExcludedMethods],
+// [server.WithRateLimit]) call [Configure] automatically — no manual setup
+// needed.
 //
 // # Available Interceptors
 //
@@ -39,6 +41,8 @@
 //     [AuthFunc] with support for method exclusion.
 //   - [Validation] — validates incoming requests implementing the
 //     [Validator] interface (compatible with protoc-gen-validate / buf validate).
+//   - [RateLimit] / [StreamRateLimit] — per-peer token-bucket rate limiting
+//     with automatic stale-limiter cleanup.
 //
 // # Usage
 //
@@ -46,18 +50,21 @@
 //		server.WithLogger(myLogger),
 //		server.WithAuthFunc(myAuthFunc),
 //		server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
+//		server.WithRateLimit(100, 200),
 //		server.WithUnaryInterceptors(
 //			interceptor.Recovery(),
 //			interceptor.Logging(),
 //			interceptor.RequestID(),
 //			interceptor.Auth(),
 //			interceptor.Validation(),
+//			interceptor.RateLimit(),
 //		),
 //		server.WithStreamInterceptors(
 //			interceptor.StreamRecovery(),
 //			interceptor.StreamLogging(),
 //			interceptor.StreamRequestID(),
 //			interceptor.StreamAuth(),
+//			interceptor.StreamRateLimit(),
 //		),
 //	)
 package interceptor

@@ -9,7 +9,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestConfigure_WithLogger(t *testing.T) {
-	l := logging.Default()
+	l := &stubLogger{}
 
 	// Configure the interceptor package with a logger.
 	interceptor.Configure(interceptor.WithLogger(l))
@@ -25,6 +24,9 @@ func TestConfigure_WithLogger(t *testing.T) {
 	// Verify by creating an interceptor — it should not panic.
 	i := interceptor.Logging()
 	assert.NotNil(t, i)
+
+	// Reset to default.
+	interceptor.Configure(interceptor.WithLogger(nil))
 }
 
 func TestConfigure_DefaultLogger(t *testing.T) {
@@ -37,7 +39,7 @@ func TestConfigure_DefaultLogger(t *testing.T) {
 }
 
 func TestConfigure_CustomLoggerUsedByInterceptors(t *testing.T) {
-	l := logging.Default()
+	l := &stubLogger{}
 	interceptor.Configure(interceptor.WithLogger(l))
 
 	// Exercise the Logging interceptor which internally calls logger().
@@ -51,4 +53,18 @@ func TestConfigure_CustomLoggerUsedByInterceptors(t *testing.T) {
 	resp, err := i(context.Background(), "req", info, handler)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp)
+	assert.True(t, l.called, "custom logger should have been invoked")
+
+	// Reset to default to avoid affecting other tests.
+	interceptor.Configure(interceptor.WithLogger(nil))
 }
+
+// stubLogger is a custom logging.Handler that records whether it was called.
+type stubLogger struct {
+	called bool
+}
+
+func (l *stubLogger) Debug(msg string, args ...any) { l.called = true }
+func (l *stubLogger) Info(msg string, args ...any)  { l.called = true }
+func (l *stubLogger) Warn(msg string, args ...any)  { l.called = true }
+func (l *stubLogger) Error(msg string, args ...any) { l.called = true }
