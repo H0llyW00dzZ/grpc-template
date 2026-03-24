@@ -255,9 +255,12 @@ func TestPeerKey_NoPort(t *testing.T) {
 }
 
 func TestPeerKey_XForwardedFor_Single(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
 	md := metadata.Pairs("x-forwarded-for", "203.0.113.1")
 	ctx := metadata.NewIncomingContext(context.Background(), md)
-	
+
 	// Also add a dummy peer context to ensure metadata takes precedence
 	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
 
@@ -266,6 +269,9 @@ func TestPeerKey_XForwardedFor_Single(t *testing.T) {
 }
 
 func TestPeerKey_XForwardedFor_Multiple(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
 	md := metadata.Pairs("x-forwarded-for", "203.0.113.1, 198.51.100.2, 192.0.2.3")
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
@@ -276,6 +282,9 @@ func TestPeerKey_XForwardedFor_Multiple(t *testing.T) {
 }
 
 func TestPeerKey_XRealIP(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
 	md := metadata.Pairs("x-real-ip", "198.51.100.2")
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
@@ -285,6 +294,9 @@ func TestPeerKey_XRealIP(t *testing.T) {
 }
 
 func TestPeerKey_XForwardedFor_And_XRealIP(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
 	md := metadata.Pairs(
 		"x-forwarded-for", "203.0.113.1",
 		"x-real-ip", "198.51.100.2",

@@ -178,3 +178,17 @@ func WithRateLimit(rps float64, burst int) Option {
 		interceptor.Configure(interceptor.WithRateLimit(rps, burst))
 	}
 }
+
+// WithTrustProxy enables trust for proxy headers (X-Forwarded-For, X-Real-IP)
+// when extracting client IPs for per-peer rate limiting.
+//
+// WARNING: Only enable this when your server is behind a trusted reverse proxy
+// or load balancer that sanitizes these headers. Without a trusted proxy,
+// clients can spoof their IP address to bypass rate limits.
+//
+// It delegates to [interceptor.Configure] with [interceptor.WithTrustProxy].
+func WithTrustProxy(trust bool) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithTrustProxy(trust))
+	}
+}

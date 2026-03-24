@@ -170,18 +170,21 @@ func runCleanupLoop(ttl time.Duration, stop <-chan struct{}) {
 }
 
 // peerKey extracts the client IP from the gRPC peer information.
-// It first checks common proxy headers (x-forwarded-for, x-real-ip)
-// in the gRPC metadata before falling back to the direct peer connection.
+// If TrustProxy is unconditionally enabled, it first checks common proxy
+// headers (x-forwarded-for, x-real-ip) in the gRPC metadata.
+// Otherwise, it falls back to the direct hardware peer connection.
 func peerKey(ctx context.Context) string {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
-			// x-forwarded-for can be a comma-separated list of IPs.
-			// The true client is the first IP.
-			clientIP := strings.Split(ips[0], ",")[0]
-			return strings.TrimSpace(clientIP)
-		}
-		if ips := md.Get("x-real-ip"); len(ips) > 0 && ips[0] != "" {
-			return strings.TrimSpace(ips[0])
+	if defaultConfig.trustProxy {
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
+				// x-forwarded-for can be a comma-separated list of IPs.
+				// The true client is the first IP.
+				clientIP := strings.Split(ips[0], ",")[0]
+				return strings.TrimSpace(clientIP)
+			}
+			if ips := md.Get("x-real-ip"); len(ips) > 0 && ips[0] != "" {
+				return strings.TrimSpace(ips[0])
+			}
 		}
 	}
 

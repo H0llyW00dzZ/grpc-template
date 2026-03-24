@@ -22,12 +22,13 @@
 //	    interceptor.WithAuthFunc(myAuthFunc),
 //	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 //	    interceptor.WithRateLimit(100, 200),
+//	    interceptor.WithTrustProxy(true), // only behind a trusted reverse proxy
 //	)
 //
 // When using the [server] package, the equivalent server options
 // ([server.WithLogger], [server.WithAuthFunc], [server.WithExcludedMethods],
-// [server.WithRateLimit]) call [Configure] automatically — no manual setup
-// needed.
+// [server.WithRateLimit], [server.WithTrustProxy]) call [Configure]
+// automatically — no manual setup needed.
 //
 // # Available Interceptors
 //
@@ -42,7 +43,8 @@
 //   - [Validation] — validates incoming requests implementing the
 //     [Validator] interface (compatible with protoc-gen-validate / buf validate).
 //   - [RateLimit] / [StreamRateLimit] — per-peer token-bucket rate limiting
-//     with automatic stale-limiter cleanup.
+//     with automatic stale-limiter cleanup. Supports proxy-aware client IP
+//     extraction via [WithTrustProxy] (X-Forwarded-For, X-Real-IP).
 //
 // # Usage
 //

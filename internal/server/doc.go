@@ -17,6 +17,7 @@
 //	    server.WithAuthFunc(myAuthFunc),
 //	    server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 //	    server.WithRateLimit(100, 200),
+//	    server.WithTrustProxy(true), // only behind a trusted reverse proxy
 //	    server.WithUnaryInterceptors(
 //	        interceptor.Recovery(),
 //	        interceptor.Logging(),
@@ -76,6 +77,7 @@
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
 //   - [WithRateLimit] — per-peer rate limiting (syncs to interceptors)
+//   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size
 //   - [WithMaxConcurrentStreams] — concurrent stream limit
