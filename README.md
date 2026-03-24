@@ -246,6 +246,19 @@ srv.RegisterService(
 | `make clean` | Remove binaries and generated code (Go + TS + PHP) |
 | `make deps` | Install required tools |
 
+## Limitations
+
+gRPC uses HTTP/2 with binary framing, which means **browsers cannot call gRPC services directly** — unlike REST/JSON over HTTP/1.1. If you need browser clients, consider one of these approaches:
+
+| Approach | Description |
+|----------|-------------|
+| [gRPC-Web](https://github.com/grpc/grpc-web) | A proxy (e.g., Envoy) translates browser-compatible requests to native gRPC |
+| [Connect](https://connectrpc.com/) | A protocol that speaks gRPC, gRPC-Web, *and* plain HTTP/JSON — works in browsers natively |
+| REST gateway | Use [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway) to expose a JSON/REST API alongside gRPC |
+
+> [!NOTE]
+> If your architecture is purely backend and you are looking for high performance — service-to-service communication, microservices, AI inference pipelines, CLI tools, or mobile clients — gRPC is the suitable choice. Its binary serialization, multiplexed streams, and native code generation deliver significantly lower latency and higher throughput than REST/JSON.
+
 ## License
 
 BSD 3-Clause License — see [LICENSE](LICENSE) for details.
