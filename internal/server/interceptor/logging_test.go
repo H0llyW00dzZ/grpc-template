@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"net"
@@ -119,6 +120,74 @@ func TestLogging_WithPeerAndRequestID(t *testing.T) {
 		return logInt(ctx, req, info, handler)
 	})
 
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
+}
+
+func TestLogging_WithTrustProxy_XForwardedFor(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false))
+
+	logInt := interceptor.Logging()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "ok", nil
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
+
+	// Set proxy header and a different peer address to verify proxy header is used.
+	md := metadata.Pairs("x-forwarded-for", "203.0.113.50")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{
+		Addr: &net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 50051},
+	})
+
+	resp, err := logInt(ctx, "req", info, handler)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
+}
+
+func TestStreamLogging_WithTrustProxy_XRealIP(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false))
+
+	logInt := interceptor.StreamLogging()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return nil
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.TestService/TestStream"}
+
+	md := metadata.Pairs("x-real-ip", "198.51.100.10")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{
+		Addr: &net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 50051},
+	})
+	ss := &fakeServerStream{ctx: ctx}
+
+	err := logInt(nil, ss, info, handler)
+	require.NoError(t, err)
+}
+
+func TestLogging_WithoutTrustProxy_IgnoresHeaders(t *testing.T) {
+	// Ensure trustProxy is off.
+	interceptor.Configure(interceptor.WithTrustProxy(false))
+
+	logInt := interceptor.Logging()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		return "ok", nil
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/TestMethod"}
+
+	// Even with proxy headers, the peer should use the direct TCP address.
+	md := metadata.Pairs("x-forwarded-for", "203.0.113.50")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{
+		Addr: &net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 50051},
+	})
+
+	resp, err := logInt(ctx, "req", info, handler)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp)
 }
