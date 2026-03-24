@@ -35,6 +35,7 @@ type MemoryRateLimiter struct {
 	burst       int
 	ttl         time.Duration
 	cleanupStop chan struct{}
+	stopOnce    sync.Once
 }
 
 // peerLimiters manages per-peer rate limiters with automatic cleanup
@@ -81,12 +82,12 @@ func (m *MemoryRateLimiter) Allow(ctx context.Context, key string) (bool, error)
 	return limiter.Allow(), nil
 }
 
-// Stop halts the background cleanup goroutine. Use only when shutting down.
+// Stop halts the background cleanup goroutine. It is safe to call
+// multiple times and is concurrency-safe.
 func (m *MemoryRateLimiter) Stop() {
-	if m.cleanupStop != nil {
+	m.stopOnce.Do(func() {
 		close(m.cleanupStop)
-		m.cleanupStop = nil
-	}
+	})
 }
 
 func (m *MemoryRateLimiter) runCleanupLoop() {
