@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
+	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
@@ -314,6 +315,25 @@ func TestWithRateLimit(t *testing.T) {
 func TestWithTrustProxy(t *testing.T) {
 	srv := server.New(
 		server.WithTrustProxy(true),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}
+
+func TestWithRateLimiter(t *testing.T) {
+	// Use NewMemoryRateLimiter as a custom RateLimiter to exercise WithRateLimiter.
+	limiter := interceptor.NewMemoryRateLimiter(50, 100, 5*time.Minute)
+	defer limiter.Stop()
+
+	srv := server.New(
+		server.WithRateLimiter(limiter),
 		server.WithPort("0"),
 	)
 	require.NotNil(t, srv)

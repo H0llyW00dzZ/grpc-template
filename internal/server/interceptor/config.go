@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
-	"golang.org/x/time/rate"
 )
 
 // AuthFunc is a user-provided function that validates a token string
@@ -24,9 +23,7 @@ type config struct {
 	logger          logging.Handler
 	authFunc        AuthFunc
 	excludedMethods map[string]struct{}
-	rateLimit       rate.Limit
-	rateBurst       int
-	rateLimitTTL    time.Duration
+	rateLimiter     RateLimiter
 	trustProxy      bool
 }
 
@@ -95,25 +92,31 @@ func Configure(opts ...Option) {
 	}
 }
 
-// WithRateLimit sets the per-peer rate limit in requests per second and
-// the burst size (maximum number of requests allowed at once).
+// WithRateLimiter sets a custom rate limiter implementation.
+// When set, this overrides any limiter configured via [WithRateLimit],
+// since both options write to the same config field.
+//
+//	interceptor.Configure(
+//	    interceptor.WithRateLimiter(interceptor.NewMemoryRateLimiter(100, 200, 10*time.Minute)),
+//	)
+func WithRateLimiter(l RateLimiter) Option {
+	return func(c *config) {
+		c.rateLimiter = l
+	}
+}
+
+// WithRateLimit is a convenience option that configures the default
+// in-memory rate limiter with a 10-minute TTL.
 // A rate of 0 or negative disables rate limiting.
+//
+// If [WithRateLimiter] is also used, whichever is applied last takes effect.
 //
 //	interceptor.Configure(
 //	    interceptor.WithRateLimit(100, 200), // 100 req/s, burst up to 200
 //	)
 func WithRateLimit(rps float64, burst int) Option {
 	return func(c *config) {
-		c.rateLimit = rate.Limit(rps)
-		c.rateBurst = burst
-	}
-}
-
-// WithRateLimitTTL sets the duration after which idle per-peer limiters
-// are removed from memory. Default is 10 minutes.
-func WithRateLimitTTL(ttl time.Duration) Option {
-	return func(c *config) {
-		c.rateLimitTTL = ttl
+		c.rateLimiter = NewMemoryRateLimiter(rps, burst, 10*time.Minute)
 	}
 }
 

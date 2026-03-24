@@ -16,7 +16,7 @@
 //	    server.WithLogger(myLogger),
 //	    server.WithAuthFunc(myAuthFunc),
 //	    server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
-//	    server.WithRateLimit(100, 200),
+//	    server.WithRateLimit(100, 200), // uses default in-memory rate limiter
 //	    server.WithTrustProxy(true), // only behind a trusted reverse proxy
 //	    server.WithUnaryInterceptors(
 //	        interceptor.Recovery(),
@@ -76,7 +76,7 @@
 //   - [WithAuthFunc] — authentication function (syncs to interceptors)
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
-//   - [WithRateLimit] — per-peer rate limiting (syncs to interceptors)
+//   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors). For custom backends like Redis, configure [interceptor.WithRateLimiter] directly.
 //   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

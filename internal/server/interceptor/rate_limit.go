@@ -20,6 +20,24 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// RateLimiter defines the interface for checking if a request is allowed.
+type RateLimiter interface {
+	// Allow checks if the given key (e.g., IP address) is allowed to proceed.
+	// It returns true if allowed, or false if the rate limit is exceeded.
+	Allow(ctx context.Context, key string) (bool, error)
+}
+
+// MemoryRateLimiter is an in-memory implementation of RateLimiter
+// using a token-bucket algorithm per peer key.
+type MemoryRateLimiter struct {
+	limiters    *peerLimiters
+	rate        rate.Limit
+	burst       int
+	ttl         time.Duration
+	cleanupStop chan struct{}
+	stopOnce    sync.Once
+}
+
 // peerLimiters manages per-peer rate limiters with automatic cleanup
 // of stale entries to prevent memory leaks.
 type peerLimiters struct {
@@ -33,23 +51,60 @@ type limiterEntry struct {
 	lastSeen time.Time
 }
 
-// globalLimiters is the package-level limiter store, initialised lazily
-// by the first call to [RateLimit] or [StreamRateLimit].
-var globalLimiters = &peerLimiters{
-	limiters: make(map[string]*limiterEntry),
+// NewMemoryRateLimiter creates a new in-memory rate limiter and starts
+// its background cleanup goroutine for stale entries.
+// A rate of 0 or negative disables rate limiting.
+func NewMemoryRateLimiter(rps float64, burst int, ttl time.Duration) *MemoryRateLimiter {
+	if ttl <= 0 {
+		ttl = 10 * time.Minute
+	}
+	m := &MemoryRateLimiter{
+		limiters: &peerLimiters{
+			limiters: make(map[string]*limiterEntry),
+		},
+		rate:        rate.Limit(rps),
+		burst:       burst,
+		ttl:         ttl,
+		cleanupStop: make(chan struct{}),
+	}
+	if rps > 0 {
+		go m.runCleanupLoop()
+	}
+	return m
 }
 
-// cleanupOnce ensures the background cleanup goroutine is started exactly once.
-var cleanupOnce sync.Once
+// Allow checks the rate limit for the given key.
+func (m *MemoryRateLimiter) Allow(ctx context.Context, key string) (bool, error) {
+	if m.rate <= 0 {
+		return true, nil
+	}
+	limiter := m.limiters.getLimiter(key, m.rate, m.burst)
+	return limiter.Allow(), nil
+}
+
+// Stop halts the background cleanup goroutine. It is safe to call
+// multiple times and is concurrency-safe.
+func (m *MemoryRateLimiter) Stop() {
+	m.stopOnce.Do(func() {
+		close(m.cleanupStop)
+	})
+}
+
+func (m *MemoryRateLimiter) runCleanupLoop() {
+	ticker := time.NewTicker(m.ttl)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			m.limiters.cleanup(m.ttl)
+		case <-m.cleanupStop:
+			return
+		}
+	}
+}
 
 // RateLimit returns a unary server interceptor that enforces per-peer
-// rate limiting using a token-bucket algorithm.
-//
-// Each unique client IP receives its own [rate.Limiter] with the rate
-// and burst values configured via [WithRateLimit]. If the caller
-// exceeds its allowance the interceptor returns [codes.ResourceExhausted].
-//
-// Stale limiter entries are cleaned up automatically in the background.
+// rate limiting. It delegates to the currently configured RateLimiter.
 func RateLimit() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -58,16 +113,16 @@ func RateLimit() grpc.UnaryServerInterceptor {
 		handler grpc.UnaryHandler,
 	) (any, error) {
 		cfg := defaultConfig
-		if cfg.rateLimit <= 0 {
+		if cfg.rateLimiter == nil {
 			return handler(ctx, req)
 		}
 
 		key := peerKey(ctx)
-		limiter := globalLimiters.getLimiter(key, cfg.rateLimit, cfg.rateBurst)
-
-		startCleanup(cfg.rateLimitTTL)
-
-		if !limiter.Allow() {
+		allowed, err := cfg.rateLimiter.Allow(ctx, key)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "rate limiter internal error")
+		}
+		if !allowed {
 			return nil, status.Error(codes.ResourceExhausted, "rate limit exceeded")
 		}
 
@@ -76,11 +131,7 @@ func RateLimit() grpc.UnaryServerInterceptor {
 }
 
 // StreamRateLimit returns a stream server interceptor that enforces per-peer
-// rate limiting using a token-bucket algorithm.
-//
-// Each unique client IP receives its own [rate.Limiter] with the rate
-// and burst values configured via [WithRateLimit]. If the caller
-// exceeds its allowance the interceptor returns [codes.ResourceExhausted].
+// rate limiting. It delegates to the currently configured RateLimiter.
 func StreamRateLimit() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
@@ -89,16 +140,16 @@ func StreamRateLimit() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) error {
 		cfg := defaultConfig
-		if cfg.rateLimit <= 0 {
+		if cfg.rateLimiter == nil {
 			return handler(srv, ss)
 		}
 
 		key := peerKey(ss.Context())
-		limiter := globalLimiters.getLimiter(key, cfg.rateLimit, cfg.rateBurst)
-
-		startCleanup(cfg.rateLimitTTL)
-
-		if !limiter.Allow() {
+		allowed, err := cfg.rateLimiter.Allow(ss.Context(), key)
+		if err != nil {
+			return status.Error(codes.Internal, "rate limiter internal error")
+		}
+		if !allowed {
 			return status.Error(codes.ResourceExhausted, "rate limit exceeded")
 		}
 
@@ -135,36 +186,6 @@ func (p *peerLimiters) cleanup(ttl time.Duration) {
 	for key, entry := range p.limiters {
 		if entry.lastSeen.Before(cutoff) {
 			delete(p.limiters, key)
-		}
-	}
-}
-
-// cleanupStop is used to signal the background cleanup goroutine to stop.
-// It is only used for testing purposes; in production the goroutine runs
-// for the lifetime of the process.
-var cleanupStop chan struct{}
-
-// startCleanup ensures the background cleanup goroutine runs exactly once.
-func startCleanup(ttl time.Duration) {
-	if ttl <= 0 {
-		ttl = 10 * time.Minute
-	}
-	cleanupOnce.Do(func() {
-		cleanupStop = make(chan struct{})
-		go runCleanupLoop(ttl, cleanupStop)
-	})
-}
-
-// runCleanupLoop runs the periodic cleanup ticker until stop is closed.
-func runCleanupLoop(ttl time.Duration, stop <-chan struct{}) {
-	ticker := time.NewTicker(ttl)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			globalLimiters.cleanup(ttl)
-		case <-stop:
-			return
 		}
 	}
 }

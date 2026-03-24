@@ -168,6 +168,11 @@ func WithExcludedMethods(methods ...string) Option {
 
 // WithRateLimit sets the per-peer rate limit in requests per second and
 // the burst size (maximum number of requests allowed at once).
+// It uses the default in-memory token-bucket limiter.
+//
+// If [WithRateLimiter] is also used, whichever is applied last takes effect
+// because both options write to the same underlying rate limiter field.
+//
 // It delegates to [interceptor.Configure] with [interceptor.WithRateLimit].
 //
 //	srv := server.New(
@@ -176,6 +181,25 @@ func WithExcludedMethods(methods ...string) Option {
 func WithRateLimit(rps float64, burst int) Option {
 	return func(s *Server) {
 		interceptor.Configure(interceptor.WithRateLimit(rps, burst))
+	}
+}
+
+// WithRateLimiter sets a custom [interceptor.RateLimiter] implementation
+// for per-peer rate limiting. Use this to plug in a distributed backend
+// such as Redis instead of the default in-memory limiter.
+//
+// When set, this overrides any limiter configured via [WithRateLimit],
+// since both options write to the same underlying rate limiter field.
+// The rate and burst parameters are owned by the custom implementation.
+//
+//	srv := server.New(
+//	    server.WithRateLimiter(myRedisLimiter), // replaces the default in-memory limiter
+//	)
+//
+// It delegates to [interceptor.Configure] with [interceptor.WithRateLimiter].
+func WithRateLimiter(l interceptor.RateLimiter) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithRateLimiter(l))
 	}
 }
 

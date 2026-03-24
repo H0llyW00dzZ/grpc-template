@@ -6,7 +6,6 @@
 package interceptor
 
 import (
-	"sync"
 	"time"
 )
 
@@ -21,47 +20,51 @@ func PeerKey(ctx interface{ Value(any) any }) string {
 	}))
 }
 
-// CleanupLimiters exports cleanup for testing.
+// ActiveMemoryLimiter gets the currently configured MemoryRateLimiter for testing.
+func ActiveMemoryLimiter() *MemoryRateLimiter {
+	if defaultConfig != nil {
+		if m, ok := defaultConfig.rateLimiter.(*MemoryRateLimiter); ok {
+			return m
+		}
+	}
+	return nil
+}
+
+// CleanupLimiters exports cleanup for testing on the active memory limiter.
 func CleanupLimiters(ttl time.Duration) {
-	globalLimiters.cleanup(ttl)
+	if m := ActiveMemoryLimiter(); m != nil {
+		m.limiters.cleanup(ttl)
+	}
 }
 
 // LimiterCount returns the number of active peer limiters for testing.
 func LimiterCount() int {
-	globalLimiters.mu.Lock()
-	defer globalLimiters.mu.Unlock()
-	return len(globalLimiters.limiters)
+	m := ActiveMemoryLimiter()
+	if m == nil {
+		return 0
+	}
+	m.limiters.mu.Lock()
+	defer m.limiters.mu.Unlock()
+	return len(m.limiters.limiters)
 }
 
 // SetLimiterLastSeen sets the lastSeen time for a specific peer key
 // to enable TTL-based cleanup testing.
 func SetLimiterLastSeen(key string, t time.Time) {
-	globalLimiters.mu.Lock()
-	defer globalLimiters.mu.Unlock()
-	if entry, ok := globalLimiters.limiters[key]; ok {
+	m := ActiveMemoryLimiter()
+	if m == nil {
+		return
+	}
+	m.limiters.mu.Lock()
+	defer m.limiters.mu.Unlock()
+	if entry, ok := m.limiters.limiters[key]; ok {
 		entry.lastSeen = t
 	}
 }
 
-// ResetCleanupOnce resets the sync.Once guard so startCleanup can be
-// invoked again during testing.
-func ResetCleanupOnce() {
-	cleanupOnce = sync.Once{}
-}
-
-// StartCleanup exports startCleanup for testing.
-func StartCleanup(ttl time.Duration) {
-	startCleanup(ttl)
-}
-
-// StopCleanup signals the cleanup goroutine to stop.
+// StopCleanup signals the cleanup goroutine to stop on the active memory limiter.
 func StopCleanup() {
-	if cleanupStop != nil {
-		close(cleanupStop)
+	if m := ActiveMemoryLimiter(); m != nil {
+		m.Stop()
 	}
-}
-
-// RunCleanupLoop exports runCleanupLoop for direct testing.
-func RunCleanupLoop(ttl time.Duration, stop <-chan struct{}) {
-	runCleanupLoop(ttl, stop)
 }
