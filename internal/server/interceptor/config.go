@@ -27,6 +27,7 @@ type config struct {
 	rateLimit       rate.Limit
 	rateBurst       int
 	rateLimitTTL    time.Duration
+	trustProxy      bool
 }
 
 // defaultConfig is the package-level configuration used by all interceptors.
@@ -113,6 +114,19 @@ func WithRateLimit(rps float64, burst int) Option {
 func WithRateLimitTTL(ttl time.Duration) Option {
 	return func(c *config) {
 		c.rateLimitTTL = ttl
+	}
+}
+
+// WithTrustProxy configures the rate limiter to trust the X-Forwarded-For
+// and X-Real-IP headers for extracting the client IP address.
+//
+// WARNING: Only enable this if your gRPC server is deployed behind a trusted
+// reverse proxy or load balancer that sanitizes these headers. Otherwise,
+// malicious clients can easily spoof their IP address to bypass rate limits.
+// By default, this is disabled for security.
+func WithTrustProxy(trust bool) Option {
+	return func(c *config) {
+		c.trustProxy = trust
 	}
 }
 

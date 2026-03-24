@@ -8,12 +8,14 @@ package interceptor
 import (
 	"context"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
@@ -168,8 +170,24 @@ func runCleanupLoop(ttl time.Duration, stop <-chan struct{}) {
 }
 
 // peerKey extracts the client IP from the gRPC peer information.
-// Falls back to "unknown" if peer info is unavailable.
+// If TrustProxy is unconditionally enabled, it first checks common proxy
+// headers (x-forwarded-for, x-real-ip) in the gRPC metadata.
+// Otherwise, it falls back to the direct hardware peer connection.
 func peerKey(ctx context.Context) string {
+	if defaultConfig.trustProxy {
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
+				// x-forwarded-for can be a comma-separated list of IPs.
+				// The true client is the first IP.
+				clientIP := strings.Split(ips[0], ",")[0]
+				return strings.TrimSpace(clientIP)
+			}
+			if ips := md.Get("x-real-ip"); len(ips) > 0 && ips[0] != "" {
+				return strings.TrimSpace(ips[0])
+			}
+		}
+	}
+
 	p, ok := peer.FromContext(ctx)
 	if !ok || p.Addr == nil {
 		return "unknown"

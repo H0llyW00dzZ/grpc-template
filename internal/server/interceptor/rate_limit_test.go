@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
@@ -251,6 +252,61 @@ func TestPeerKey_NoPort(t *testing.T) {
 	})
 	key := interceptor.PeerKey(ctx)
 	assert.Equal(t, "192.168.1.1", key)
+}
+
+func TestPeerKey_XForwardedFor_Single(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
+	md := metadata.Pairs("x-forwarded-for", "203.0.113.1")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	// Also add a dummy peer context to ensure metadata takes precedence
+	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
+
+	key := interceptor.PeerKey(ctx)
+	assert.Equal(t, "203.0.113.1", key)
+}
+
+func TestPeerKey_XForwardedFor_Multiple(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
+	md := metadata.Pairs("x-forwarded-for", "203.0.113.1, 198.51.100.2, 192.0.2.3")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
+
+	key := interceptor.PeerKey(ctx)
+	// Should extract the first IP and trim spaces
+	assert.Equal(t, "203.0.113.1", key)
+}
+
+func TestPeerKey_XRealIP(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
+	md := metadata.Pairs("x-real-ip", "198.51.100.2")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
+
+	key := interceptor.PeerKey(ctx)
+	assert.Equal(t, "198.51.100.2", key)
+}
+
+func TestPeerKey_XForwardedFor_And_XRealIP(t *testing.T) {
+	interceptor.Configure(interceptor.WithTrustProxy(true))
+	defer interceptor.Configure(interceptor.WithTrustProxy(false)) // reset
+
+	md := metadata.Pairs(
+		"x-forwarded-for", "203.0.113.1",
+		"x-real-ip", "198.51.100.2",
+	)
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	ctx = peer.NewContext(ctx, &peer.Peer{Addr: fakeAddr("192.168.1.1:12345")})
+
+	key := interceptor.PeerKey(ctx)
+	// X-Forwarded-For should take precedence over X-Real-IP
+	assert.Equal(t, "203.0.113.1", key)
 }
 
 func TestStartCleanup_DefaultTTL(t *testing.T) {

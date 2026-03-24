@@ -17,6 +17,7 @@
 //	    server.WithAuthFunc(myAuthFunc),
 //	    server.WithExcludedMethods("/grpc.health.v1.Health/Check"),
 //	    server.WithRateLimit(100, 200),
+//	    server.WithTrustProxy(true), // only behind a trusted reverse proxy
 //	    server.WithUnaryInterceptors(
 //	        interceptor.Recovery(),
 //	        interceptor.Logging(),
@@ -32,8 +33,8 @@
 //	)
 //
 // Options that accept shared dependencies (logger, auth function, excluded
-// methods, rate limit) automatically delegate to [interceptor.Configure],
-// keeping configuration in a single place.
+// methods, rate limit, trust proxy) automatically delegate to
+// [interceptor.Configure], keeping configuration in a single place.
 //
 // # Registering Services
 //
@@ -76,6 +77,7 @@
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
 //   - [WithRateLimit] — per-peer rate limiting (syncs to interceptors)
+//   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size
 //   - [WithMaxConcurrentStreams] — concurrent stream limit

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -72,6 +71,8 @@ func StreamLogging() grpc.StreamServerInterceptor {
 
 // buildLogArgs creates the common key-value pairs for both unary and stream
 // logging interceptors, including method, duration, gRPC status code, and peer address.
+// When [WithTrustProxy] is enabled, the logged peer reflects the true client IP
+// extracted from proxy headers (X-Forwarded-For, X-Real-IP).
 func buildLogArgs(ctx context.Context, method string, duration time.Duration, err error) []any {
 	st, _ := status.FromError(err)
 
@@ -81,8 +82,8 @@ func buildLogArgs(ctx context.Context, method string, duration time.Duration, er
 		"code", st.Code().String(),
 	}
 
-	if p, ok := peer.FromContext(ctx); ok {
-		args = append(args, "peer", p.Addr.String())
+	if key := peerKey(ctx); key != "unknown" {
+		args = append(args, "peer", key)
 	}
 
 	if id := RequestIDFromContext(ctx); id != "" {
@@ -95,3 +96,4 @@ func buildLogArgs(ctx context.Context, method string, duration time.Duration, er
 
 	return args
 }
+
