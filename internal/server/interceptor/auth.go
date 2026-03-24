@@ -87,6 +87,10 @@ func StreamAuth() grpc.StreamServerInterceptor {
 
 // authenticateContext extracts the bearer token from metadata and calls the
 // AuthFunc. Returns an enriched context or a gRPC Unauthenticated error.
+//
+// The real error from the AuthFunc is logged internally for debugging;
+// clients always receive a generic "authentication failed" message to
+// avoid leaking internal details (OWASP / CWE-209).
 func authenticateContext(ctx context.Context, fn AuthFunc) (context.Context, error) {
 	token, err := extractBearerToken(ctx)
 	if err != nil {
@@ -95,7 +99,10 @@ func authenticateContext(ctx context.Context, fn AuthFunc) (context.Context, err
 
 	ctx, err = fn(ctx, token)
 	if err != nil {
-		return ctx, status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
+		// Return a generic message to the client — never expose internal details
+		// (OWASP / CWE-209). The Logging interceptor already captures every
+		// failed RPC, so no additional logging is needed here.
+		return ctx, status.Error(codes.Unauthenticated, "authentication failed")
 	}
 
 	return ctx, nil
