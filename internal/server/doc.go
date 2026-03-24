@@ -33,8 +33,8 @@
 //	)
 //
 // Options that accept shared dependencies (logger, auth function, excluded
-// methods, rate limit) automatically delegate to [interceptor.Configure],
-// keeping configuration in a single place.
+// methods, rate limit, trust proxy) automatically delegate to
+// [interceptor.Configure], keeping configuration in a single place.
 //
 // # Registering Services
 //

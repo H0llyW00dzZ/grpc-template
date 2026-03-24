@@ -33,7 +33,8 @@
 // # Available Interceptors
 //
 //   - [Logging] / [StreamLogging] — logs method, duration, gRPC status code,
-//     peer address, request ID, and error for every RPC.
+//     peer address, request ID, and error for every RPC. When [WithTrustProxy]
+//     is enabled, the logged peer reflects the true client IP from proxy headers.
 //   - [Recovery] / [StreamRecovery] — recovers from panics and returns
 //     codes.Internal to the client.
 //   - [RequestID] / [StreamRequestID] — extracts or generates a unique
