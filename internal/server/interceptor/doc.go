@@ -21,7 +21,8 @@
 //	    interceptor.WithLogger(myLogger),
 //	    interceptor.WithAuthFunc(myAuthFunc),
 //	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
-//	    interceptor.WithRateLimit(100, 200),
+//	    interceptor.WithRateLimit(100, 200), // uses default in-memory rate limiter
+//	    // interceptor.WithRateLimiter(myRedisLimiter), // or inject a custom backend!
 //	    interceptor.WithTrustProxy(true), // only behind a trusted reverse proxy
 //	)
 //
@@ -43,8 +44,10 @@
 //     [AuthFunc] with support for method exclusion.
 //   - [Validation] — validates incoming requests implementing the
 //     [Validator] interface (compatible with protoc-gen-validate / buf validate).
-//   - [RateLimit] / [StreamRateLimit] — per-peer token-bucket rate limiting
-//     with automatic stale-limiter cleanup. Supports proxy-aware client IP
+//   - [RateLimit] / [StreamRateLimit] — configurable per-peer rate limiting
+//     powered by a [RateLimiter] interface (scalable to Redis or other databases). 
+//     The default [MemoryRateLimiter] executes a token-bucket algorithm with 
+//     automatic stale-limiter cleanup. Supports proxy-aware client IP
 //     extraction via [WithTrustProxy] (X-Forwarded-For, X-Real-IP).
 //
 // # Usage

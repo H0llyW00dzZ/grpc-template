@@ -93,6 +93,8 @@ func Configure(opts ...Option) {
 }
 
 // WithRateLimiter sets a custom rate limiter implementation.
+// When set, this overrides any limiter configured via [WithRateLimit],
+// since both options write to the same config field.
 //
 //	interceptor.Configure(
 //	    interceptor.WithRateLimiter(interceptor.NewMemoryRateLimiter(100, 200, 10*time.Minute)),
@@ -106,6 +108,8 @@ func WithRateLimiter(l RateLimiter) Option {
 // WithRateLimit is a convenience option that configures the default
 // in-memory rate limiter with a 10-minute TTL.
 // A rate of 0 or negative disables rate limiting.
+//
+// If [WithRateLimiter] is also used, whichever is applied last takes effect.
 //
 //	interceptor.Configure(
 //	    interceptor.WithRateLimit(100, 200), // 100 req/s, burst up to 200
