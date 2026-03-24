@@ -96,4 +96,3 @@ func buildLogArgs(ctx context.Context, method string, duration time.Duration, er
 
 	return args
 }
-

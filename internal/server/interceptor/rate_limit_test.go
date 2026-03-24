@@ -7,6 +7,7 @@ package interceptor_test
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -310,23 +311,17 @@ func TestPeerKey_XForwardedFor_And_XRealIP(t *testing.T) {
 }
 
 func TestStartCleanup_DefaultTTL(t *testing.T) {
-	// Reset the sync.Once so we can re-enter startCleanup.
-	interceptor.ResetCleanupOnce()
-
 	// Calling with TTL=0 triggers the default 10m fallback path.
-	interceptor.StartCleanup(0)
-
-	// The goroutine is now running. Stop it and reset for next tests.
-	interceptor.StopCleanup()
-	interceptor.ResetCleanupOnce()
+	m := interceptor.NewMemoryRateLimiter(100, 10, 0)
+	// The goroutine is now running. Stop it.
+	m.Stop()
 }
 
 func TestRunCleanupLoop(t *testing.T) {
 	// Directly test the cleanup loop with a very short interval.
-	interceptor.Configure(
-		interceptor.WithRateLimit(100, 10),
-		interceptor.WithRateLimitTTL(1*time.Millisecond),
-	)
+	m := interceptor.NewMemoryRateLimiter(100, 10, 1*time.Millisecond)
+	interceptor.Configure(interceptor.WithRateLimiter(m))
+	defer m.Stop() // ensure cleanup stops at end of test
 
 	// Create a limiter entry.
 	i := interceptor.RateLimit()
@@ -340,18 +335,76 @@ func TestRunCleanupLoop(t *testing.T) {
 	// Set lastSeen to the past so cleanup will remove it.
 	interceptor.SetLimiterLastSeen("10.88.88.88", time.Now().Add(-1*time.Hour))
 
-	// Run cleanup loop directly with a very short TTL (1ms) and stop it after one tick.
-	stop := make(chan struct{})
-	done := make(chan struct{})
-	go func() {
-		interceptor.RunCleanupLoop(1*time.Millisecond, stop)
-		close(done)
-	}()
-
 	// Give it time to tick at least once.
 	time.Sleep(10 * time.Millisecond)
-	close(stop)
 
-	// Wait for the loop to exit.
-	<-done
+	// Verify cleanup removed the stale entry
+	assert.Equal(t, 0, interceptor.LimiterCount())
+}
+
+type errorLimiter struct{}
+
+func (e *errorLimiter) Allow(ctx context.Context, key string) (bool, error) {
+	return false, errors.New("rate limiter internal error")
+}
+
+func TestRateLimit_InternalError(t *testing.T) {
+	interceptor.Configure(interceptor.WithRateLimiter(&errorLimiter{}))
+	defer interceptor.Configure(interceptor.WithRateLimiter(nil))
+
+	i := interceptor.RateLimit()
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
+	handler := func(ctx context.Context, req any) (any, error) { return "ok", nil }
+
+	ctx := peerContext("10.88.88.88:12345")
+	_, err := i(ctx, "req", info, handler)
+	require.Error(t, err)
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
+	assert.Equal(t, "rate limiter internal error", st.Message())
+}
+
+func TestStreamRateLimit_InternalError(t *testing.T) {
+	interceptor.Configure(interceptor.WithRateLimiter(&errorLimiter{}))
+	defer interceptor.Configure(interceptor.WithRateLimiter(nil))
+
+	i := interceptor.StreamRateLimit()
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/Method"}
+	handler := func(srv any, stream grpc.ServerStream) error { return nil }
+
+	ctx := peerContext("10.88.88.88:12345")
+	ss := &fakeServerStream{ctx: ctx}
+	err := i(nil, ss, info, handler)
+	require.Error(t, err)
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
+	assert.Equal(t, "rate limiter internal error", st.Message())
+}
+
+func TestRateLimit_NilLimiter(t *testing.T) {
+	interceptor.Configure(interceptor.WithRateLimiter(nil))
+
+	i := interceptor.RateLimit()
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
+	handler := func(ctx context.Context, req any) (any, error) { return "ok", nil }
+
+	resp, err := i(context.Background(), "req", info, handler)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp)
+}
+
+func TestStreamRateLimit_NilLimiter(t *testing.T) {
+	interceptor.Configure(interceptor.WithRateLimiter(nil))
+
+	i := interceptor.StreamRateLimit()
+	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/Method"}
+	handler := func(srv any, stream grpc.ServerStream) error { return nil }
+
+	ss := &fakeServerStream{ctx: context.Background()}
+	err := i(nil, ss, info, handler)
+	require.NoError(t, err)
 }
