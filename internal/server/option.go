@@ -165,3 +165,16 @@ func WithExcludedMethods(methods ...string) Option {
 		interceptor.Configure(interceptor.WithExcludedMethods(methods...))
 	}
 }
+
+// WithRateLimit sets the per-peer rate limit in requests per second and
+// the burst size (maximum number of requests allowed at once).
+// It delegates to [interceptor.Configure] with [interceptor.WithRateLimit].
+//
+//	srv := server.New(
+//	    server.WithRateLimit(100, 200), // 100 req/s, burst up to 200
+//	)
+func WithRateLimit(rps float64, burst int) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithRateLimit(rps, burst))
+	}
+}
