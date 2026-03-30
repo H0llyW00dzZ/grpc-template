@@ -19,13 +19,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type userKey struct{}
+
 func TestAuth_Valid(t *testing.T) {
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			if token != "valid-token" {
 				return ctx, fmt.Errorf("bad token")
 			}
-			return context.WithValue(ctx, "user", "alice"), nil
+			return context.WithValue(ctx, userKey{}, "alice"), nil
 		}),
 	)
 
@@ -33,7 +35,7 @@ func TestAuth_Valid(t *testing.T) {
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Secure"}
 
 	handler := func(ctx context.Context, req any) (any, error) {
-		assert.Equal(t, "alice", ctx.Value("user"))
+		assert.Equal(t, "alice", ctx.Value(userKey{}))
 		return "ok", nil
 	}
 
@@ -182,7 +184,7 @@ func TestStreamAuth_Valid(t *testing.T) {
 			if token != "stream-token" {
 				return ctx, fmt.Errorf("bad token")
 			}
-			return context.WithValue(ctx, "user", "bob"), nil
+			return context.WithValue(ctx, userKey{}, "bob"), nil
 		}),
 	)
 
@@ -190,7 +192,7 @@ func TestStreamAuth_Valid(t *testing.T) {
 	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/SecureStream"}
 
 	handler := func(srv any, stream grpc.ServerStream) error {
-		assert.Equal(t, "bob", stream.Context().Value("user"))
+		assert.Equal(t, "bob", stream.Context().Value(userKey{}))
 		return nil
 	}
 
