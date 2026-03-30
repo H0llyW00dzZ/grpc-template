@@ -63,7 +63,8 @@ DIR    ?= .
 SIGNED ?=
 init: header
 	@set -e; \
-	GIT_USER=$$(git config user.name 2>/dev/null); \
+	UNAME_S=$$(uname -s); \
+	GIT_USER=$$(git config user.name 2>/dev/null || true); \
 	if [ -z "$$GIT_USER" ]; then \
 		echo "ERROR: git config user.name is not set. Run: git config --global user.name 'yourname'"; \
 		exit 1; \
@@ -90,17 +91,24 @@ init: header
 		RESOLVED_MODULE="$(MODULE)"; \
 	fi; \
 	echo "==> Initialising project: $$RESOLVED_MODULE"; \
+	ORIG_PWD="$$(pwd)"; \
 	if [ "$(DIR)" != "." ]; then \
-		trap 'echo ""; echo "==> Interrupted — cleaning up $(DIR)..."; rm -rf "$(DIR)"; exit 1' INT TERM; \
+		trap 'RET=$$?; if [ $$RET -ne 0 ]; then echo ""; echo "==> Failed or interrupted — cleaning up $(DIR)..."; cd "$$ORIG_PWD" && rm -rf "$(DIR)"; fi; exit $$RET' EXIT INT TERM; \
 		echo "==> Copying template to $(DIR) (excluding .git)..."; \
 		mkdir -p "$(DIR)"; \
 		rsync -a --exclude='.git' . "$(DIR)/"; \
 		cd "$(DIR)"; \
 	fi; \
 	echo "==> Rewriting module path in source files..."; \
-	find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
-		-not -path './.git/*' \
-		-exec sed -i "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+	if [ "$$UNAME_S" = "Darwin" ]; then \
+		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
+			-not -path './.git/*' \
+			-exec sed -i '' "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+	else \
+		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
+			-not -path './.git/*' \
+			-exec sed -i "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+	fi; \
 	echo "==> Updating go.mod..."; \
 	go mod edit -module "$$RESOLVED_MODULE"; \
 	echo "==> Running go mod tidy..."; \
@@ -124,11 +132,16 @@ init: header
 		echo "==> Signed commit enabled (format: $${GPG_FORMAT:-gpg})"; \
 	fi; \
 	git commit $$COMMIT_FLAGS -m "chore: initialise project from grpc-template"; \
+	if [ "$(DIR)" != "." ]; then trap - EXIT INT TERM; fi; \
 	echo ""; \
 	echo "==> Done! Your project is ready at: $(DIR)"; \
 	echo "    Module : $$RESOLVED_MODULE"; \
 	echo "    Signed : $${COMMIT_FLAGS:+yes}$${COMMIT_FLAGS:-no}"; \
-	echo "    Next   : make deps && make proto && make run-server"
+	if [ "$(DIR)" = "." ]; then \
+		echo "    Next   : make deps && make proto && make run-server"; \
+	else \
+		echo "    Next   : cd $(DIR) && make deps && make proto && make run-server"; \
+	fi
 
 
 ## ──────────────────────────────────────────────
