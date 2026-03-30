@@ -54,8 +54,13 @@ all: header proto build
 #   6. Re-initialises git: removes .git, runs git init, and creates
 #      an initial commit so the developer starts with a clean history.
 #   7. Runs `go mod tidy` to sync the dependency graph.
+#
+# Signed commits:
+#   Set SIGNED=1 to GPG/SSH sign the initial commit (requires git signing to be configured).
+#   make init SIGNED=1 DIR=../my-grpc-project
 MODULE ?=
 DIR    ?= .
+SIGNED ?=
 init: header
 	@set -e; \
 	GIT_USER=$$(git config user.name 2>/dev/null); \
@@ -104,10 +109,25 @@ init: header
 	rm -rf .git; \
 	git init; \
 	git add -A; \
-	git commit -m "chore: initialise project from grpc-template"; \
+	COMMIT_FLAGS=""; \
+	if [ -n "$(SIGNED)" ]; then \
+		SIGN_KEY=$$(git config user.signingkey 2>/dev/null || true); \
+		GPG_FORMAT=$$(git config gpg.format 2>/dev/null || true); \
+		if [ -z "$$SIGN_KEY" ] && [ -z "$$GPG_FORMAT" ]; then \
+			echo "ERROR: SIGNED=1 requires a signing key. Configure one with:"; \
+			echo "  gpg  : git config --global user.signingkey <key-id>"; \
+			echo "  ssh  : git config --global user.signingkey ~/.ssh/id_ed25519.pub"; \
+			echo "         git config --global gpg.format ssh"; \
+			exit 1; \
+		fi; \
+		COMMIT_FLAGS="-S"; \
+		echo "==> Signed commit enabled (format: $${GPG_FORMAT:-gpg})"; \
+	fi; \
+	git commit $$COMMIT_FLAGS -m "chore: initialise project from grpc-template"; \
 	echo ""; \
 	echo "==> Done! Your project is ready at: $(DIR)"; \
 	echo "    Module : $$RESOLVED_MODULE"; \
+	echo "    Signed : $${COMMIT_FLAGS:+yes}$${COMMIT_FLAGS:-no}"; \
 	echo "    Next   : make deps && make proto && make run-server"
 
 

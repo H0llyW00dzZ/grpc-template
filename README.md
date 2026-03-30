@@ -271,8 +271,9 @@ srv.RegisterService(
 
 | Target | Description |
 |--------|-------------|
-| `make init DIR=../my-project` | Bootstrap a new project: auto-renames module from git username + dir, resets git history |
+| `make init DIR=../my-project` | Bootstrap a new project: auto-detects git host + username, resets git history |
 | `make init MODULE=github.com/org/proj` | Bootstrap with an explicit module path override |
+| `make init SIGNED=1 DIR=../my-project` | Bootstrap with a GPG/SSH signed initial commit |
 | `make proto` | Generate Go + TypeScript/JS + PHP + C++ code from proto files |
 | `make proto-path PROTO_PATH=proto/storage/v1` | Generate code for a specific proto package |
 | `make build` | Build server and client binaries |
