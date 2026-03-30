@@ -113,7 +113,8 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 
 ### Formatting and Comments
 - Run `gofmt -s` and goimports
-- **NO comments in code** unless explicitly asked by user (per agent instructions)
+- Add godoc comments for all exported types/functions and package docs (required; see `internal/server/interceptor/`)
+- Avoid unnecessary inline `//` comments inside function bodies
 - Keep functions < 50 lines when possible
 - Use early returns
 - Prefer explicit over implicit
