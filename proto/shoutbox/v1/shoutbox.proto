@@ -1,0 +1,93 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package shoutbox.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/shoutbox/v1;shoutboxv1";
+option php_namespace = "Shoutbox\\V1";
+option php_metadata_namespace = "GPBMetadata\\Shoutbox\\V1";
+
+// ShoutboxService implements a classic forum-style shoutbox using gRPC.
+//
+// This provides real-time messaging similar to WebSocket-based shoutboxes.
+// Users can post short messages that are instantly broadcast to all subscribers.
+service ShoutboxService {
+  // PostShout sends a new message to the shoutbox.
+  rpc PostShout(PostShoutRequest) returns (PostShoutResponse) {}
+
+  // WatchShouts subscribes to real-time shoutbox messages (server streaming).
+  // Messages are delivered instantly to all connected clients.
+  rpc WatchShouts(WatchShoutsRequest) returns (stream WatchShoutsResponse) {}
+
+  // DeleteShout removes a shout by ID (moderation / admin use).
+  rpc DeleteShout(DeleteShoutRequest) returns (DeleteShoutResponse) {}
+}
+
+// WatchShoutsResponse represents a single shoutbox entry delivered to subscribers.
+message WatchShoutsResponse {
+  // id is a unique identifier for this shout.
+  string id = 1;
+
+  // username is the display name of the person who shouted.
+  string username = 2;
+
+  // message is the actual shout content (keep it short, like classic shoutboxes).
+  string message = 3;
+
+  // created_at is when the shout was posted.
+  google.protobuf.Timestamp created_at = 4;
+
+  // metadata can be used for colors, badges, or extra context.
+  map<string, string> metadata = 5;
+}
+
+// PostShoutRequest is sent when posting a new shout.
+message PostShoutRequest {
+  // username is the display name of the poster.
+  string username = 1;
+
+  // message is the content of the shout.
+  string message = 2;
+
+  // metadata allows attaching extra info (e.g. color, avatar_url, etc).
+  map<string, string> metadata = 3;
+}
+
+// PostShoutResponse confirms the shout was accepted.
+message PostShoutResponse {
+  // id is the assigned unique identifier for the posted shout.
+  string id = 1;
+
+  // created_at is the server timestamp of the shout.
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// WatchShoutsRequest configures the shoutbox subscription.
+message WatchShoutsRequest {
+  // since_id is the last known shout ID. When provided, the server will
+  // replay any shouts posted after this ID, allowing clients to resume
+  // seamlessly after a disconnect without missing messages.
+  // Leave empty to receive only new shouts from this point forward.
+  string since_id = 1;
+}
+
+// DeleteShoutRequest targets a specific shout for removal.
+message DeleteShoutRequest {
+  // id is the unique identifier of the shout to delete.
+  string id = 1;
+}
+
+// DeleteShoutResponse confirms the shout was removed.
+message DeleteShoutResponse {
+  // id is the identifier of the deleted shout.
+  string id = 1;
+
+  // deleted confirms the operation was successful.
+  bool deleted = 2;
+}
