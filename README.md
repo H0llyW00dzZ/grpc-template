@@ -245,8 +245,8 @@ srv.RegisterService(
 | `make test` | Run all tests |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
-| `make clean` | Remove binaries and generated code (Go + TS + PHP) |
-| `make deps` | Install required tools |
+| `make clean` | Remove binaries and generated code (Go + TS + PHP); preserves `composer.lock` |
+| `make deps` | Install required tools (buf, protoc-gen, composer deps) |
 
 ## Limitations
 
