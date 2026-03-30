@@ -1,7 +1,10 @@
-.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover vet lint clean deps deps-cpp header
+.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover vet lint clean deps deps-cpp header init
 
 # Binary output directory.
 BIN_DIR := bin
+
+# Original module path in this template repository.
+TEMPLATE_MODULE := github.com/H0llyW00dzZ/grpc-template
 
 # Test packages (excludes test helpers and cmd mains, matching CI).
 TEST_PKGS := $(shell go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$$')
@@ -22,6 +25,82 @@ header:
 all: header proto build
 
 ## ──────────────────────────────────────────────
+## Project Initialisation
+## ──────────────────────────────────────────────
+
+# Initialise a new project from this template.
+#
+# MODULE is derived automatically from git config user.name + project dir name:
+#   github.com/<git-username>/<project-name>
+#
+# Usage (auto-derive from git config):
+#   make init DIR=../my-grpc-project
+#
+# Usage (explicit override):
+#   make init MODULE=github.com/yourorg/yourproject DIR=../my-grpc-project
+#   make init MODULE=github.com/yourorg/yourproject   # in-place
+#
+# What it does:
+#   1. Derives MODULE from `git config user.name` + basename of DIR (if MODULE not set).
+#   2. Copies the entire template to DIR (if given) or works in-place.
+#   3. Replaces every occurrence of the template module path with MODULE
+#      across all .go, .proto, and .yaml files (including buf.gen.yaml).
+#   4. Updates go.mod via `go mod edit -module`.
+#   5. Re-initialises git: removes .git, runs git init, and creates
+#      an initial commit so the developer starts with a clean history.
+#   6. Runs `go mod tidy` to sync the dependency graph.
+MODULE ?=
+DIR    ?= .
+init: header
+	@set -e; \
+	GIT_USER=$$(git config user.name 2>/dev/null); \
+	if [ -z "$$GIT_USER" ]; then \
+		echo "ERROR: git config user.name is not set. Run: git config --global user.name 'yourname'"; \
+		exit 1; \
+	fi; \
+	GIT_USER=$$(echo "$$GIT_USER" | tr ' ' '-'); \
+	if [ "$(DIR)" = "." ]; then \
+		PROJECT=$$(basename "$$(pwd)"); \
+	else \
+		PROJECT=$$(basename "$(DIR)"); \
+		if [ -d "$(DIR)" ] && [ "$$(ls -A '$(DIR)' 2>/dev/null)" ]; then \
+			echo "ERROR: $(DIR) already exists and is not empty. Choose a different path."; \
+			exit 1; \
+		fi; \
+	fi; \
+	if [ -z "$(MODULE)" ]; then \
+		RESOLVED_MODULE="github.com/$$GIT_USER/$$PROJECT"; \
+	else \
+		RESOLVED_MODULE="$(MODULE)"; \
+	fi; \
+	echo "==> Initialising project: $$RESOLVED_MODULE"; \
+	if [ "$(DIR)" != "." ]; then \
+		trap 'echo ""; echo "==> Interrupted — cleaning up $(DIR)..."; rm -rf "$(DIR)"; exit 1' INT TERM; \
+		echo "==> Copying template to $(DIR) (excluding .git)..."; \
+		mkdir -p "$(DIR)"; \
+		rsync -a --exclude='.git' . "$(DIR)/"; \
+		cd "$(DIR)"; \
+	fi; \
+	echo "==> Rewriting module path in source files..."; \
+	find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
+		-not -path './.git/*' \
+		-exec sed -i "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+	echo "==> Updating go.mod..."; \
+	go mod edit -module "$$RESOLVED_MODULE"; \
+	echo "==> Running go mod tidy..."; \
+	go mod tidy; \
+	echo "==> Re-initialising git..."; \
+	rm -rf .git; \
+	git init; \
+	git add -A; \
+	git commit -m "chore: initialise project from grpc-template"; \
+	echo ""; \
+	echo "==> Done! Your project is ready at: $(DIR)"; \
+	echo "    Module : $$RESOLVED_MODULE"; \
+	echo "    Next   : make deps && make proto && make run-server"
+
+
+## ──────────────────────────────────────────────
 ## Proto Generation
 ## ──────────────────────────────────────────────
 
@@ -34,6 +113,10 @@ proto: header
 # Generate code for a specific proto path.
 # Usage: make proto-path PROTO_PATH=proto/storage/v1
 proto-path: header
+	@if [ -z "$(PROTO_PATH)" ]; then \
+		echo "ERROR: PROTO_PATH is required. Usage: make proto-path PROTO_PATH=proto/storage/v1"; \
+		exit 1; \
+	fi
 	@echo "==> Generating proto for $(PROTO_PATH)..."
 	buf generate --path $(PROTO_PATH)
 	@echo "==> Done."
@@ -50,6 +133,7 @@ lint-proto: header
 
 # Build server and client binaries.
 build: header
+	@mkdir -p $(BIN_DIR)
 	@echo "==> Building server..."
 	go build -o $(BIN_DIR)/server ./cmd/server
 	@echo "==> Building client..."
