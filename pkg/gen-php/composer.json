@@ -6,7 +6,7 @@
     "require": {
         "php": ">=8.1",
         "grpc/grpc": "^1.57",
-        "google/protobuf": "^3.25"
+        "google/protobuf": "^3.25 || ^4.0"
     },
     "autoload": {
         "psr-4": {
