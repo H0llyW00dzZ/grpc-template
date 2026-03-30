@@ -1,0 +1,152 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package s3.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/s3/v1;s3v1";
+option php_namespace = "S3\\V1";
+option php_metadata_namespace = "GPBMetadata\\S3\\V1";
+
+// S3Service provides full management for S3-compatible object storage.
+//
+// Works with any S3-compatible server (AWS S3, MinIO, Ceph, etc.).
+service S3Service {
+  // Bucket operations
+  rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
+  rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
+  rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
+
+  // Object operations
+  rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+  rpc Download(DownloadRequest) returns (stream DownloadResponse) {}
+  rpc GetObjectInfo(GetObjectInfoRequest) returns (GetObjectInfoResponse) {}
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+
+  // Presigned URLs for direct client access
+  rpc GeneratePresignedURL(GeneratePresignedURLRequest) returns (GeneratePresignedURLResponse) {}
+}
+
+// Object metadata
+message ObjectInfo {
+  string bucket = 1;
+  string key = 2;
+  int64 size_bytes = 3;
+  string content_type = 4;
+  string checksum = 5;
+  google.protobuf.Timestamp created_at = 6;
+  map<string, string> metadata = 7;
+}
+
+// Bucket metadata
+message Bucket {
+  string name = 1;
+  google.protobuf.Timestamp created_at = 2;
+  string region = 3;
+}
+
+// Upload
+message UploadRequest {
+  oneof content {
+    UploadMetadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message UploadMetadata {
+  string bucket = 1;
+  string key = 2;
+  string content_type = 3;
+  map<string, string> metadata = 4;
+}
+
+message UploadResponse {
+  string bucket = 1;
+  string key = 2;
+  int64 size_bytes = 3;
+  string checksum = 4;
+}
+
+// Download
+message DownloadRequest {
+  string bucket = 1;
+  string key = 2;
+}
+
+message DownloadResponse {
+  bytes chunk = 1;
+}
+
+// Object info
+message GetObjectInfoRequest {
+  string bucket = 1;
+  string key = 2;
+}
+
+message GetObjectInfoResponse {
+  ObjectInfo info = 1;
+}
+
+message DeleteObjectRequest {
+  string bucket = 1;
+  string key = 2;
+}
+
+message DeleteObjectResponse {}
+
+// List objects
+message ListObjectsRequest {
+  string bucket = 1;
+  string prefix = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListObjectsResponse {
+  repeated ObjectInfo objects = 1;
+  string next_page_token = 2;
+}
+
+// Bucket management
+message CreateBucketRequest {
+  string bucket = 1;
+  string region = 2;
+}
+
+message CreateBucketResponse {}
+
+message ListBucketsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListBucketsResponse {
+  repeated Bucket buckets = 1;
+  string next_page_token = 2;
+}
+
+message DeleteBucketRequest {
+  string bucket = 1;
+}
+
+message DeleteBucketResponse {}
+
+// Presigned URL
+message GeneratePresignedURLRequest {
+  string bucket = 1;
+  string key = 2;
+  string method = 3; // GET, PUT, DELETE
+  google.protobuf.Duration expires_in = 4;
+}
+
+message GeneratePresignedURLResponse {
+  string url = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
