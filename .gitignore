@@ -14,7 +14,7 @@ go.work
 go.work.sum
 
 # Output of go coverage
-*.out
+coverage.*
 
 # Generated code (recreated by buf generate)
 # Ignore everything under pkg/gen/ except helloworld (ships with the template).
