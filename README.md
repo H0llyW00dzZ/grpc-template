@@ -127,11 +127,29 @@ git clone https://github.com/H0llyW00dzZ/grpc-template.git my-grpc-project
 cd my-grpc-project
 ```
 
-Then update the Go module path to match your own project:
+Then run `make init` to wire up the module path, reset git history, and get a clean starting point:
 
 ```bash
-go mod edit -module github.com/yourorg/yourproject
+# Auto-derives <git-host>/<your-git-username>/my-grpc-project
+# Host is detected from `git remote get-url origin` — works with GitHub, GitLab, Gitea, Bitbucket, etc.
+make init DIR=.
+
+# Or point it at a new directory — the template is copied there first
+make init DIR=../my-grpc-project
+
+# Override the full module path explicitly (bypasses all auto-detection)
+make init MODULE=github.com/yourorg/yourproject
+make init MODULE=gitlab.com/yourorg/yourproject
+make init MODULE=gitea.example.com/yourorg/yourproject
 ```
+
+`make init` will:
+1. Detect the git host from `git remote get-url origin` (HTTPS or SSH) — falls back to `github.com` if no remote is set
+2. Read `git config user.name` and the project directory name to build the Go module path
+3. Rewrite the module path across all `.go`, `.proto`, and `.yaml` files
+4. Update `go.mod` and run `go mod tidy`
+5. Wipe the template git history and create a fresh initial commit
+
 
 ## Prerequisites
 
@@ -253,6 +271,8 @@ srv.RegisterService(
 
 | Target | Description |
 |--------|-------------|
+| `make init DIR=../my-project` | Bootstrap a new project: auto-renames module from git username + dir, resets git history |
+| `make init MODULE=github.com/org/proj` | Bootstrap with an explicit module path override |
 | `make proto` | Generate Go + TypeScript/JS + PHP + C++ code from proto files |
 | `make proto-path PROTO_PATH=proto/storage/v1` | Generate code for a specific proto package |
 | `make build` | Build server and client binaries |
