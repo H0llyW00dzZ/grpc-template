@@ -97,6 +97,7 @@ grpc-template/
 │   ├── kv/v1/                  # Key-value store with watch
 │   ├── media/v1/               # Media processing pipelines
 │   ├── messaging/v1/           # Real-time messaging / pub-sub
+│   ├── shoutbox/v1/            # Classic forum shoutbox (real-time)
 │   ├── notification/v1/        # Push notifications & events
 │   ├── queue/v1/               # Message queue with DLQ
 │   ├── ratelimit/v1/           # Rate limiting & quota enforcement
@@ -174,6 +175,7 @@ This template ships with ready-to-use proto definitions so you never have to wri
 | [`crud/v1`](proto/crud/v1/crud.proto) | CrudService | Create, Get, List (pagination), Update (field mask), Delete |
 | [`auth/v1`](proto/auth/v1/auth.proto) | AuthService | Multi-credential login (`oneof`: password, API key, OAuth), refresh, validate, logout |
 | [`messaging/v1`](proto/messaging/v1/messaging.proto) | MessagingService | Send, subscribe (server stream), full-duplex streaming, channels, metadata |
+| [`shoutbox/v1`](proto/shoutbox/v1/shoutbox.proto) | ShoutboxService | Classic forum shoutbox with moderation (PostShout, WatchShouts, DeleteShout, ClearShoutbox) |
 | [`storage/v1`](proto/storage/v1/storage.proto) | StorageService | Chunked upload (client stream), download (server stream), object info, list |
 | [`task/v1`](proto/task/v1/task.proto) | TaskService | Submit, status, watch (server stream for progress), cancel, list with filters |
 | [`notification/v1`](proto/notification/v1/notification.proto) | NotificationService | Send to recipients/topics, subscribe (server stream), acknowledge, list |
