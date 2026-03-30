@@ -15,7 +15,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 ## Features
 
 - **Proto-first** — [Buf](https://buf.build/) for proto linting and code generation
-- **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript and PHP client code
+- **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript, PHP, and C++ client code
 - **Functional Options** — clean, extensible server configuration
 - **TLS / mTLS** — secure connections with a single option
 - **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend
@@ -98,6 +98,7 @@ grpc-template/
 ├── pkg/gen/                    # Generated Go code (do not edit)
 ├── pkg/gen-ts/                 # Generated TypeScript/JS code (do not edit)
 ├── pkg/gen-php/                # Generated PHP code (do not edit)
+├── pkg/gen-cpp/                # Generated C/C++ protobuf (client only)
 ├── buf.yaml                    # Buf module config
 ├── buf.gen.yaml                # Buf generation config
 ├── Makefile                    # Build automation
@@ -237,7 +238,7 @@ srv.RegisterService(
 
 | Target | Description |
 |--------|-------------|
-| `make proto` | Generate Go + TypeScript/JS + PHP code from proto files |
+| `make proto` | Generate Go + TypeScript/JS + PHP + C++ code from proto files |
 | `make proto-path PROTO_PATH=proto/storage/v1` | Generate code for a specific proto package |
 | `make build` | Build server and client binaries |
 | `make run-server` | Run the gRPC server |
@@ -246,8 +247,9 @@ srv.RegisterService(
 | `make test-cover` | Run tests with coverage (atomic + race, generates coverage.txt) |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
-| `make clean` | Remove binaries and generated code (Go + TS + PHP) |
+| `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |
 | `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint) |
+| `make deps-cpp` | Install system packages for C++ protobuf/gRPC code generation |
 
 ## Limitations
 

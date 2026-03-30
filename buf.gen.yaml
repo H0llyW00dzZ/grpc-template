@@ -30,5 +30,12 @@ plugins:
   - remote: buf.build/grpc/php
     out: pkg/gen-php
 
+  # C/C++ client-only (server is Go; ::Stub is used, ::Service is generated but unused by design)
+  - remote: buf.build/protocolbuffers/cpp
+    out: pkg/gen-cpp
+
+  - remote: buf.build/grpc/cpp
+    out: pkg/gen-cpp
+
 inputs:
   - directory: proto

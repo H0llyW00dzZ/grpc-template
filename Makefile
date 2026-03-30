@@ -1,4 +1,4 @@
-.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover vet lint clean deps header
+.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover vet lint clean deps deps-cpp header
 
 # Binary output directory.
 BIN_DIR := bin
@@ -109,6 +109,7 @@ clean: header
 	rm -rf pkg/gen
 	rm -rf pkg/gen-ts
 	rm -rf pkg/gen-php
+	rm -rf pkg/gen-cpp
 
 ## ──────────────────────────────────────────────
 ## Dependencies
@@ -120,3 +121,15 @@ deps: header
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Install C++ protobuf and gRPC code-generation tools (system packages).
+# These are needed to compile or locally invoke grpc_cpp_plugin.
+# Usage: sudo make deps-cpp
+deps-cpp: header
+	@echo "==> Installing C++ protobuf and gRPC tools..."
+	sudo apt-get install -y \
+		protobuf-compiler \
+		protobuf-compiler-grpc \
+		libprotobuf-dev \
+		libgrpc++-dev
+	@echo "==> Done."
