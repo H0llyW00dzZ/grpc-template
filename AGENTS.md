@@ -7,7 +7,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 ## 1. Build, Lint, Test Commands
 
 ### Dependencies
-- `make deps` - Installs buf, protoc-gen-go, protoc-gen-go-grpc
+- `make deps` - Installs buf, protoc-gen-go, protoc-gen-go-grpc, golangci-lint
 - `go mod tidy` - Update dependencies
 
 ### Proto Generation
@@ -29,7 +29,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 - `make lint` - golangci-lint run ./cmd/... ./internal/...
 - `make vet` - go vet ./cmd/... ./internal/...
 - `make test` - Runs tests with -race (excludes testutil, cmd/client/server)
-- Test coverage: `make test-cover` (generates coverage.out)
+- Test coverage: `make test-cover` (generates coverage.txt with atomic mode + race)
 - Full: `go test ./... -race -count=1`
 
 ### Running a Single Test (Important)
@@ -37,7 +37,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 - `go test -run '^TestSpecificName$' ./internal/server/interceptor -count=1 -v`
 - With race: `go test -run TestName ./path -race`
 - Specific package only: `go test ./internal/logging -run TestXXX`
-- Coverage for one: `go test -run TestFoo ./pkg -coverprofile=coverage.out`
+- Coverage for one: `go test -run TestFoo ./pkg -coverprofile=coverage.txt`
 
 ### CI Commands
 - See .github/workflows/test.yaml: go vet, go test with race and coverage

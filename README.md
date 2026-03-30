@@ -242,11 +242,12 @@ srv.RegisterService(
 | `make build` | Build server and client binaries |
 | `make run-server` | Run the gRPC server |
 | `make run-client` | Run the client demo |
-| `make test` | Run all tests |
+| `make test` | Run all tests with race detector |
+| `make test-cover` | Run tests with coverage (atomic + race, generates coverage.txt) |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
-| `make clean` | Remove binaries and generated code (Go + TS + PHP); preserves `composer.lock` |
-| `make deps` | Install required tools (buf, protoc-gen, composer deps) |
+| `make clean` | Remove binaries and generated code (Go + TS + PHP) |
+| `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint) |
 
 ## Limitations
 
