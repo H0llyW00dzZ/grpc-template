@@ -5,6 +5,17 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/H0llyW00dzZ/grpc-template)](https://goreportcard.com/report/github.com/H0llyW00dzZ/grpc-template)
 [![codecov](https://codecov.io/gh/H0llyW00dzZ/grpc-template/branch/master/graph/badge.svg?token=ZAS8WCR300)](https://codecov.io/gh/H0llyW00dzZ/grpc-template)
 
+```text
+       ______ ______  _____   _____                        _         _        
+       | ___ \| ___ \/  __ \ |_   _|                      | |       | |       
+  __ _ | |_/ /| |_/ /| /  \/   | |  ___  _ __ ___   _ __  | |  __ _ | |_  ___ 
+ / _` ||    / |  __/ | |       | | / _ \| '_ ` _ \ | '_ \ | | / _` || __|/ _ \
+| (_| || |\ \ | |    | \__/\   | ||  __/| | | | | || |_) || || (_| || |_|  __/
+ \__, |\_| \_|\_|     \____/   \_/ \___||_| |_| |_|| .__/ |_| \__,_| \__|\___|
+  __/ |                                            | |                        
+ |___/   by H0llyW00dzZ (@github.com/H0llyW00dzZ)  |_|                        
+```
+
 A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC projects. Designed as a template repository for any Git code hosting (e.g., GitHub).
 
 > **Actively maintained** — I built this template from my own experience with high-performance and critical systems that rely on gRPC. Proto definitions are added as I encounter real-world patterns worth templating. Use this repo as a template to bootstrap your next project without writing boilerplate from scratch.
@@ -158,30 +169,29 @@ This template ships with ready-to-use proto definitions so you never have to wri
 
 | Proto | Package | What It Covers |
 |-------|---------|----------------|
-| `helloworld/v1` | GreeterService | Unary + server-streaming RPCs |
-| `echo/v1` | EchoService | All 4 RPC patterns (unary, server stream, client stream, bidirectional) |
-| `crud/v1` | CrudService | Create, Get, List (pagination), Update (field mask), Delete |
-| `auth/v1` | AuthService | Multi-credential login (`oneof`: password, API key, OAuth), refresh, validate, logout |
-| `messaging/v1` | MessagingService | Send, subscribe (server stream), full-duplex streaming, channels, metadata |
-| `storage/v1` | StorageService | Chunked upload (client stream), download (server stream), object info, list |
-| `task/v1` | TaskService | Submit, status, watch (server stream for progress), cancel, list with filters |
-| `notification/v1` | NotificationService | Send to recipients/topics, subscribe (server stream), acknowledge, list |
-| `kv/v1` | KvService | Get, set (TTL), delete, batch ops, watch (server stream), optimistic locking |
-| `discovery/v1` | DiscoveryService | Register, deregister, lookup, heartbeat, watch topology changes |
-| `ratelimit/v1` | RateLimitService | Check (allow/deny/throttle), report usage, get quota, manage rules |
-| `config/v1` | ConfigService | Get/set/delete config, watch changes, feature flag evaluation |
-| `audit/v1` | AuditService | Log events (single/batch), query with filters, stream real-time audit trail |
-| `scheduler/v1` | SchedulerService | Create/update/delete schedules, pause/resume, cron expressions, execution history |
-| `search/v1` | SearchService | Index, search (facets/filters/sort), suggest (autocomplete), batch index |
-| `workflow/v1` | WorkflowService | Start, signal, query, cancel, list, watch state transitions |
-| `geo/v1` | GeoService | Nearby search, geocode, reverse geocode, geofencing, route, location tracking |
-| `media/v1` | MediaService | Transcode, resize, job status, watch progress (server stream), cancel |
-| `secret/v1` | SecretService | Get/put/delete secrets, version history, rotation, watch rotation events |
-| `s3/v1` | S3Service | Bucket CRUD, object ops, presigned URLs for any S3-compatible server |
-| `storage/v1` | StorageService | Generic object storage (chunked upload/download, any backend) |
-| `identity/v1` | IdentityService | User CRUD, assign/revoke roles, check permissions (RBAC) |
-| `analytics/v1` | AnalyticsService | Track events (single + client stream batch), aggregation queries, reports |
-| `queue/v1` | QueueService | Publish, consume (server stream), ack/nack, DLQ, visibility timeout |
+| [`helloworld/v1`](proto/helloworld/v1/helloworld.proto) | GreeterService | Unary + server-streaming RPCs |
+| [`echo/v1`](proto/echo/v1/echo.proto) | EchoService | All 4 RPC patterns (unary, server stream, client stream, bidirectional) |
+| [`crud/v1`](proto/crud/v1/crud.proto) | CrudService | Create, Get, List (pagination), Update (field mask), Delete |
+| [`auth/v1`](proto/auth/v1/auth.proto) | AuthService | Multi-credential login (`oneof`: password, API key, OAuth), refresh, validate, logout |
+| [`messaging/v1`](proto/messaging/v1/messaging.proto) | MessagingService | Send, subscribe (server stream), full-duplex streaming, channels, metadata |
+| [`storage/v1`](proto/storage/v1/storage.proto) | StorageService | Chunked upload (client stream), download (server stream), object info, list |
+| [`task/v1`](proto/task/v1/task.proto) | TaskService | Submit, status, watch (server stream for progress), cancel, list with filters |
+| [`notification/v1`](proto/notification/v1/notification.proto) | NotificationService | Send to recipients/topics, subscribe (server stream), acknowledge, list |
+| [`kv/v1`](proto/kv/v1/kv.proto) | KvService | Get, set (TTL), delete, batch ops, watch (server stream), optimistic locking |
+| [`discovery/v1`](proto/discovery/v1/discovery.proto) | DiscoveryService | Register, deregister, lookup, heartbeat, watch topology changes |
+| [`ratelimit/v1`](proto/ratelimit/v1/ratelimit.proto) | RateLimitService | Check (allow/deny/throttle), report usage, get quota, manage rules |
+| [`config/v1`](proto/config/v1/config.proto) | ConfigService | Get/set/delete config, watch changes, feature flag evaluation |
+| [`audit/v1`](proto/audit/v1/audit.proto) | AuditService | Log events (single/batch), query with filters, stream real-time audit trail |
+| [`scheduler/v1`](proto/scheduler/v1/scheduler.proto) | SchedulerService | Create/update/delete schedules, pause/resume, cron expressions, execution history |
+| [`search/v1`](proto/search/v1/search.proto) | SearchService | Index, search (facets/filters/sort), suggest (autocomplete), batch index |
+| [`workflow/v1`](proto/workflow/v1/workflow.proto) | WorkflowService | Start, signal, query, cancel, list, watch state transitions |
+| [`geo/v1`](proto/geo/v1/geo.proto) | GeoService | Nearby search, geocode, reverse geocode, geofencing, route, location tracking |
+| [`media/v1`](proto/media/v1/media.proto) | MediaService | Transcode, resize, job status, watch progress (server stream), cancel |
+| [`secret/v1`](proto/secret/v1/secret.proto) | SecretService | Get/put/delete secrets, version history, rotation, watch rotation events |
+| [`s3/v1`](proto/s3/v1/s3.proto) | S3Service | Bucket CRUD, object ops, presigned URLs for any S3-compatible server |
+| [`identity/v1`](proto/identity/v1/identity.proto) | IdentityService | User CRUD, assign/revoke roles, check permissions (RBAC) |
+| [`analytics/v1`](proto/analytics/v1/analytics.proto) | AnalyticsService | Track events (single + client stream batch), aggregation queries, reports |
+| [`queue/v1`](proto/queue/v1/queue.proto) | QueueService | Publish, consume (server stream), ack/nack, DLQ, visibility timeout |
 
 Pick what you need, delete what you don't. Each proto is self-contained under `proto/<service>/v1/`.
 
