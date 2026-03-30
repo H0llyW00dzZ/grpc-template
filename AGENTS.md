@@ -50,8 +50,24 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 
 ## 2. Code Style Guidelines
 
-### Copyright Header (Required in EVERY .go file)
+### Copyright Header (Required in EVERY .go and .proto file)
+The owner name in the copyright MUST be determined from the repository, not assumed:
+- Run `git config user.name` — if the result is `H0llyW00dzZ`, use `H0llyW00dzZ`.
+- Or check `git remote get-url origin` — if the URL contains `H0llyW00dzZ`, use `H0llyW00dzZ`.
+- Never hardcode a different name without first verifying the git owner.
+
+For this repository the owner is **H0llyW00dzZ** (`git config user.name` → `H0llyW00dzZ`, remote → `https://github.com/H0llyW00dzZ/grpc-template.git`), so every `.go` file must start with:
+
 ```go
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+```
+
+And every `.proto` file must also start with the identical header (same `//` comment style):
+
+```proto
 // Copyright (c) 2026 H0llyW00dzZ All rights reserved.
 //
 // By accessing or using this software, you agree to be bound by the terms
