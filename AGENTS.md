@@ -36,6 +36,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 ### Running a Single Test (Important)
 - `go test -run TestSayHello ./internal/service/greeter -v`
 - `go test -run '^TestSpecificName$' ./internal/server/interceptor -count=1 -v`
+- `go test -run TestClient ./internal/client -count=1 -v`
 - With race: `go test -run TestName ./path -race`
 - Specific package only: `go test ./internal/logging -run TestXXX`
 - Coverage for one: `go test -run TestFoo ./pkg -coverprofile=coverage.txt`
@@ -137,12 +138,13 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Prefer explicit over implicit
 
 ### Server and Interceptors
-- Use functional options: server.WithXXX()
-- Register services via RegisterService(registrar func(*grpc.Server))
-- Interceptors in internal/server/interceptor/
-- Always chain interceptors properly: Recovery(), Logging(), etc.
-- See server.go:42 for New(), option.go for options
-- For new interceptors: implement both unary and stream versions
+- Use functional options: `server.WithXXX()` and `client.WithXXX()`
+- Register services via `RegisterService(registrar func(*grpc.Server))`
+- Server interceptors in `internal/server/interceptor/`
+- Client interceptors in `internal/client/interceptor/`
+- Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
+- See `internal/server/server.go:42` for New(), `option.go` for options
+- For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/

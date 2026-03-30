@@ -10,12 +10,12 @@ import (
 	"context"
 	"io"
 	"log"
-	"log/slog"
 	"time"
 
-	pb "github.com/H0llyW00dzZ/grpc-template/pkg/gen/helloworld/v1"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/H0llyW00dzZ/grpc-template/internal/client"
+	clientinterceptor "github.com/H0llyW00dzZ/grpc-template/internal/client/interceptor"
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
+	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 )
 
 const (
@@ -24,35 +24,44 @@ const (
 )
 
 func main() {
-	// Create a gRPC client connection.
-	conn, err := grpc.NewClient(
-		defaultAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Fatalf("failed to connect: %v", err)
-	}
-	defer conn.Close()
+	// Initialize logger.
+	l := logging.Default()
 
-	client := pb.NewGreeterServiceClient(conn)
+	// Create and configure the gRPC client.
+	c := client.New(defaultAddr,
+		client.WithInsecure(),
+		client.WithLogger(l),
+		client.WithDefaultTimeout(5*time.Second),
+		client.WithRetry(3, time.Second),
+		client.WithUnaryInterceptors(
+			clientinterceptor.Logging(),
+			clientinterceptor.Timeout(),
+			clientinterceptor.Retry(),
+		),
+		client.WithStreamInterceptors(
+			clientinterceptor.StreamLogging(),
+		),
+	)
+
+	// Connect to the server.
+	ctx := context.Background()
+	if err := c.Connect(ctx); err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	// Create the greeter caller using the client's connection and logger.
+	caller := greeter.NewCaller(c.Conn(), c.Logger())
 
 	// --- Unary RPC ---
-	slog.Info("calling SayHello (unary)...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	reply, err := client.SayHello(ctx, &pb.SayHelloRequest{Name: defaultName})
+	reply, err := caller.SayHello(ctx, defaultName)
 	if err != nil {
 		log.Fatalf("SayHello failed: %v", err)
 	}
-	slog.Info("SayHello response", "message", reply.GetMessage())
+	l.Info("SayHello response", "message", reply.GetMessage())
 
 	// --- Server Streaming RPC ---
-	slog.Info("calling SayHelloServerStream (server streaming)...")
-	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel2()
-
-	stream, err := client.SayHelloServerStream(ctx2, &pb.SayHelloServerStreamRequest{Name: defaultName})
+	stream, err := caller.SayHelloServerStream(ctx, defaultName)
 	if err != nil {
 		log.Fatalf("SayHelloServerStream failed: %v", err)
 	}
@@ -65,8 +74,8 @@ func main() {
 		if err != nil {
 			log.Fatalf("stream recv failed: %v", err)
 		}
-		slog.Info("stream response", "message", reply.GetMessage())
+		l.Info("stream response", "message", reply.GetMessage())
 	}
 
-	slog.Info("client demo completed")
+	l.Info("client demo completed")
 }

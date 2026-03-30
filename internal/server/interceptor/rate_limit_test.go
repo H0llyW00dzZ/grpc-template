@@ -335,11 +335,11 @@ func TestRunCleanupLoop(t *testing.T) {
 	// Set lastSeen to the past so cleanup will remove it.
 	interceptor.SetLimiterLastSeen("10.88.88.88", time.Now().Add(-1*time.Hour))
 
-	// Give it time to tick at least once.
-	time.Sleep(10 * time.Millisecond)
-
-	// Verify cleanup removed the stale entry
-	assert.Equal(t, 0, interceptor.LimiterCount())
+	// Wait for the cleanup loop to tick and remove the stale entry.
+	// Use Eventually to tolerate Windows' ~15ms timer resolution.
+	assert.Eventually(t, func() bool {
+		return interceptor.LimiterCount() == 0
+	}, 500*time.Millisecond, 5*time.Millisecond, "cleanup loop should remove stale entry")
 }
 
 type errorLimiter struct{}

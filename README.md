@@ -27,10 +27,10 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 
 - **Proto-first** — [Buf](https://buf.build/) for proto linting and code generation
 - **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript, PHP, and C++ client code
-- **Functional Options** — clean, extensible server configuration
-- **TLS / mTLS** — secure connections with a single option
+- **Functional Options** — clean, extensible configuration for both server and client
+- **TLS / mTLS** — secure connections with a single option (server + client)
 - **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend
-- **Built-in Interceptors** — modular interceptor package with logging, panic recovery, request ID correlation, auth/token validation, request validation, and generic **per-peer rate limiting** (default in-memory token bucket, easily scalable to Redis via `RateLimiter` interface) for both unary and streaming RPCs — with proxy-aware client IP extraction for logging and rate limiting behind reverse proxies
+- **Built-in Interceptors** — server (recovery, logging, auth, validation, rate limiting) and client (logging, timeout, retry, auth) interceptor packages for both unary and streaming RPCs — with proxy-aware client IP extraction
 
 > [!TIP]
 > **New to gRPC?** Interceptors run *before* a request reaches your service handler — think of them as middleware that operates on the raw RPC layer using Go's native `context.Context`. This makes them more robust than most HTTP frameworks that rely on their own custom context types. Auth, logging, and recovery all happen transparently before your business logic is ever invoked.
@@ -73,13 +73,18 @@ grpc-template/
 │   └── client/main.go          # Client demo
 ├── internal/
 │   ├── logging/                # Pluggable logger (logging.Handler interface, slog default)
+│   ├── client/                 # High-level gRPC client with lifecycle management and interceptors
+│   │   ├── client.go           # Client connection, health watching, and lifecycle
+│   │   ├── option.go           # Functional options (TLS, timeout, retry, interceptors)
+│   │   └── interceptor/        # Client-side interceptors (logging, timeout, retry, auth)
 │   ├── server/                 # gRPC server lifecycle
 │   │   ├── server.go           # Server with graceful shutdown
 │   │   ├── option.go           # Functional options (TLS, mTLS)
 │   │   └── interceptor/        # Modular interceptors (logging, recovery, auth, request ID, validation, rate limiting)
 │   ├── service/
 │   │   └── greeter/            # Example service implementation
-│   │       ├── greeter.go      # Greeter service
+│   │       ├── greeter.go      # Greeter service (server-side handler)
+│   │       ├── caller.go       # Greeter caller (client-side typed wrapper)
 │   │       └── greeter_test.go # Greeter service tests
 │   └── testutil/
 │       └── grpctest.go         # Shared bufconn test helpers
@@ -225,6 +230,19 @@ make test
 
 Shared test helpers live in `internal/testutil/`. See `internal/service/greeter/greeter_test.go` for a working example of unary and server-streaming RPC tests.
 
+## Using the Client
+
+The `internal/client` package provides a high-level client with functional options, automatic interceptor configuration, health watching, and graceful lifecycle management.
+
+See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key options include:
+
+- `client.WithInsecure()` / `client.WithTLS()` / `client.WithMutualTLS()`
+- `client.WithLogger()`, `client.WithDefaultTimeout()`, `client.WithRetry()`
+- `client.WithUnaryInterceptors()` and `client.WithStreamInterceptors()`
+- `client.WithHealthWatch()` for background health monitoring
+
+The client automatically configures shared interceptors via `clientinterceptor.Configure()` when options are used.
+
 ## Adding a New Service
 
 1. **Define a proto** — Create a new `.proto` file under `proto/yourservice/v1/`
@@ -244,6 +262,8 @@ srv.RegisterService(
 ```
 
 ## Customization
+
+### Server
 
 | What | Where | How |
 |------|-------|-----|
@@ -266,6 +286,19 @@ srv.RegisterService(
 | Health status | runtime | `srv.Health().SetServingStatus(svc, status)` — toggle per-service health at runtime |
 | Proto output path | `buf.gen.yaml` | Change `out` field |
 | Go module path | `go.mod` | `go mod edit -module your/module` |
+
+### Client
+
+| What | Where | How |
+|------|-------|-----|
+| Target address | `cmd/client/main.go` | `client.New("localhost:50051", ...)` |
+| TLS / mTLS | `cmd/client/main.go` | `client.WithTLS(...)`, `client.WithMutualTLS(...)` |
+| Custom logger | `cmd/client/main.go` | `client.WithLogger(l)` — auto-syncs to `clientinterceptor.Configure()` |
+| Timeouts & Retry | `cmd/client/main.go` | `client.WithDefaultTimeout()`, `client.WithRetry(3, time.Second)` |
+| Unary interceptors | `cmd/client/main.go` | `client.WithUnaryInterceptors(clientinterceptor.Logging(), clientinterceptor.Timeout(), ...)` |
+| Stream interceptors | `cmd/client/main.go` | `client.WithStreamInterceptors(clientinterceptor.StreamLogging(), ...)` |
+| Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` |
+
 
 ## Make Targets
 

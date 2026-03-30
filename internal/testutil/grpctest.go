@@ -33,3 +33,19 @@ func DialBufNet(ctx context.Context, lis *bufconn.Listener) (*grpc.ClientConn, e
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 }
+
+// BufDialer returns a context dialer function for the given bufconn listener.
+// Use this with [grpc.WithContextDialer] or [client.WithDialOptions] when
+// creating test clients.
+//
+//	c := client.New("passthrough:///bufconn",
+//	    client.WithDialOptions(
+//	        grpc.WithContextDialer(testutil.BufDialer(lis)),
+//	        grpc.WithTransportCredentials(insecure.NewCredentials()),
+//	    ),
+//	)
+func BufDialer(lis *bufconn.Listener) func(context.Context, string) (net.Conn, error) {
+	return func(ctx context.Context, _ string) (net.Conn, error) {
+		return lis.DialContext(ctx)
+	}
+}
