@@ -8,10 +8,11 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 
 ### Dependencies
 - `make deps` - Installs buf, protoc-gen-go, protoc-gen-go-grpc, golangci-lint
+- `make deps-cpp` - Installs system packages for C++ protobuf/gRPC generation
 - `go mod tidy` - Update dependencies
 
 ### Proto Generation
-- `make proto` or `buf generate` - Generate all Go/TS/PHP code from protos
+- `make proto` or `buf generate` - Generate all Go/TS/PHP/C++ code from protos
 - `make proto-path PROTO_PATH=proto/xxx/v1` - Generate for specific proto
 - `make lint-proto` or `buf lint` - Lint proto files
 - Config: buf.yaml, buf.gen.yaml
@@ -44,7 +45,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 - Use `go test $(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$') -race`
 
 ### Cleanup
-- `make clean` - Removes binaries and generated pkg/gen*
+- `make clean` - Removes binaries and generated files (pkg/gen*, pkg/gen-ts, pkg/gen-php, pkg/gen-cpp)
 
 **IMPORTANT**: After any code changes, ALWAYS run `make lint`, `make vet`, `make test` (or equivalent single test). If no Makefile command, ask user to add to this file.
 
