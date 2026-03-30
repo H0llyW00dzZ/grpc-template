@@ -75,14 +75,8 @@ grpc-template/
 │   ├── logging/                # Pluggable logger (logging.Handler interface, slog default)
 │   ├── client/                 # High-level gRPC client with lifecycle management and interceptors
 │   │   ├── client.go           # Client connection, health watching, and lifecycle
-│   │   ├── doc.go              # Package documentation
 │   │   ├── option.go           # Functional options (TLS, timeout, retry, interceptors)
 │   │   └── interceptor/        # Client-side interceptors (logging, timeout, retry, auth)
-│   │       ├── auth.go         # Bearer token injection via configurable TokenSource
-│   │       ├── config.go       # Centralized interceptor configuration
-│   │       ├── logging.go      # Unary and streaming RPC logging
-│   │       ├── retry.go        # Exponential backoff with jitter for transient failures
-│   │       └── timeout.go      # Default deadline injection
 │   ├── server/                 # gRPC server lifecycle
 │   │   ├── server.go           # Server with graceful shutdown
 │   │   ├── option.go           # Functional options (TLS, mTLS)
