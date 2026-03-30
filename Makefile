@@ -30,25 +30,30 @@ all: header proto build
 
 # Initialise a new project from this template.
 #
-# MODULE is derived automatically from git config user.name + project dir name:
-#   github.com/<git-username>/<project-name>
+# MODULE is derived automatically from the git remote host + git config user.name + project dir name:
+#   <git-host>/<git-username>/<project-name>
 #
-# Usage (auto-derive from git config):
+# The git host is detected from `git remote get-url origin` — works with
+# GitHub, GitLab, Gitea, Bitbucket, or any self-hosted git server.
+# Falls back to github.com if no remote is configured.
+#
+# Usage (auto-derive from git remote + git config):
 #   make init DIR=../my-grpc-project
 #
-# Usage (explicit override):
+# Usage (explicit override — bypasses all auto-detection):
 #   make init MODULE=github.com/yourorg/yourproject DIR=../my-grpc-project
-#   make init MODULE=github.com/yourorg/yourproject   # in-place
+#   make init MODULE=gitlab.com/yourorg/yourproject   # in-place
 #
 # What it does:
-#   1. Derives MODULE from `git config user.name` + basename of DIR (if MODULE not set).
-#   2. Copies the entire template to DIR (if given) or works in-place.
-#   3. Replaces every occurrence of the template module path with MODULE
+#   1. Detects git host from origin remote URL (HTTPS or SSH format).
+#   2. Derives MODULE from <host>/<git-username>/<project-name> (if MODULE not set).
+#   3. Copies the entire template to DIR (if given) or works in-place.
+#   4. Replaces every occurrence of the template module path with MODULE
 #      across all .go, .proto, and .yaml files (including buf.gen.yaml).
-#   4. Updates go.mod via `go mod edit -module`.
-#   5. Re-initialises git: removes .git, runs git init, and creates
+#   5. Updates go.mod via `go mod edit -module`.
+#   6. Re-initialises git: removes .git, runs git init, and creates
 #      an initial commit so the developer starts with a clean history.
-#   6. Runs `go mod tidy` to sync the dependency graph.
+#   7. Runs `go mod tidy` to sync the dependency graph.
 MODULE ?=
 DIR    ?= .
 init: header
@@ -59,6 +64,12 @@ init: header
 		exit 1; \
 	fi; \
 	GIT_USER=$$(echo "$$GIT_USER" | tr ' ' '-'); \
+	REMOTE_URL=$$(git remote get-url origin 2>/dev/null || true); \
+	if [ -n "$$REMOTE_URL" ]; then \
+		GIT_HOST=$$(echo "$$REMOTE_URL" | sed -E 's|https?://([^/:]+)/.*|\1|; s|git@([^:]+):.*|\1|'); \
+	else \
+		GIT_HOST="github.com"; \
+	fi; \
 	if [ "$(DIR)" = "." ]; then \
 		PROJECT=$$(basename "$$(pwd)"); \
 	else \
@@ -69,7 +80,7 @@ init: header
 		fi; \
 	fi; \
 	if [ -z "$(MODULE)" ]; then \
-		RESOLVED_MODULE="github.com/$$GIT_USER/$$PROJECT"; \
+		RESOLVED_MODULE="$$GIT_HOST/$$GIT_USER/$$PROJECT"; \
 	else \
 		RESOLVED_MODULE="$(MODULE)"; \
 	fi; \
