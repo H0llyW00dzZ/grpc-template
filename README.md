@@ -92,7 +92,8 @@ grpc-template/
 │   ├── scheduler/v1/           # Cron / scheduled job management
 │   ├── search/v1/              # Full-text search & indexing
 │   ├── secret/v1/              # Vault / secret management
-│   ├── storage/v1/             # Streaming file upload/download
+│   ├── s3/v1/                  # Full S3-compatible storage (buckets, presigned URLs)
+│   ├── storage/v1/             # Generic object storage (any backend)
 │   ├── task/v1/                # Async job queue with progress
 │   └── workflow/v1/            # State machine / orchestration
 ├── pkg/gen/                    # Generated Go code (do not edit)
@@ -176,6 +177,8 @@ This template ships with ready-to-use proto definitions so you never have to wri
 | `geo/v1` | GeoService | Nearby search, geocode, reverse geocode, geofencing, route, location tracking |
 | `media/v1` | MediaService | Transcode, resize, job status, watch progress (server stream), cancel |
 | `secret/v1` | SecretService | Get/put/delete secrets, version history, rotation, watch rotation events |
+| `s3/v1` | S3Service | Bucket CRUD, object ops, presigned URLs for any S3-compatible server |
+| `storage/v1` | StorageService | Generic object storage (chunked upload/download, any backend) |
 | `identity/v1` | IdentityService | User CRUD, assign/revoke roles, check permissions (RBAC) |
 | `analytics/v1` | AnalyticsService | Track events (single + client stream batch), aggregation queries, reports |
 | `queue/v1` | QueueService | Publish, consume (server stream), ack/nack, DLQ, visibility timeout |

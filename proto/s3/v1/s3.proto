@@ -1,0 +1,278 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package s3.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/s3/v1;s3v1";
+option php_namespace = "S3\\V1";
+option php_metadata_namespace = "GPBMetadata\\S3\\V1";
+
+// HttpMethod defines the HTTP verb used when generating a presigned URL.
+enum HttpMethod {
+  // HTTP_METHOD_UNSPECIFIED is the default zero value and should not be used.
+  HTTP_METHOD_UNSPECIFIED = 0;
+
+  // HTTP_METHOD_GET is used to generate a presigned download URL.
+  HTTP_METHOD_GET = 1;
+
+  // HTTP_METHOD_PUT is used to generate a presigned upload URL.
+  HTTP_METHOD_PUT = 2;
+
+  // HTTP_METHOD_DELETE is used to generate a presigned delete URL.
+  HTTP_METHOD_DELETE = 3;
+}
+
+// S3Service provides full management for S3-compatible object storage.
+//
+// Works with any S3-compatible backend (AWS S3, MinIO, Ceph, etc.) and supports
+// bucket lifecycle management, chunked streaming for large objects, paginated
+// listing, and presigned URLs for direct client access without proxying data.
+service S3Service {
+  // CreateBucket creates a new storage bucket in the specified region.
+  rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
+
+  // ListBuckets returns a paginated list of all accessible buckets.
+  rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
+
+  // DeleteBucket removes an existing bucket. The bucket must be empty.
+  rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
+
+  // Upload streams file chunks from the client to S3-compatible storage.
+  // The first message must contain the metadata; subsequent messages carry data chunks.
+  // Returns metadata about the stored object on completion.
+  rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+
+  // Download streams file chunks from S3-compatible storage to the client.
+  rpc Download(DownloadRequest) returns (stream DownloadResponse) {}
+
+  // GetObjectInfo retrieves metadata about a stored object without downloading it.
+  rpc GetObjectInfo(GetObjectInfoRequest) returns (GetObjectInfoResponse) {}
+
+  // DeleteObject removes a stored object from the bucket.
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
+
+  // ListObjects lists objects in a bucket with optional prefix filtering and pagination.
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+
+  // GeneratePresignedURL creates a time-limited signed URL for direct client access.
+  // Use this to allow clients to upload or download objects without routing data through the server.
+  rpc GeneratePresignedURL(GeneratePresignedURLRequest) returns (GeneratePresignedURLResponse) {}
+}
+
+// ObjectInfo contains metadata about a stored S3 object.
+message ObjectInfo {
+  // bucket is the name of the bucket containing the object.
+  string bucket = 1;
+
+  // key is the unique object identifier (path/key) within the bucket.
+  string key = 2;
+
+  // size_bytes is the total size of the object in bytes.
+  int64 size_bytes = 3;
+
+  // content_type is the MIME type of the object.
+  string content_type = 4;
+
+  // checksum is the integrity hash (e.g., SHA-256 or ETag) of the object.
+  string checksum = 5;
+
+  // created_at is when the object was stored.
+  google.protobuf.Timestamp created_at = 6;
+
+  // metadata contains optional key-value pairs (user-defined tags).
+  map<string, string> metadata = 7;
+}
+
+// Bucket contains metadata about an S3 bucket.
+message Bucket {
+  // name is the globally unique bucket name.
+  string name = 1;
+
+  // created_at is when the bucket was created.
+  google.protobuf.Timestamp created_at = 2;
+
+  // region is the storage region where the bucket resides.
+  string region = 3;
+}
+
+// UploadRequest streams file data from the client to the server.
+// The first message must contain the metadata; subsequent messages carry data chunks.
+message UploadRequest {
+  oneof content {
+    // metadata is sent in the first message to describe the upload target.
+    UploadMetadata metadata = 1;
+
+    // chunk is a binary fragment of the file body.
+    bytes chunk = 2;
+  }
+}
+
+// UploadMetadata describes the object being uploaded.
+message UploadMetadata {
+  // bucket is the destination bucket name.
+  string bucket = 1;
+
+  // key is the destination object key/path within the bucket.
+  string key = 2;
+
+  // content_type is the MIME type of the file.
+  string content_type = 3;
+
+  // metadata contains optional key-value pairs (user-defined tags).
+  map<string, string> metadata = 4;
+}
+
+// UploadResponse is returned after a successful upload.
+message UploadResponse {
+  // bucket is the name of the bucket where the object was stored.
+  string bucket = 1;
+
+  // key is the stored object key/path.
+  string key = 2;
+
+  // size_bytes is the total size of the uploaded object.
+  int64 size_bytes = 3;
+
+  // checksum is the integrity hash of the stored object.
+  string checksum = 4;
+}
+
+// DownloadRequest identifies the object to download.
+message DownloadRequest {
+  // bucket is the name of the bucket containing the object.
+  string bucket = 1;
+
+  // key is the object key/path to download.
+  string key = 2;
+}
+
+// DownloadResponse streams file data to the client.
+message DownloadResponse {
+  // chunk is a binary fragment of the file data.
+  bytes chunk = 1;
+}
+
+// GetObjectInfoRequest identifies the object to query.
+message GetObjectInfoRequest {
+  // bucket is the name of the bucket containing the object.
+  string bucket = 1;
+
+  // key is the object key/path.
+  string key = 2;
+}
+
+// GetObjectInfoResponse contains metadata about the requested object.
+message GetObjectInfoResponse {
+  // info is the object metadata.
+  ObjectInfo info = 1;
+}
+
+// DeleteObjectRequest identifies the object to delete.
+message DeleteObjectRequest {
+  // bucket is the name of the bucket containing the object.
+  string bucket = 1;
+
+  // key is the object key/path to delete.
+  string key = 2;
+}
+
+// DeleteObjectResponse is the response after deleting an object.
+// Reserved for future fields.
+message DeleteObjectResponse {}
+
+// ListObjectsRequest lists objects in a bucket with optional prefix filtering and pagination.
+message ListObjectsRequest {
+  // bucket is the name of the bucket to list objects from.
+  string bucket = 1;
+
+  // prefix filters objects by key prefix (optional).
+  string prefix = 2;
+
+  // page_size is the maximum number of objects to return.
+  int32 page_size = 3;
+
+  // page_token is the pagination cursor from a previous call.
+  string page_token = 4;
+}
+
+// ListObjectsResponse contains a page of objects from the bucket.
+message ListObjectsResponse {
+  // objects is the list of object metadata for this page.
+  repeated ObjectInfo objects = 1;
+
+  // next_page_token is the cursor for the next page (empty if no more results).
+  string next_page_token = 2;
+}
+
+// CreateBucketRequest specifies the parameters for the new bucket.
+message CreateBucketRequest {
+  // bucket is the globally unique name for the new bucket.
+  string bucket = 1;
+
+  // region is the storage region where the bucket should be created.
+  string region = 2;
+}
+
+// CreateBucketResponse is the response after creating a bucket.
+// Reserved for future fields.
+message CreateBucketResponse {}
+
+// ListBucketsRequest specifies pagination parameters for listing buckets.
+message ListBucketsRequest {
+  // page_size is the maximum number of buckets to return.
+  int32 page_size = 1;
+
+  // page_token is the pagination cursor from a previous call.
+  string page_token = 2;
+}
+
+// ListBucketsResponse contains a page of accessible buckets.
+message ListBucketsResponse {
+  // buckets is the list of bucket metadata for this page.
+  repeated Bucket buckets = 1;
+
+  // next_page_token is the cursor for the next page (empty if no more results).
+  string next_page_token = 2;
+}
+
+// DeleteBucketRequest identifies the bucket to delete.
+// The bucket must be empty before deletion.
+message DeleteBucketRequest {
+  // bucket is the name of the bucket to delete.
+  string bucket = 1;
+}
+
+// DeleteBucketResponse is the response after deleting a bucket.
+// Reserved for future fields.
+message DeleteBucketResponse {}
+
+// GeneratePresignedURLRequest specifies parameters for the presigned URL.
+message GeneratePresignedURLRequest {
+  // bucket is the name of the bucket containing the object.
+  string bucket = 1;
+
+  // key is the object key/path the presigned URL will target.
+  string key = 2;
+
+  // method is the HTTP verb the presigned URL will authorize.
+  HttpMethod method = 3;
+
+  // expires_in is the duration after which the presigned URL becomes invalid.
+  google.protobuf.Duration expires_in = 4;
+}
+
+// GeneratePresignedURLResponse contains the generated presigned URL and its expiry.
+message GeneratePresignedURLResponse {
+  // url is the time-limited signed URL for direct client access.
+  string url = 1;
+
+  // expires_at is the absolute timestamp when the URL becomes invalid.
+  google.protobuf.Timestamp expires_at = 2;
+}
