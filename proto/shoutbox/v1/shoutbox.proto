@@ -17,16 +17,27 @@ option php_metadata_namespace = "GPBMetadata\\Shoutbox\\V1";
 //
 // This provides real-time messaging similar to WebSocket-based shoutboxes.
 // Users can post short messages that are instantly broadcast to all subscribers.
+//
+// Authentication is enforced via gRPC metadata (Authorization: Bearer <token>).
+// The auth interceptor validates the token before any handler runs.
+// Admin-only RPCs (DeleteShout, ClearShoutbox) require elevated privileges
+// enforced at the interceptor layer — not inside the proto messages themselves.
 service ShoutboxService {
   // PostShout sends a new message to the shoutbox.
+  // Requires a valid auth token in metadata.
   rpc PostShout(PostShoutRequest) returns (PostShoutResponse) {}
 
   // WatchShouts subscribes to real-time shoutbox messages (server streaming).
   // Messages are delivered instantly to all connected clients.
   rpc WatchShouts(WatchShoutsRequest) returns (stream WatchShoutsResponse) {}
 
-  // DeleteShout removes a shout by ID (moderation / admin use).
+  // DeleteShout removes a shout by ID.
+  // Requires moderator or admin role (enforced by auth interceptor).
   rpc DeleteShout(DeleteShoutRequest) returns (DeleteShoutResponse) {}
+
+  // ClearShoutbox wipes the entire message history.
+  // Requires admin role (enforced by auth interceptor).
+  rpc ClearShoutbox(ClearShoutboxRequest) returns (ClearShoutboxResponse) {}
 }
 
 // WatchShoutsResponse represents a single shoutbox entry delivered to subscribers.
@@ -57,6 +68,11 @@ message PostShoutRequest {
 
   // metadata allows attaching extra info (e.g. color, avatar_url, etc).
   map<string, string> metadata = 3;
+
+  // actor is the authenticated subject (e.g. user ID or email) extracted
+  // from the auth token by the server. Clients should leave this empty;
+  // the server populates it after token validation.
+  string actor = 4;
 }
 
 // PostShoutResponse confirms the shout was accepted.
@@ -81,6 +97,10 @@ message WatchShoutsRequest {
 message DeleteShoutRequest {
   // id is the unique identifier of the shout to delete.
   string id = 1;
+
+  // actor is the authenticated subject performing the deletion.
+  // Populated server-side from the auth token for audit purposes.
+  string actor = 2;
 }
 
 // DeleteShoutResponse confirms the shout was removed.
@@ -90,4 +110,18 @@ message DeleteShoutResponse {
 
   // deleted confirms the operation was successful.
   bool deleted = 2;
+}
+
+// ClearShoutboxRequest wipes all shoutbox messages.
+// This is an irreversible admin operation.
+message ClearShoutboxRequest {
+  // actor is the authenticated subject performing the clear.
+  // Populated server-side from the auth token for audit purposes.
+  string actor = 1;
+}
+
+// ClearShoutboxResponse reports the result of a clear operation.
+message ClearShoutboxResponse {
+  // cleared is the total number of messages that were removed.
+  int64 cleared = 1;
 }
