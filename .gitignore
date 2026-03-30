@@ -27,6 +27,8 @@ pkg/gen-php/*
 !pkg/gen-php/composer.json
 pkg/gen-php/vendor/
 !pkg/gen-php/composer.lock
+pkg/gen-cpp/*
+!pkg/gen-cpp/helloworld/
 
 # Node
 node_modules/

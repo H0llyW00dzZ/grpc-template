@@ -98,6 +98,7 @@ grpc-template/
 ├── pkg/gen/                    # Generated Go code (do not edit)
 ├── pkg/gen-ts/                 # Generated TypeScript/JS code (do not edit)
 ├── pkg/gen-php/                # Generated PHP code (do not edit)
+├── pkg/gen-cpp/                # Generated C/C++ protobuf (client only)
 ├── buf.yaml                    # Buf module config
 ├── buf.gen.yaml                # Buf generation config
 ├── Makefile                    # Build automation
@@ -246,7 +247,7 @@ srv.RegisterService(
 | `make test-cover` | Run tests with coverage (atomic + race, generates coverage.txt) |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
-| `make clean` | Remove binaries and generated code (Go + TS + PHP) |
+| `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |
 | `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint) |
 
 ## Limitations
