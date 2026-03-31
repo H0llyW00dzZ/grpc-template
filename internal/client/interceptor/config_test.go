@@ -14,6 +14,7 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -252,4 +253,45 @@ func TestAuth_NoTokenInContext(t *testing.T) {
 	err := i(context.Background(), "/test/Method", nil, nil, nil, invoker)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no token in context")
+}
+
+func TestOAuth2TokenSource(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		interceptor.ResetConfig()
+		t.Cleanup(interceptor.ResetConfig)
+
+		ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "oauth-test-token"})
+		interceptor.Configure(interceptor.WithTokenSource(interceptor.OAuth2TokenSource(ts)))
+
+		i := interceptor.Auth()
+
+		var captured string
+		invoker := func(ctx context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
+			md, _ := metadata.FromOutgoingContext(ctx)
+			if vals := md.Get("authorization"); len(vals) > 0 {
+				captured = vals[0]
+			}
+			return nil
+		}
+
+		err := i(context.Background(), "/test/Method", nil, nil, nil, invoker)
+		require.NoError(t, err)
+		assert.Equal(t, "Bearer oauth-test-token", captured)
+	})
+
+	t.Run("nil_source", func(t *testing.T) {
+		src := interceptor.OAuth2TokenSource(nil)
+		_, err := src(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "token source is nil")
+	})
+
+	t.Run("token_error", func(t *testing.T) {
+		ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: ""})
+		src := interceptor.OAuth2TokenSource(ts)
+		_, err := src(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "empty access token")
+	})
+
 }

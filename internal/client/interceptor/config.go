@@ -7,9 +7,11 @@ package interceptor
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 )
 
@@ -28,6 +30,26 @@ type TokenSource func(ctx context.Context) (context.Context, error)
 func StaticToken(token string) TokenSource {
 	return func(ctx context.Context) (context.Context, error) {
 		return context.WithValue(ctx, tokenKey{}, token), nil
+	}
+}
+
+// OAuth2TokenSource adapts [oauth2.TokenSource] to this package's
+// TokenSource. The oauth2 package handles token caching and automatic refresh.
+func OAuth2TokenSource(ts oauth2.TokenSource) TokenSource {
+	return func(ctx context.Context) (context.Context, error) {
+		if ts == nil {
+			return ctx, fmt.Errorf("oauth2: token source is nil")
+		}
+
+		tok, err := ts.Token()
+		if err != nil {
+			return ctx, fmt.Errorf("oauth2: failed to get token: %w", err)
+		}
+		if tok == nil || tok.AccessToken == "" {
+			return ctx, fmt.Errorf("oauth2: empty access token")
+		}
+
+		return context.WithValue(ctx, tokenKey{}, tok.AccessToken), nil
 	}
 }
 
@@ -105,8 +127,12 @@ func WithRetryCodes(codes ...codes.Code) Option {
 // to inject bearer tokens into outgoing metadata. The function may also
 // enrich the context with claims or other metadata.
 //
+// Use [StaticToken] for static tokens or [OAuth2TokenSource] for
+// [oauth2.TokenSource] (recommended for production).
+//
 //	interceptor.Configure(
 //	    interceptor.WithTokenSource(interceptor.StaticToken("my-token")),
+//	    // interceptor.WithTokenSource(interceptor.OAuth2TokenSource(oauth2TokenSrc)),
 //	)
 func WithTokenSource(fn TokenSource) Option {
 	return func(c *config) {

@@ -240,6 +240,7 @@ See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key op
 - `client.WithLogger()`, `client.WithDefaultTimeout()`, `client.WithRetry()`
 - `client.WithUnaryInterceptors()` and `client.WithStreamInterceptors()`
 - `client.WithHealthWatch()` for background health monitoring
+- `client.WithTokenSource()` for auth (supports `StaticToken` and `OAuth2TokenSource`)
 
 The client automatically configures shared interceptors via `clientinterceptor.Configure()` when options are used.
 
@@ -298,6 +299,7 @@ srv.RegisterService(
 | Unary interceptors | `cmd/client/main.go` | `client.WithUnaryInterceptors(clientinterceptor.Logging(), clientinterceptor.Timeout(), ...)` |
 | Stream interceptors | `cmd/client/main.go` | `client.WithStreamInterceptors(clientinterceptor.StreamLogging(), ...)` |
 | Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` |
+| Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
 
 
 ## Make Targets
