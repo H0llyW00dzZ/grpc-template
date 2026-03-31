@@ -5,11 +5,17 @@
 
 # LoadBalancer Service — exposes the gRPC server to external traffic.
 #
-# This creates an L4 (TCP) load balancer, which is what gRPC requires.
-# On cloud providers (GKE, EKS, AKS) this provisions an external IP
-# automatically. On bare-metal clusters, use MetalLB or similar.
+# This creates an L4 (TCP) load balancer, which is what gRPC requires for
+# proper HTTP/2 passthrough, bidirectional streaming, and trailers.
+# On cloud providers (GKE, EKS, AKS) this provisions an external IP automatically.
+# On bare-metal clusters, use MetalLB or similar.
 #
-# To enable: uncomment service-lb.yaml in kustomization.yaml
+# To enable: uncomment this file in kustomization.yaml
+#
+# Best practices added in this 2026 update:
+# - appProtocol: grpc
+# - externalTrafficPolicy: Local
+# - sessionAffinity: None
 #
 # Note: When using a LoadBalancer, ensure your NetworkPolicy allows
 # ingress from external sources (not just in-cluster pods).
@@ -25,7 +31,7 @@ metadata:
     # GKE — use an internal load balancer:
     # networking.gke.io/load-balancer-type: "Internal"
     #
-    # AWS/EKS — use NLB (Network Load Balancer) for TCP:
+    # AWS/EKS — use NLB (Network Load Balancer) for TCP/gRPC:
     # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     #
     # Azure/AKS — use an internal load balancer:
@@ -38,4 +44,7 @@ spec:
     port: 50051
     targetPort: 50051
     protocol: TCP
+    appProtocol: grpc            # Tells K8s, Gateway API, and service meshes this is gRPC
   type: LoadBalancer
+  externalTrafficPolicy: Local   # Recommended for long-lived gRPC connections
+  sessionAffinity: None          # gRPC clients usually handle their own load balancing
