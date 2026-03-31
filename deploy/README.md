@@ -36,7 +36,8 @@ kubectl apply -k .
 |----------|-------------|
 | `namespace.yaml` | Dedicated namespace (named after your project) |
 | `deployment.yaml` | Multi-replica Deployment with resource limits and security context |
-| `service.yaml` | ClusterIP Service on port 50051 |
+| `service.yaml` | ClusterIP Service on port 50051 (internal) |
+| `service-lb.yaml` | LoadBalancer Service for external access (opt-in, see below) |
 | `hpa.yaml` | HorizontalPodAutoscaler (CPU + memory metrics) |
 | `networkpolicy.yaml` | Ingress/egress control with DNS-only egress |
 | `pdb.yaml` | PodDisruptionBudget (`minAvailable: 2`) |
@@ -49,6 +50,18 @@ kubectl apply -k .
 - **Hardened security** — non-root user, read-only root filesystem, all capabilities dropped
 - **Auto-scaling** — HPA scales from 3 to 10 replicas based on CPU/memory utilization
 
+### External Access (LoadBalancer)
+
+By default, the gRPC server is only accessible within the cluster (`ClusterIP`). To expose it externally, uncomment `service-lb.yaml` in `kustomization.yaml`:
+
+```yaml
+resources:
+  # ...
+  - service-lb.yaml  # ← uncomment this line
+```
+
+This provisions an **L4 (TCP) LoadBalancer** — required for gRPC since it uses HTTP/2. The manifest includes commented annotations for cloud providers (GKE, EKS, AKS) including internal LB options.
+
 ### Customization
 
 Adjust the following for your environment:
@@ -56,4 +69,3 @@ Adjust the following for your environment:
 - **Image**: `kustomize edit set image grpc-template=your-registry/image:tag`
 - **TLS**: Add TLS Secrets and mount them as volumes in the Deployment
 - **ConfigMaps**: Add environment-specific configuration via ConfigMaps or Secrets
-- **Ingress**: Add a gRPC-compatible Ingress (e.g., NGINX with `grpc` backend protocol, or an L4 LoadBalancer Service)
