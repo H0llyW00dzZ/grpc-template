@@ -50,10 +50,12 @@ all: header proto build
 #   3. Copies the entire template to DIR (if given) or works in-place.
 #   4. Replaces every occurrence of the template module path with MODULE
 #      across all .go, .proto, and .yaml files (including buf.gen.yaml).
-#   5. Updates go.mod via `go mod edit -module`.
-#   6. Re-initialises git: removes .git, runs git init, and creates
+#   5. Rewrites the template project name (grpc-template) with the actual
+#      project name across Kubernetes manifests, deploy docs, and Dockerfile.
+#   6. Updates go.mod via `go mod edit -module`.
+#   7. Re-initialises git: removes .git, runs git init, and creates
 #      an initial commit so the developer starts with a clean history.
-#   7. Runs `go mod tidy` to sync the dependency graph.
+#   8. Runs `go mod tidy` to sync the dependency graph.
 #
 # Signed commits:
 #   Set SIGNED=1 to GPG/SSH sign the initial commit (requires git signing to be configured).
@@ -100,14 +102,21 @@ init: header
 		cd "$(DIR)"; \
 	fi; \
 	echo "==> Rewriting module path in source files..."; \
+	TEMPLATE_PROJECT="grpc-template"; \
 	if [ "$$UNAME_S" = "Darwin" ]; then \
 		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
 			-not -path './.git/*' \
 			-exec sed -i '' "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' \) \
+			-not -path './.git/*' \
+			-exec sed -i '' "s|$$TEMPLATE_PROJECT|$$PROJECT|g" {} +; \
 	else \
 		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
 			-not -path './.git/*' \
 			-exec sed -i "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
+		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' \) \
+			-not -path './.git/*' \
+			-exec sed -i "s|$$TEMPLATE_PROJECT|$$PROJECT|g" {} +; \
 	fi; \
 	echo "==> Updating go.mod..."; \
 	go mod edit -module "$$RESOLVED_MODULE"; \
