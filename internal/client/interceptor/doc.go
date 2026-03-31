@@ -18,7 +18,7 @@
 //	    interceptor.WithLogger(myLogger),
 //	    interceptor.WithDefaultTimeout(5 * time.Second),
 //	    interceptor.WithRetry(3, time.Second),
-//	    interceptor.WithTokenSource(myTokenSource),
+//	    interceptor.WithTokenSource(interceptor.StaticToken("my-token")),
 //	)
 //
 // When using the [github.com/H0llyW00dzZ/grpc-template/internal/client] package,
