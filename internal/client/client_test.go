@@ -98,8 +98,7 @@ func newBufClient(lis *bufconn.Listener, opts ...client.Option) *client.Client {
 }
 
 func TestConnectAndClose(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -115,8 +114,7 @@ func TestConnectAndClose(t *testing.T) {
 }
 
 func TestStateAfterConnect(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -131,8 +129,7 @@ func TestStateAfterConnect(t *testing.T) {
 }
 
 func TestWaitReady(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -169,8 +166,7 @@ func TestWaitReady_ContextExpired(t *testing.T) {
 }
 
 func TestConnectWithHealthWatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -186,8 +182,7 @@ func TestConnectWithHealthWatch(t *testing.T) {
 }
 
 func TestCloseWithHealthWatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -245,8 +240,7 @@ func TestConnectWithInsecure(t *testing.T) {
 }
 
 func TestConnectWithInterceptors(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -321,8 +315,7 @@ func TestHealthWatch_NoHealthService(t *testing.T) {
 }
 
 func TestHealthWatch_ImmediateClose(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -358,8 +351,7 @@ func TestHealthWatch_WatchRPCError(t *testing.T) {
 	// To cover the stream.Recv() error path where ctx.Err() == nil,
 	// we close the raw *grpc.ClientConn (bypassing Client.Close) so
 	// the health context is still active but the transport is broken.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -384,8 +376,7 @@ func TestHealthWatch_WatchCtxCancelled(t *testing.T) {
 	// To cover the Watch() error path where ctx.Err() != nil,
 	// we close the client immediately after Connect so that the
 	// health context is cancelled before Watch can complete.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
@@ -402,8 +393,7 @@ func TestHealthWatch_WatchFuncError(t *testing.T) {
 	// Inject a watch function that returns an error to cover the Watch()
 	// error path where ctx.Err() == nil. This path is unreachable with
 	// the real gRPC client since Watch always defers errors to Recv.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
