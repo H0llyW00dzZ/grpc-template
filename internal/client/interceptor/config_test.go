@@ -115,6 +115,13 @@ type mockClientStream struct {
 	grpc.ClientStream
 }
 
+// failingTokenSource implements oauth2.TokenSource and always returns an error.
+type failingTokenSource struct{}
+
+func (f *failingTokenSource) Token() (*oauth2.Token, error) {
+	return nil, assert.AnError
+}
+
 func TestStreamAuth_WithToken(t *testing.T) {
 	interceptor.ResetConfig()
 	interceptor.Configure(
@@ -294,4 +301,10 @@ func TestOAuth2TokenSource(t *testing.T) {
 		assert.Contains(t, err.Error(), "empty access token")
 	})
 
+	t.Run("token_fetch_error", func(t *testing.T) {
+		src := interceptor.OAuth2TokenSource(&failingTokenSource{})
+		_, err := src(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "oauth2: failed to get token")
+	})
 }
