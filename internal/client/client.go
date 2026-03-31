@@ -37,7 +37,7 @@ type Client struct {
 	conn               *grpc.ClientConn
 	healthWatch        bool
 	healthCancel       context.CancelFunc
-	mu                 sync.Mutex
+	mu                 sync.RWMutex
 
 	// dialFunc overrides grpc.NewClient for testing. If nil, the real
 	// grpc.NewClient is used.
@@ -72,8 +72,8 @@ func New(target string, opts ...Option) *Client {
 //
 // Conn panics if called before a successful [Client.Connect].
 func (c *Client) Conn() *grpc.ClientConn {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.conn == nil {
 		panic("client: Conn called before Connect")
 	}
@@ -142,8 +142,8 @@ func (c *Client) WaitReady(ctx context.Context) error {
 // State returns the current connectivity state of the underlying connection.
 // Returns [connectivity.Shutdown] if the client has not been connected.
 func (c *Client) State() connectivity.State {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.conn == nil {
 		return connectivity.Shutdown
 	}
