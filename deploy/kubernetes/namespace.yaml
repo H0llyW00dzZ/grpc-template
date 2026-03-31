@@ -3,6 +3,11 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# gRPC in Kubernetes requires careful connection management. The namespace
+# provides the isolation boundary for all gRPC resources. How networking
+# behaves within this namespace (DNS resolution, service discovery, load
+# balancing) depends on your cloud provider and networking resources/addons
+# (e.g., CoreDNS configuration, service mesh injection, CNI plugin).
 apiVersion: v1
 kind: Namespace
 metadata:

@@ -3,6 +3,16 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# gRPC in Kubernetes requires careful connection management, and PodDisruptionBudgets
+# are critical to that. When a pod is evicted, all its persistent gRPC connections
+# are terminated. The PDB ensures that voluntary disruptions (node upgrades,
+# cluster maintenance) don't drain too many pods simultaneously, giving clients
+# time to reconnect to remaining pods.
+#
+# How smoothly this works depends on your cloud provider and networking
+# resources/addons — managed node-pool upgrades, service meshes with connection
+# draining, and client-side retry logic all contribute to graceful failover.
+# Pair this PDB with the Deployment's terminationGracePeriodSeconds for best results.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

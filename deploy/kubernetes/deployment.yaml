@@ -3,6 +3,20 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# gRPC in Kubernetes requires careful connection management.
+# Unlike REST, gRPC uses persistent HTTP/2 connections that don't naturally
+# redistribute when pods scale or restart. This means rolling updates and
+# autoscaling events may leave connections pinned to stale endpoints.
+#
+# How hard this is to handle depends on your cloud provider and networking
+# resources/addons (e.g., service mesh like Istio/Linkerd, or a gRPC-aware
+# ingress controller). Some environments handle connection re-balancing
+# automatically; others require client-side load balancing or look-aside
+# balancing via xDS.
+#
+# The topology spread, graceful termination period, and health probes below
+# are designed to minimize disruption, but verify behavior in your specific
+# cluster environment.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

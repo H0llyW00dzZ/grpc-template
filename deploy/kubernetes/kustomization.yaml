@@ -3,6 +3,12 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# gRPC in Kubernetes requires careful connection management due to HTTP/2's
+# persistent, multiplexed connections. However, it is not overly difficult —
+# the exact approach depends on your cloud provider and the networking
+# resources/addons available in your cluster (service meshes, gRPC-aware
+# ingress controllers, CNI plugins, etc.). Each manifest below includes
+# specific guidance on how its resource relates to gRPC connection lifecycle.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
