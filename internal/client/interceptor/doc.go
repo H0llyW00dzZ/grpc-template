@@ -19,6 +19,7 @@
 //	    interceptor.WithDefaultTimeout(5 * time.Second),
 //	    interceptor.WithRetry(3, time.Second),
 //	    interceptor.WithTokenSource(interceptor.StaticToken("my-token")),
+//	    // interceptor.WithTokenSource(interceptor.OAuth2TokenSource(oauth2Src)),
 //	)
 //
 // When using the [github.com/H0llyW00dzZ/grpc-template/internal/client] package,
@@ -31,4 +32,5 @@
 //   - [Timeout] — enforces a default deadline on unary RPCs
 //   - [Retry] — retries transient failures with exponential backoff and jitter
 //   - [Auth] / [StreamAuth] — injects bearer tokens into outgoing metadata
+//     (use [OAuth2TokenSource] for golang.org/x/oauth2 support)
 package interceptor
