@@ -13,6 +13,9 @@ This directory contains production-ready deployment templates for the gRPC serve
 
 Additional deployment targets (e.g., Docker Compose, Nomad) may be added in the future.
 
+> [!TIP]
+> All references to `grpc-template` in the manifests below (namespace, labels, image name) are **automatically rewritten** by `make init` to match your project name. The values shown here are the template defaults.
+
 ## Kubernetes
 
 Production-ready manifests using [Kustomize](https://kustomize.io/):
@@ -31,7 +34,7 @@ kubectl apply -k .
 
 | Manifest | Description |
 |----------|-------------|
-| `namespace.yaml` | Dedicated `grpc-template` namespace |
+| `namespace.yaml` | Dedicated namespace (named after your project) |
 | `deployment.yaml` | Multi-replica Deployment with resource limits and security context |
 | `service.yaml` | ClusterIP Service on port 50051 |
 | `hpa.yaml` | HorizontalPodAutoscaler (CPU + memory metrics) |

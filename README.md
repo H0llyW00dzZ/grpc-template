@@ -333,9 +333,10 @@ srv.RegisterService(
 
 ### Docker
 
-Build the container:
+Build the container (use your project name to match the Kubernetes manifests):
 ```bash
-docker build -t grpc-template:latest .
+# Replace with your project name — must match the image in deploy/kubernetes/deployment.yaml
+docker build -t <your-project-name>:latest .
 ```
 
 ### Deploy Templates
