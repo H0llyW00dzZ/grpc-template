@@ -64,8 +64,8 @@ func TestAuth_NoTokenSource(t *testing.T) {
 func TestAuth_TokenSourceError(t *testing.T) {
 	interceptor.ResetConfig()
 	interceptor.Configure(
-		interceptor.WithTokenSource(func(_ context.Context) (string, error) {
-			return "", assert.AnError
+		interceptor.WithTokenSource(func(ctx context.Context) (context.Context, error) {
+			return ctx, assert.AnError
 		}),
 	)
 	t.Cleanup(interceptor.ResetConfig)
@@ -159,8 +159,8 @@ func TestStreamAuth_NoTokenSource(t *testing.T) {
 func TestStreamAuth_TokenSourceError(t *testing.T) {
 	interceptor.ResetConfig()
 	interceptor.Configure(
-		interceptor.WithTokenSource(func(_ context.Context) (string, error) {
-			return "", assert.AnError
+		interceptor.WithTokenSource(func(ctx context.Context) (context.Context, error) {
+			return ctx, assert.AnError
 		}),
 	)
 	t.Cleanup(interceptor.ResetConfig)
@@ -231,4 +231,25 @@ func TestConfigure_AllOptions(t *testing.T) {
 		interceptor.WithRetryCodes(),
 		interceptor.WithTokenSource(interceptor.StaticToken("tok")),
 	)
+}
+
+func TestAuth_NoTokenInContext(t *testing.T) {
+	interceptor.ResetConfig()
+	interceptor.Configure(
+		interceptor.WithTokenSource(func(ctx context.Context) (context.Context, error) {
+			return ctx, nil // valid call but no token in context
+		}),
+	)
+	t.Cleanup(interceptor.ResetConfig)
+
+	i := interceptor.Auth()
+
+	invoker := func(_ context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
+		t.Fatal("invoker should not be called")
+		return nil
+	}
+
+	err := i(context.Background(), "/test/Method", nil, nil, nil, invoker)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no token in context")
 }

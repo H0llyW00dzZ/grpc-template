@@ -61,17 +61,22 @@ func StreamAuth() grpc.StreamClientInterceptor {
 	}
 }
 
-// injectToken retrieves a token from the configured [TokenSource] and
-// appends it to the outgoing metadata as a "authorization" bearer header.
+// injectToken calls the configured TokenSource and injects the bearer token
+// into outgoing metadata.
 func injectToken(ctx context.Context) (context.Context, error) {
 	src := defaultConfig.tokenSource
 	if src == nil {
 		return ctx, nil
 	}
 
-	token, err := src(ctx)
+	ctx, err := src(ctx)
 	if err != nil {
 		return ctx, fmt.Errorf("client interceptor: token source failed: %w", err)
+	}
+
+	token, ok := ctx.Value(tokenKey{}).(string)
+	if !ok || token == "" {
+		return ctx, fmt.Errorf("client interceptor: no token in context")
 	}
 
 	md, ok := metadata.FromOutgoingContext(ctx)

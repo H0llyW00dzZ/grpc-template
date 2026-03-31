@@ -13,19 +13,21 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// TokenSource is a function that returns a bearer token for outgoing RPCs.
-// It is called before each RPC and should return the token string or an error.
-type TokenSource func(ctx context.Context) (string, error)
+type tokenKey struct{}
 
-// StaticToken returns a [TokenSource] that always returns the same token.
+// TokenSource enriches the context with a bearer token.
+// It uses the same signature as server interceptor.AuthFunc for consistency.
+type TokenSource func(ctx context.Context) (context.Context, error)
+
+// StaticToken returns a TokenSource that adds a static bearer token to the context.
 // Use this for development, testing, or services with long-lived credentials.
 //
 //	interceptor.Configure(
 //	    interceptor.WithTokenSource(interceptor.StaticToken("my-api-key")),
 //	)
 func StaticToken(token string) TokenSource {
-	return func(_ context.Context) (string, error) {
-		return token, nil
+	return func(ctx context.Context) (context.Context, error) {
+		return context.WithValue(ctx, tokenKey{}, token), nil
 	}
 }
 
@@ -100,7 +102,8 @@ func WithRetryCodes(codes ...codes.Code) Option {
 }
 
 // WithTokenSource sets the [TokenSource] used by [Auth] and [StreamAuth]
-// to inject bearer tokens into outgoing metadata.
+// to inject bearer tokens into outgoing metadata. The function may also
+// enrich the context with claims or other metadata.
 //
 //	interceptor.Configure(
 //	    interceptor.WithTokenSource(interceptor.StaticToken("my-token")),

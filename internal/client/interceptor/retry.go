@@ -8,6 +8,7 @@ package interceptor
 import (
 	"context"
 	"math/rand/v2"
+	"slices"
 	"time"
 
 	"google.golang.org/grpc"
@@ -97,10 +98,5 @@ func backoffDuration(attempt int, base time.Duration) time.Duration {
 
 // isRetryable reports whether the given code is in the retryable set.
 func isRetryable(code codes.Code, retryable []codes.Code) bool {
-	for _, c := range retryable {
-		if code == c {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(retryable, code)
 }
