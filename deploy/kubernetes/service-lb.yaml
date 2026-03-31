@@ -19,6 +19,15 @@
 #
 # Note: When using a LoadBalancer, ensure your NetworkPolicy allows
 # ingress from external sources (not just in-cluster pods).
+#
+# gRPC in Kubernetes requires careful connection management. External L4 load
+# balancers forward TCP connections without gRPC awareness, so a single client
+# may pin all its RPCs to one pod. How hard this is to address depends on your
+# cloud provider and networking resources/addons — for example, GKE supports
+# gRPC-native health checking on its LBs, AWS NLB can be paired with an
+# Envoy sidecar, and bare-metal setups may need a proxy like Envoy or HAProxy
+# in front. Evaluate your provider's capabilities before relying on this
+# Service for production gRPC traffic.
 apiVersion: v1
 kind: Service
 metadata:

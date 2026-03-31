@@ -3,6 +3,23 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# ClusterIP Service — exposes the gRPC server for in-cluster communication.
+#
+# gRPC in Kubernetes requires careful connection management. Standard ClusterIP
+# services perform L4 (TCP) load balancing at connection time, not per-request.
+# Since gRPC multiplexes many RPCs over a single long-lived HTTP/2 connection,
+# traffic may become unevenly distributed across pods.
+#
+# How much this matters depends on your cloud provider and networking
+# resources/addons:
+# - A service mesh (Istio, Linkerd) provides L7 per-request balancing.
+# - A headless Service + client-side balancing (e.g., dns:/// resolver with
+#   grpc.WithDefaultServiceConfig round_robin) lets gRPC clients distribute
+#   requests across all discovered endpoints.
+# - Some managed Kubernetes platforms offer native gRPC-aware load balancing.
+#
+# This ClusterIP configuration works out of the box for most use cases; tune
+# the balancing strategy based on your specific cluster environment.
 apiVersion: v1
 kind: Service
 metadata:

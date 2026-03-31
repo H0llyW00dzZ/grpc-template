@@ -3,6 +3,15 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
+# gRPC in Kubernetes requires careful connection management during scaling.
+# When the HPA adds new replicas, existing gRPC clients won't automatically
+# redistribute their long-lived HTTP/2 connections to the new pods. This can
+# leave new pods idle while existing ones remain overloaded.
+#
+# How hard this is to solve depends on your cloud provider and networking
+# resources/addons — a service mesh can rebalance per-request, or clients
+# can use short connection max-age / periodic re-resolve to pick up new
+# endpoints. Without these, scale-up events may not relieve load as expected.
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
