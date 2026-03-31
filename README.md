@@ -285,8 +285,6 @@ srv.RegisterService(
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
 | Custom listener | `cmd/server/main.go` | `server.WithListener(lis)` |
 | Health status | runtime | `srv.Health().SetServingStatus(svc, status)` — toggle per-service health at runtime |
-| Proto output path | `buf.gen.yaml` | Change `out` field |
-| Go module path | `go.mod` | `go mod edit -module your/module` |
 
 ### Client
 
@@ -301,6 +299,12 @@ srv.RegisterService(
 | Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
 
+### Project
+
+| What | Where | How |
+|------|-------|-----|
+| Proto output path | `buf.gen.yaml` | Change `out` field |
+| Go module path | `go.mod` | `go mod edit -module your/module` |
 
 ## Make Targets
 
