@@ -20,14 +20,18 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
 # Final stage
 FROM alpine:3.23
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates && \
+    addgroup -g 1000 -S grpcuser && \
+    adduser -u 1000 -S -G grpcuser grpcuser
 
-WORKDIR /root/
+WORKDIR /app
 
-COPY --from=builder /server .
+COPY --from=builder /server /app/server
 
 # Expose gRPC port
 EXPOSE 50051
+
+USER 1000
 
 # Run the server
 CMD ["./server"]
