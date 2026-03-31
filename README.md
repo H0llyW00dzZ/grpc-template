@@ -71,7 +71,7 @@ grpc-template/
 ├── cmd/
 │   ├── server/main.go          # Server entry point
 │   └── client/main.go          # Client demo
-├── deploy/                      # Deployment templates
+├── deploy/                     # Deployment templates
 │   └── kubernetes/             # Kustomize manifests (Deployment, HPA, NetworkPolicy, PDB, Service)
 ├── internal/
 │   ├── logging/                # Pluggable logger (logging.Handler interface, slog default)

@@ -60,7 +60,26 @@ resources:
   - service-lb.yaml  # ← uncomment this line
 ```
 
-This provisions an **L4 (TCP) LoadBalancer** — required for gRPC since it uses HTTP/2. The manifest includes commented annotations for cloud providers (GKE, EKS, AKS) including internal LB options.
+This provisions an **L4 (TCP) LoadBalancer** — required for gRPC since it uses HTTP/2. The manifest includes the following gRPC-optimized settings:
+
+| Field | Value | Purpose |
+|-------|-------|---------|
+| `appProtocol` | `grpc` | Informs Kubernetes, Gateway API, and service meshes that this port carries gRPC traffic |
+| `externalTrafficPolicy` | `Local` | Preserves client source IP and avoids extra network hops — recommended for long-lived gRPC connections |
+| `sessionAffinity` | `None` | gRPC clients typically handle their own load balancing via client-side balancing |
+
+#### Cloud-Provider Annotations
+
+The manifest includes commented annotations for major cloud providers. Uncomment the relevant block in `service-lb.yaml`:
+
+| Provider | Annotation | Effect |
+|----------|------------|--------|
+| GKE | `networking.gke.io/load-balancer-type: "Internal"` | Provisions an internal (VPC-only) load balancer |
+| AWS/EKS | `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"` | Uses a Network Load Balancer for TCP/gRPC |
+| Azure/AKS | `service.beta.kubernetes.io/azure-load-balancer-internal: "true"` | Provisions an internal load balancer |
+
+> [!WARNING]
+> When using a LoadBalancer, ensure your `NetworkPolicy` allows ingress from external sources — the default `networkpolicy.yaml` restricts ingress to in-cluster pods only.
 
 ### Customization
 
