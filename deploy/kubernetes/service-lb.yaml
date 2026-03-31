@@ -1,0 +1,41 @@
+# Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+#
+# By accessing or using this software, you agree to be bound by the terms
+# of the License Agreement, which you can find at LICENSE files.
+
+# LoadBalancer Service — exposes the gRPC server to external traffic.
+#
+# This creates an L4 (TCP) load balancer, which is what gRPC requires.
+# On cloud providers (GKE, EKS, AKS) this provisions an external IP
+# automatically. On bare-metal clusters, use MetalLB or similar.
+#
+# To enable: uncomment service-lb.yaml in kustomization.yaml
+#
+# Note: When using a LoadBalancer, ensure your NetworkPolicy allows
+# ingress from external sources (not just in-cluster pods).
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-server-lb
+  labels:
+    app: grpc-template
+  annotations:
+    # Cloud-specific annotations (uncomment as needed):
+    #
+    # GKE — use an internal load balancer:
+    # networking.gke.io/load-balancer-type: "Internal"
+    #
+    # AWS/EKS — use NLB (Network Load Balancer) for TCP:
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    #
+    # Azure/AKS — use an internal load balancer:
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+spec:
+  selector:
+    app: grpc-template
+  ports:
+  - name: grpc
+    port: 50051
+    targetPort: 50051
+    protocol: TCP
+  type: LoadBalancer

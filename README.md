@@ -71,6 +71,8 @@ grpc-template/
 ├── cmd/
 │   ├── server/main.go          # Server entry point
 │   └── client/main.go          # Client demo
+├── deploy/                      # Deployment templates
+│   └── kubernetes/             # Kustomize manifests (Deployment, HPA, NetworkPolicy, PDB, Service)
 ├── internal/
 │   ├── logging/                # Pluggable logger (logging.Handler interface, slog default)
 │   ├── client/                 # High-level gRPC client with lifecycle management and interceptors
@@ -117,6 +119,7 @@ grpc-template/
 ├── pkg/gen-ts/                 # Generated TypeScript/JS code (do not edit)
 ├── pkg/gen-php/                # Generated PHP code (do not edit)
 ├── pkg/gen-cpp/                # Generated C/C++ protobuf (client only)
+├── Dockerfile                  # Multi-stage build (Go 1.26 + Alpine)
 ├── buf.yaml                    # Buf module config
 ├── buf.gen.yaml                # Buf generation config
 ├── Makefile                    # Build automation
@@ -325,6 +328,20 @@ srv.RegisterService(
 | `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |
 | `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint) |
 | `make deps-cpp` | Install system packages for C++ protobuf/gRPC code generation |
+
+## Deployment
+
+### Docker
+
+Build the container (use your project name to match the Kubernetes manifests):
+```bash
+# Replace with your project name — must match the image in deploy/kubernetes/deployment.yaml
+docker build -t <your-project-name>:latest .
+```
+
+### Deploy Templates
+
+Production-ready deployment templates are available in [`deploy/`](deploy/). See the [deployment guide](deploy/README.md) for available platforms and usage instructions.
 
 ## Limitations
 
