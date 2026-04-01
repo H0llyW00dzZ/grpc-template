@@ -184,8 +184,12 @@ func WithRetryCodes(retryCodes ...codes.Code) Option {
 // [interceptor.Auth] and [interceptor.StreamAuth] interceptors.
 // It delegates to [interceptor.Configure] with [interceptor.WithTokenSource].
 //
+// Use [interceptor.StaticToken] for static tokens or [interceptor.OAuth2TokenSource]
+// for dynamic OAuth2 (with automatic refresh).
+//
 //	c := client.New("localhost:50051",
 //	    client.WithTokenSource(interceptor.StaticToken("my-api-key")),
+//	    // client.WithTokenSource(interceptor.OAuth2TokenSource(oauth2Src)),
 //	)
 func WithTokenSource(fn interceptor.TokenSource) Option {
 	return func(c *Client) {
