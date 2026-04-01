@@ -510,3 +510,23 @@ func TestConnect_AlreadyConnected(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already connected")
 }
+
+func TestConnect_ReconnectAfterClose(t *testing.T) {
+	ctx := t.Context()
+
+	lis := startTestServer(t, ctx)
+
+	c := newBufClient(lis)
+
+	// First cycle: connect then close.
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+	require.NoError(t, c.Close())
+
+	// Second cycle: should succeed after Close cleared c.conn.
+	err = c.Connect(context.Background())
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
+
+	assert.NotEqual(t, connectivity.Shutdown, c.State())
+}

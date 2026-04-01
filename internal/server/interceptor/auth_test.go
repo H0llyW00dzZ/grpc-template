@@ -22,6 +22,8 @@ import (
 type userKey struct{}
 
 func TestAuth_Valid(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			if token != "valid-token" {
@@ -48,6 +50,8 @@ func TestAuth_Valid(t *testing.T) {
 }
 
 func TestAuth_MissingToken(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			return ctx, nil
@@ -70,6 +74,8 @@ func TestAuth_MissingToken(t *testing.T) {
 }
 
 func TestAuth_InvalidToken(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			return ctx, fmt.Errorf("invalid")
@@ -95,6 +101,8 @@ func TestAuth_InvalidToken(t *testing.T) {
 }
 
 func TestAuth_ExcludedMethod(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			t.Fatal("authFunc should not be called for excluded methods")
@@ -116,6 +124,8 @@ func TestAuth_ExcludedMethod(t *testing.T) {
 }
 
 func TestAuth_BearerCaseInsensitive(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			if token != "my-token" {
@@ -140,6 +150,8 @@ func TestAuth_BearerCaseInsensitive(t *testing.T) {
 }
 
 func TestAuth_EmptyBearer(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			return ctx, nil
@@ -164,6 +176,8 @@ func TestAuth_EmptyBearer(t *testing.T) {
 }
 
 func TestAuth_NoAuthFunc(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(interceptor.WithAuthFunc(nil))
 
 	i := interceptor.Auth()
@@ -179,6 +193,8 @@ func TestAuth_NoAuthFunc(t *testing.T) {
 }
 
 func TestStreamAuth_Valid(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			if token != "stream-token" {
@@ -205,6 +221,8 @@ func TestStreamAuth_Valid(t *testing.T) {
 }
 
 func TestStreamAuth_ExcludedMethod(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			t.Fatal("authFunc should not be called for excluded methods")
@@ -226,6 +244,8 @@ func TestStreamAuth_ExcludedMethod(t *testing.T) {
 }
 
 func TestStreamAuth_InvalidToken(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			return ctx, fmt.Errorf("invalid token")
@@ -252,6 +272,8 @@ func TestStreamAuth_InvalidToken(t *testing.T) {
 }
 
 func TestStreamAuth_NoAuthFunc(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(interceptor.WithAuthFunc(nil))
 
 	i := interceptor.StreamAuth()
@@ -267,6 +289,8 @@ func TestStreamAuth_NoAuthFunc(t *testing.T) {
 }
 
 func TestAuth_EmptyAuthKey(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 	interceptor.Configure(
 		interceptor.WithAuthFunc(func(ctx context.Context, token string) (context.Context, error) {
 			return ctx, nil

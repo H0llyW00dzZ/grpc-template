@@ -108,13 +108,6 @@ func (c *Client) Connect(ctx context.Context) error {
 		return fmt.Errorf("client: configuration error: %w", c.configErr)
 	}
 
-	c.mu.RLock()
-	alreadyConnected := c.conn != nil
-	c.mu.RUnlock()
-	if alreadyConnected {
-		return fmt.Errorf("client: already connected (call Close before reconnecting)")
-	}
-
 	opts := c.buildDialOpts()
 
 	dial := grpc.NewClient
@@ -122,12 +115,21 @@ func (c *Client) Connect(ctx context.Context) error {
 		dial = c.dialFunc
 	}
 
-	conn, err := dial(c.target, opts...)
-	if err != nil {
-		return fmt.Errorf("client: failed to create connection to %s: %w", c.target, err)
+	// Hold the lock across the entire check-dial-assign sequence to
+	// prevent two concurrent Connect calls from both passing the
+	// guard and overwriting c.conn (TOCTOU race). This is safe
+	// because grpc.NewClient is non-blocking.
+	c.mu.Lock()
+	if c.conn != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("client: already connected (call Close before reconnecting)")
 	}
 
-	c.mu.Lock()
+	conn, err := dial(c.target, opts...)
+	if err != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("client: failed to create connection to %s: %w", c.target, err)
+	}
 	c.conn = conn
 	c.mu.Unlock()
 

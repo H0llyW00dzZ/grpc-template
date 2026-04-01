@@ -45,7 +45,7 @@ func TestConfigure_CustomLoggerUsedByInterceptors(t *testing.T) {
 	l := &stubLogger{}
 	interceptor.Configure(interceptor.WithLogger(l))
 
-	// Exercise the Logging interceptor which internally calls logger().
+	// Exercise the Logging interceptor which uses the configured logger.
 	i := interceptor.Logging()
 
 	handler := func(ctx context.Context, req any) (any, error) {

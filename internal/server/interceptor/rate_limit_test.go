@@ -22,7 +22,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// resetRateLimitConfig stops any active memory limiter and resets the
+// package-level configuration. Use at the start of each test and via
+// t.Cleanup to ensure goroutines don't leak and state doesn't bleed.
+func resetRateLimitConfig(t *testing.T) {
+	t.Helper()
+	interceptor.StopCleanup()
+	interceptor.ResetConfig()
+}
+
 func TestRateLimit_Allowed(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(100, 10))
 
 	i := interceptor.RateLimit()
@@ -40,6 +51,8 @@ func TestRateLimit_Allowed(t *testing.T) {
 }
 
 func TestRateLimit_Exceeded(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	// Allow only 1 request per second with burst of 1.
 	interceptor.Configure(interceptor.WithRateLimit(1, 1))
 
@@ -67,6 +80,8 @@ func TestRateLimit_Exceeded(t *testing.T) {
 }
 
 func TestRateLimit_PerPeer(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	// Allow 1 request per second with burst of 1.
 	interceptor.Configure(interceptor.WithRateLimit(1, 1))
 
@@ -96,6 +111,8 @@ func TestRateLimit_PerPeer(t *testing.T) {
 }
 
 func TestRateLimit_NoPeer(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(1, 1))
 
 	i := interceptor.RateLimit()
@@ -112,6 +129,8 @@ func TestRateLimit_NoPeer(t *testing.T) {
 }
 
 func TestRateLimit_Disabled(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	// Disable rate limiting by setting rate to 0.
 	interceptor.Configure(interceptor.WithRateLimit(0, 0))
 
@@ -133,6 +152,8 @@ func TestRateLimit_Disabled(t *testing.T) {
 }
 
 func TestStreamRateLimit_Allowed(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(100, 10))
 
 	i := interceptor.StreamRateLimit()
@@ -150,6 +171,8 @@ func TestStreamRateLimit_Allowed(t *testing.T) {
 }
 
 func TestStreamRateLimit_Exceeded(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(1, 1))
 
 	i := interceptor.StreamRateLimit()
@@ -191,6 +214,8 @@ func (a fakeAddr) String() string  { return string(a) }
 var _ net.Addr = fakeAddr("")
 
 func TestStreamRateLimit_Disabled(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(0, 0))
 
 	i := interceptor.StreamRateLimit()
@@ -210,6 +235,8 @@ func TestStreamRateLimit_Disabled(t *testing.T) {
 }
 
 func TestRateLimit_Cleanup(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimit(100, 10))
 
 	i := interceptor.RateLimit()
@@ -306,10 +333,12 @@ func TestStartCleanup_DefaultTTL(t *testing.T) {
 }
 
 func TestRunCleanupLoop(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	// Directly test the cleanup loop with a very short interval.
 	m := interceptor.NewMemoryRateLimiter(100, 10, 1*time.Millisecond)
 	interceptor.Configure(interceptor.WithRateLimiter(m))
-	defer m.Stop() // ensure cleanup stops at end of test
+	t.Cleanup(m.Stop)
 
 	// Create a limiter entry.
 	i := interceptor.RateLimit()
@@ -337,8 +366,9 @@ func (e *errorLimiter) Allow(ctx context.Context, key string) (bool, error) {
 }
 
 func TestRateLimit_InternalError(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimiter(&errorLimiter{}))
-	defer interceptor.Configure(interceptor.WithRateLimiter(nil))
 
 	i := interceptor.RateLimit()
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
@@ -355,8 +385,9 @@ func TestRateLimit_InternalError(t *testing.T) {
 }
 
 func TestStreamRateLimit_InternalError(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimiter(&errorLimiter{}))
-	defer interceptor.Configure(interceptor.WithRateLimiter(nil))
 
 	i := interceptor.StreamRateLimit()
 	info := &grpc.StreamServerInfo{FullMethod: "/test.v1.Svc/Method"}
@@ -374,6 +405,8 @@ func TestStreamRateLimit_InternalError(t *testing.T) {
 }
 
 func TestRateLimit_NilLimiter(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimiter(nil))
 
 	i := interceptor.RateLimit()
@@ -386,6 +419,8 @@ func TestRateLimit_NilLimiter(t *testing.T) {
 }
 
 func TestStreamRateLimit_NilLimiter(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
 	interceptor.Configure(interceptor.WithRateLimiter(nil))
 
 	i := interceptor.StreamRateLimit()

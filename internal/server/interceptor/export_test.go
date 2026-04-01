@@ -57,7 +57,8 @@ func SetLimiterLastSeen(key string, t time.Time) {
 	}
 }
 
-// StopCleanup signals the cleanup goroutine to stop on the active memory limiter.
+// StopCleanup signals the cleanup goroutine to stop on the active memory
+// limiter, if one is configured. Safe to call when no limiter is active.
 func StopCleanup() {
 	if m := ActiveMemoryLimiter(); m != nil {
 		m.Stop()

@@ -36,3 +36,9 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
+  # gRPC connections are long-lived and won't naturally redistribute
+  # to new pods. A stabilization window prevents rapid scale-down
+  # oscillations that would repeatedly tear down connections.
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
