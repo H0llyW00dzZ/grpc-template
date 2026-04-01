@@ -51,6 +51,7 @@ func WithTLS(caCertFile string) Option {
 			return
 		}
 
+		c.configErr = nil
 		c.tlsConfig = &tls.Config{
 			RootCAs:    caPool,
 			MinVersion: tls.VersionTLS13,
@@ -83,6 +84,7 @@ func WithMutualTLS(certFile, keyFile, caCertFile string) Option {
 			return
 		}
 
+		c.configErr = nil
 		c.tlsConfig = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      caPool,

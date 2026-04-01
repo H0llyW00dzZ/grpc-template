@@ -43,6 +43,21 @@ func TestWithTLS_InvalidFile(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to read CA certificate")
 }
 
+func TestWithTLS_SuccessOverridesPreviousError(t *testing.T) {
+	dir := t.TempDir()
+	_, _, caCertFile := generateTestCert(t, dir)
+
+	// A failing option followed by a succeeding one should connect
+	// without error because the second option clears configErr.
+	c := client.New("localhost:50051",
+		client.WithTLS("/no/such/ca.pem"),
+		client.WithTLS(caCertFile),
+	)
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+	_ = c.Close()
+}
+
 func TestWithTLS_InvalidPEM(t *testing.T) {
 	dir := t.TempDir()
 	badCA := filepath.Join(dir, "bad_ca.pem")

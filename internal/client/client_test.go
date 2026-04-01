@@ -441,15 +441,13 @@ func TestHealthWatch_RetriesAfterWatchError(t *testing.T) {
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
 
-	// Wait long enough for the initial 500ms backoff to complete
-	// so the goroutine retries.
-	time.Sleep(700 * time.Millisecond)
+	// Poll until the goroutine has retried at least once (after 500ms backoff).
+	require.Eventually(t, func() bool {
+		return calls.Load() >= 2
+	}, 5*time.Second, 50*time.Millisecond, "health watch should retry after backoff")
 
 	err = c.Close()
 	assert.NoError(t, err)
-
-	// Should have been called at least twice: initial + retry after backoff.
-	assert.GreaterOrEqual(t, calls.Load(), int32(2))
 }
 
 func TestHealthWatch_ReconnectsAfterStreamEnd(t *testing.T) {
@@ -470,13 +468,11 @@ func TestHealthWatch_ReconnectsAfterStreamEnd(t *testing.T) {
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
 
-	// Wait long enough for the initial 500ms backoff after stream error
-	// to complete so the goroutine reconnects.
-	time.Sleep(700 * time.Millisecond)
+	// Poll until the goroutine has reconnected at least once (after 500ms backoff).
+	require.Eventually(t, func() bool {
+		return calls.Load() >= 2
+	}, 5*time.Second, 50*time.Millisecond, "health watch should reconnect after stream error")
 
 	err = c.Close()
 	assert.NoError(t, err)
-
-	// Should have been called at least twice: initial + reconnect after backoff.
-	assert.GreaterOrEqual(t, calls.Load(), int32(2))
 }
