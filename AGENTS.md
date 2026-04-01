@@ -141,15 +141,15 @@ And every `.proto` file must also start with the identical header (same `//` com
 
 ### Server and Interceptors
 - Use functional options: `server.WithXXX()` and `client.WithXXX()`
-- Register services via `RegisterService(registrar func(*grpc.Server))`
+- Register services via `RegisterService(registrar func(*grpc.Server))` — must be called before `Run`; not safe for concurrent use
 - Server interceptors in `internal/server/interceptor/`
 - Client interceptors in `internal/client/interceptor/`
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
 - See `internal/server/server.go:42` for New(), `option.go` for options
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
-- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot. Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
+- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot (returned by value in both packages). Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
 - `Client.Connect()` rejects double invocation — call `Close()` before reconnecting to prevent connection and goroutine leaks.
-- `Server.Run()` drains the serve goroutine before returning — no goroutine leaks on shutdown. It logs the actual listener address via `lis.Addr()`.
+- `Server.Run()` drains the serve goroutine before returning — no goroutine leaks on shutdown. It logs the actual listener address via `lis.Addr()`. On graceful shutdown, `healthSrv.Shutdown()` atomically transitions all registered services to NOT_SERVING.
 - When replacing a rate limiter via `WithRateLimiter` or `WithRateLimit`, the previous limiter is automatically stopped if it implements `Stop()` (e.g., `MemoryRateLimiter`), preventing background goroutine leaks.
 
 ### Proto and Generated Code
