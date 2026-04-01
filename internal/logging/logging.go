@@ -15,7 +15,7 @@
 // # Default Handler
 //
 // [Default] returns a slog-backed handler.  Override the global default with
-// [SetDefault]:
+// [SetDefault]. Both functions are safe for concurrent use:
 //
 //	logging.SetDefault(myZapAdapter)
 package logging

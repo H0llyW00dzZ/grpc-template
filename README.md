@@ -240,7 +240,7 @@ The `internal/client` package provides a high-level client with functional optio
 
 See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key options include:
 
-- `client.WithInsecure()` / `client.WithTLS()` / `client.WithMutualTLS()` (TLS errors are deferred and returned from `Connect()`)
+- `client.WithInsecure()` (also clears any prior TLS config error) / `client.WithTLS()` / `client.WithMutualTLS()` (TLS errors are deferred and returned from `Connect()`)
 - `client.WithLogger()`, `client.WithDefaultTimeout()`, `client.WithRetry()`
 - `client.WithUnaryInterceptors()` and `client.WithStreamInterceptors()`
 - `client.WithHealthWatch()` for background health monitoring with automatic reconnect
@@ -273,8 +273,8 @@ srv.RegisterService(
 | What | Where | How |
 |------|-------|-----|
 | Server port | `cmd/server/main.go` | `server.WithPort("8080")` |
-| Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` |
-| Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` |
+| Enable TLS | `cmd/server/main.go` | `server.WithTLS("cert.pem", "key.pem")` (errors deferred to `Run()`) |
+| Enable mTLS | `cmd/server/main.go` | `server.WithMutualTLS("cert.pem", "key.pem", "ca.pem")` (errors deferred to `Run()`) |
 | Custom logger | `cmd/server/main.go` | `server.WithLogger(myHandler)` — auto-syncs to `interceptor.Configure()` |
 | Unary interceptors | `cmd/server/main.go` | `server.WithUnaryInterceptors(interceptor.Recovery(), interceptor.Logging(), ...)` |
 | Stream interceptors | `cmd/server/main.go` | `server.WithStreamInterceptors(interceptor.StreamRecovery(), interceptor.StreamLogging(), ...)` |

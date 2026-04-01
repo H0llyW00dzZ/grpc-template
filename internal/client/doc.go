@@ -87,7 +87,7 @@
 //
 // # Available Options
 //
-//   - [WithInsecure] — disable transport security (dev/testing)
+//   - [WithInsecure] — disable transport security (dev/testing); clears any prior TLS config error
 //   - [WithTLS] — TLS with server CA verification (errors deferred to [Client.Connect])
 //   - [WithMutualTLS] — mutual TLS for service-to-service (errors deferred to [Client.Connect])
 //   - [WithLogger] — pluggable logger (syncs to interceptors)

@@ -46,8 +46,12 @@
 // # Running and Shutdown
 //
 // [Server.Run] starts the server and blocks until the context is cancelled
-// or a SIGINT/SIGTERM signal is received. The server performs a graceful
-// shutdown, draining in-flight RPCs before stopping:
+// or a SIGINT/SIGTERM signal is received. It returns immediately with an
+// error if any option recorded a configuration failure (e.g., invalid TLS
+// certificates from [WithTLS] or [WithMutualTLS]). A succeeding TLS
+// option clears the error from a preceding one.
+// The server performs a graceful shutdown, draining in-flight RPCs
+// before stopping:
 //
 //	if err := srv.Run(ctx); err != nil {
 //	    log.Fatal(err)

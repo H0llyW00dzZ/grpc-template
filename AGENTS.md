@@ -109,7 +109,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - gRPC errors: `status.Errorf(codes.InvalidArgument, "msg: %v", err)` or `status.Error`
 - In interceptors: use codes.Internal for panics/recovery (see recovery.go:33)
 - Never panic in production code
-- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `c.configErr`) and return it from a later method like `Connect()` — see `client/option.go` WithTLS/WithMutualTLS
+- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `configErr`) and return it from a later method like `Connect()` or `Run()` — see `client/option.go` and `server/option.go` WithTLS/WithMutualTLS. A succeeding TLS option clears `configErr`. `client.WithInsecure()` also clears `configErr` and `tlsConfig`.
 - Log errors with structured logging using logger.Error(msg, "key", value)
 - In tests: use require.NoError(t, err), assert.Equal
 
@@ -160,7 +160,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Go 1.26+
 - Use context everywhere
 - Graceful shutdown in server
-- Avoid global state except for logging.Default()
+- Avoid global state except for logging.Default() (which is atomic/thread-safe)
 - Error strings should not be capitalized or end with punctuation
 - Use %w for wrapping in fmt.Errorf
 - Struct tags for any JSON if needed (though rare in gRPC)
