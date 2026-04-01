@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/time v0.15.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
