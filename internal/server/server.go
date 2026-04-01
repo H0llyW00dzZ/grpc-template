@@ -83,6 +83,9 @@ func (s *Server) Health() *health.Server {
 // when the server starts. This is the primary way to add your
 // gRPC service implementations to the server.
 //
+// RegisterService must be called before [Run]; it is not safe for
+// concurrent use.
+//
 //	srv.RegisterService(greeterSvc.Register, authSvc.Register, kvSvc.Register)
 func (s *Server) RegisterService(registrars ...ServiceRegistrar) {
 	s.registrars = append(s.registrars, registrars...)
@@ -171,7 +174,7 @@ func (s *Server) Run(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		s.logger.Info("shutdown signal received, draining connections...")
-		s.healthSrv.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
+		s.healthSrv.Shutdown()
 		grpcServer.GracefulStop()
 		s.logger.Info("gRPC server stopped gracefully")
 		// Drain the serve result so the goroutine is guaranteed to

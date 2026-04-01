@@ -91,7 +91,9 @@ func (m *MemoryRateLimiter) Stop() {
 }
 
 func (m *MemoryRateLimiter) runCleanupLoop() {
-	ticker := time.NewTicker(m.ttl)
+	// Use half the TTL as the cleanup interval so stale entries are
+	// reclaimed within 1.5×TTL instead of up to 2×TTL.
+	ticker := time.NewTicker(m.ttl / 2)
 	defer ticker.Stop()
 	for {
 		select {

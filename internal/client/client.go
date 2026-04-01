@@ -29,8 +29,8 @@ type healthWatchFunc func(ctx context.Context, conn *grpc.ClientConn) (healthgrp
 // counterpart of [github.com/H0llyW00dzZ/grpc-template/internal/server.Server].
 //
 // Fields set during [New] (target, insecureCreds, tlsConfig, logger,
-// interceptors, dialOpts, healthWatch, dialFunc, watchFunc) are
-// immutable after construction and are read without holding mu.
+// interceptors, dialOpts, healthWatch, configErr, dialFunc, watchFunc)
+// are immutable after construction and are read without holding mu.
 // Only conn and healthCancel are guarded by mu because they change
 // during [Connect] and [Close].
 type Client struct {
@@ -43,24 +43,14 @@ type Client struct {
 	streamInterceptors []grpc.StreamClientInterceptor
 	dialOpts           []grpc.DialOption
 	healthWatch        bool
+	configErr          error                                                                  // set only during New via options (e.g., TLS cert loading)
+	dialFunc           func(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) // nil = real grpc.NewClient
+	watchFunc          healthWatchFunc                                                        // nil = standard gRPC health client
 
 	// Guarded by mu — mutable during Connect/Close lifecycle.
 	conn         *grpc.ClientConn
 	healthCancel context.CancelFunc
 	mu           sync.RWMutex
-
-	// configErr captures errors from functional options (e.g., TLS
-	// certificate loading) so they can be returned from [Client.Connect]
-	// instead of panicking during construction.
-	configErr error
-
-	// dialFunc overrides grpc.NewClient for testing. If nil, the real
-	// grpc.NewClient is used.
-	dialFunc func(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
-
-	// watchFunc overrides the health Watch creation for testing.
-	// If nil, the standard gRPC health client is used.
-	watchFunc healthWatchFunc
 }
 
 // New creates a new Client targeting the given address.

@@ -69,8 +69,8 @@
 //	    healthgrpc.HealthCheckResponse_NOT_SERVING,
 //	)
 //
-// On graceful shutdown, the overall health status is automatically set
-// to NOT_SERVING before draining connections.
+// On graceful shutdown, all registered services are atomically
+// transitioned to NOT_SERVING before draining connections.
 //
 // # Available Options
 //
@@ -81,7 +81,8 @@
 //   - [WithAuthFunc] — authentication function (syncs to interceptors)
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
-//   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors). For custom backends like Redis, configure [interceptor.WithRateLimiter] directly.
+//   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors)
+//   - [WithRateLimiter] — custom [interceptor.RateLimiter] backend (e.g., Redis) (syncs to interceptors)
 //   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

@@ -95,7 +95,7 @@
 //   - [WithDefaultTimeout] — default RPC deadline (syncs to interceptors)
 //   - [WithRetry] — retry on transient failures (syncs to interceptors)
 //   - [WithRetryCodes] — override retryable status codes (syncs to interceptors)
-//   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [StaticToken] and [OAuth2TokenSource])
+//   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [interceptor.StaticToken] and [interceptor.OAuth2TokenSource])
 //   - [WithHealthWatch] — background health monitoring with auto-reconnect
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

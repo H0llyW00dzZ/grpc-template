@@ -8,6 +8,5 @@ LICENSE
 Makefile
 .gitignore
 proto/
-AGENTS.md
 Dockerfile
 .dockerignore

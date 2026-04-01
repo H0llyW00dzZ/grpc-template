@@ -10,7 +10,9 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Auth returns a unary client interceptor that injects a bearer token
@@ -78,7 +80,7 @@ func injectToken(ctx context.Context, src TokenSource) (context.Context, error) 
 
 	token, ok := ctx.Value(tokenKey{}).(string)
 	if !ok || token == "" {
-		return ctx, fmt.Errorf("client interceptor: no token in context")
+		return ctx, status.Error(codes.Unauthenticated, "client interceptor: no token in context")
 	}
 
 	md, ok := metadata.FromOutgoingContext(ctx)
