@@ -26,6 +26,12 @@
 // options like [github.com/H0llyW00dzZ/grpc-template/internal/client.WithLogger]
 // call [Configure] automatically—no manual configuration is needed.
 //
+// # Thread Safety
+//
+// All interceptors read their configuration through a snapshot taken under
+// a read lock, so [Configure] may be called concurrently with in-flight
+// RPCs without data races.
+//
 // # Available Interceptors
 //
 //   - [Logging] / [StreamLogging] — logs RPC method, duration, and status

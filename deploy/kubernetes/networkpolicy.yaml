@@ -28,7 +28,7 @@ spec:
     - podSelector:
         matchLabels:
           app: grpc-client  # Adjust for your client pods
-    - namespaceSelector:
+      namespaceSelector:
         matchLabels:
           name: default
     ports:

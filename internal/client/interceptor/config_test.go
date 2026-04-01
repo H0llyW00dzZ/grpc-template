@@ -146,6 +146,35 @@ func TestStreamAuth_WithToken(t *testing.T) {
 	assert.Equal(t, []string{"Bearer stream-token"}, md.Get("authorization"))
 }
 
+func TestStreamAuth_ExistingMetadata(t *testing.T) {
+	interceptor.ResetConfig()
+	interceptor.Configure(
+		interceptor.WithTokenSource(interceptor.StaticToken("stream-token")),
+	)
+	t.Cleanup(interceptor.ResetConfig)
+
+	i := interceptor.StreamAuth()
+
+	// Set up a context that already has outgoing metadata.
+	existingMD := metadata.Pairs("x-custom", "value")
+	ctx := metadata.NewOutgoingContext(context.Background(), existingMD)
+
+	var capturedCtx context.Context
+	streamer := func(ctx context.Context, _ *grpc.StreamDesc, _ *grpc.ClientConn, _ string, _ ...grpc.CallOption) (grpc.ClientStream, error) {
+		capturedCtx = ctx
+		return &mockClientStream{}, nil
+	}
+
+	cs, err := i(ctx, &grpc.StreamDesc{}, nil, "/test/Stream", streamer)
+	require.NoError(t, err)
+	require.NotNil(t, cs)
+
+	md, ok := metadata.FromOutgoingContext(capturedCtx)
+	require.True(t, ok)
+	assert.Equal(t, []string{"Bearer stream-token"}, md.Get("authorization"))
+	assert.Equal(t, []string{"value"}, md.Get("x-custom"))
+}
+
 func TestStreamAuth_NoTokenSource(t *testing.T) {
 	interceptor.ResetConfig()
 	t.Cleanup(interceptor.ResetConfig)

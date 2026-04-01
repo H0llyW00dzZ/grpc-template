@@ -22,10 +22,9 @@ func PeerKey(ctx interface{ Value(any) any }) string {
 
 // ActiveMemoryLimiter gets the currently configured MemoryRateLimiter for testing.
 func ActiveMemoryLimiter() *MemoryRateLimiter {
-	if defaultConfig != nil {
-		if m, ok := defaultConfig.rateLimiter.(*MemoryRateLimiter); ok {
-			return m
-		}
+	cfg := getConfig()
+	if m, ok := cfg.rateLimiter.(*MemoryRateLimiter); ok {
+		return m
 	}
 	return nil
 }
@@ -66,5 +65,15 @@ func SetLimiterLastSeen(key string, t time.Time) {
 func StopCleanup() {
 	if m := ActiveMemoryLimiter(); m != nil {
 		m.Stop()
+	}
+}
+
+// ResetConfig resets the package-level configuration to defaults.
+// This is only available in tests.
+func ResetConfig() {
+	configMu.Lock()
+	defer configMu.Unlock()
+	defaultConfig = &config{
+		excludedMethods: make(map[string]struct{}),
 	}
 }

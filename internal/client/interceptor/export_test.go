@@ -14,6 +14,8 @@ import (
 // ResetConfig resets the package-level configuration to defaults.
 // This is only available in tests.
 func ResetConfig() {
+	configMu.Lock()
+	defer configMu.Unlock()
 	defaultConfig = &config{
 		retryCodes: defaultRetryCodes,
 	}

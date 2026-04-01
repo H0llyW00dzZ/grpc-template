@@ -1,0 +1,7 @@
+.git
+bin/
+deploy/
+coverage.txt
+.github/
+*.md
+LICENSE

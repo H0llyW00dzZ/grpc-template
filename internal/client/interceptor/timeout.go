@@ -31,7 +31,7 @@ func Timeout() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		timeout := defaultConfig.defaultTimeout
+		timeout := getConfig().defaultTimeout
 		if timeout > 0 {
 			if _, ok := ctx.Deadline(); !ok {
 				var cancel context.CancelFunc

@@ -58,11 +58,15 @@
 // # Connection Lifecycle
 //
 // [Client.Connect] creates the gRPC connection using [grpc.NewClient],
-// which connects lazily. To block until the connection is ready, use
-// [Client.WaitReady]:
+// which connects lazily. It also validates any deferred configuration
+// errors (e.g., invalid TLS certificates) before dialling.
+// To block until the connection is ready, use [Client.WaitReady]:
 //
 //	if err := c.Connect(ctx); err != nil { ... }
 //	if err := c.WaitReady(ctx); err != nil { ... }
+//
+// If neither [WithTLS], [WithMutualTLS], nor [WithInsecure] is set,
+// the client defaults to insecure credentials and logs a warning.
 //
 // [Client.Close] gracefully shuts down the connection and cancels
 // any background goroutines (e.g., health watching).
@@ -70,7 +74,9 @@
 // # Health Watching
 //
 // Enable [WithHealthWatch] to monitor the server's health status
-// in a background goroutine after connecting:
+// in a background goroutine after connecting. The watcher automatically
+// reconnects with exponential backoff (500ms to 30s) if the health
+// stream is interrupted:
 //
 //	c := client.New("localhost:50051",
 //	    client.WithInsecure(),
@@ -80,15 +86,15 @@
 // # Available Options
 //
 //   - [WithInsecure] — disable transport security (dev/testing)
-//   - [WithTLS] — TLS with server CA verification
-//   - [WithMutualTLS] — mutual TLS for service-to-service
+//   - [WithTLS] — TLS with server CA verification (errors deferred to [Client.Connect])
+//   - [WithMutualTLS] — mutual TLS for service-to-service (errors deferred to [Client.Connect])
 //   - [WithLogger] — pluggable logger (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
 //   - [WithDefaultTimeout] — default RPC deadline (syncs to interceptors)
 //   - [WithRetry] — retry on transient failures (syncs to interceptors)
 //   - [WithRetryCodes] — override retryable status codes (syncs to interceptors)
 //   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [StaticToken] and [OAuth2TokenSource])
-//   - [WithHealthWatch] — background health monitoring
+//   - [WithHealthWatch] — background health monitoring with auto-reconnect
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size
 //   - [WithDialOptions] — raw grpc.DialOption pass-through

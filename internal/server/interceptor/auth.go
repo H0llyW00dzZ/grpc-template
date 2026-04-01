@@ -39,11 +39,12 @@ func Auth() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		if _, excluded := defaultConfig.excludedMethods[info.FullMethod]; excluded {
+		cfg := getConfig()
+		if _, excluded := cfg.excludedMethods[info.FullMethod]; excluded {
 			return handler(ctx, req)
 		}
 
-		fn := defaultConfig.authFunc
+		fn := cfg.authFunc
 		if fn == nil {
 			return handler(ctx, req)
 		}
@@ -67,11 +68,12 @@ func StreamAuth() grpc.StreamServerInterceptor {
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		if _, excluded := defaultConfig.excludedMethods[info.FullMethod]; excluded {
+		cfg := getConfig()
+		if _, excluded := cfg.excludedMethods[info.FullMethod]; excluded {
 			return handler(srv, ss)
 		}
 
-		fn := defaultConfig.authFunc
+		fn := cfg.authFunc
 		if fn == nil {
 			return handler(srv, ss)
 		}

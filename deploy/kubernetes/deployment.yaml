@@ -81,7 +81,7 @@ spec:
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
+        whenUnsatisfiable: ScheduleAnyway  # Prefer spreading, but allow scheduling on smaller clusters
         labelSelector:
           matchLabels:
             app: grpc-template
