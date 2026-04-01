@@ -67,3 +67,13 @@ func StopCleanup() {
 		m.Stop()
 	}
 }
+
+// ResetConfig resets the package-level configuration to defaults.
+// This is only available in tests.
+func ResetConfig() {
+	configMu.Lock()
+	defer configMu.Unlock()
+	defaultConfig = &config{
+		excludedMethods: make(map[string]struct{}),
+	}
+}

@@ -276,8 +276,10 @@ func (c *Client) startHealthWatch() {
 // sleepOrDone blocks for the given duration or until the context is cancelled.
 // Returns true if the sleep completed, false if the context was cancelled.
 func (c *Client) sleepOrDone(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
 	select {
-	case <-time.After(d):
+	case <-t.C:
 		return true
 	case <-ctx.Done():
 		return false
