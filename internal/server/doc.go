@@ -69,8 +69,8 @@
 //	    healthgrpc.HealthCheckResponse_NOT_SERVING,
 //	)
 //
-// On graceful shutdown, all registered services are atomically
-// transitioned to NOT_SERVING before draining connections.
+// When [Run] returns (whether from graceful shutdown or a serve error),
+// all registered services are atomically transitioned to NOT_SERVING.
 //
 // # Available Options
 //
