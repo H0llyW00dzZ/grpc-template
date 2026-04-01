@@ -96,11 +96,23 @@ func (c *Client) Logger() logging.Handler {
 // handshake occurs when the first RPC is made or [Client.WaitReady] is
 // called.
 //
+// Connect returns an error if called more than once without an
+// intervening [Client.Close]. This prevents connection and goroutine
+// leaks that would occur if a previous connection were silently
+// overwritten.
+//
 // If [WithHealthWatch] was configured, a background goroutine is started
 // to monitor the server's health status.
 func (c *Client) Connect(ctx context.Context) error {
 	if c.configErr != nil {
 		return fmt.Errorf("client: configuration error: %w", c.configErr)
+	}
+
+	c.mu.RLock()
+	alreadyConnected := c.conn != nil
+	c.mu.RUnlock()
+	if alreadyConnected {
+		return fmt.Errorf("client: already connected (call Close before reconnecting)")
 	}
 
 	opts := c.buildDialOpts()

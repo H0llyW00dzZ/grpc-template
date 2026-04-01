@@ -78,6 +78,8 @@ spec:
           capabilities:
             drop:
             - ALL
+          seccompProfile:
+            type: RuntimeDefault
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname

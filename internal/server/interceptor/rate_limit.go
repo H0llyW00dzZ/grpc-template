@@ -117,7 +117,7 @@ func RateLimit() grpc.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 
-		key := peerKey(ctx)
+		key := peerKey(ctx, cfg.trustProxy)
 		allowed, err := cfg.rateLimiter.Allow(ctx, key)
 		if err != nil {
 			return nil, status.Error(codes.Internal, "rate limiter internal error")
@@ -144,7 +144,7 @@ func StreamRateLimit() grpc.StreamServerInterceptor {
 			return handler(srv, ss)
 		}
 
-		key := peerKey(ss.Context())
+		key := peerKey(ss.Context(), cfg.trustProxy)
 		allowed, err := cfg.rateLimiter.Allow(ss.Context(), key)
 		if err != nil {
 			return status.Error(codes.Internal, "rate limiter internal error")
@@ -191,11 +191,15 @@ func (p *peerLimiters) cleanup(ttl time.Duration) {
 }
 
 // peerKey extracts the client IP from the gRPC peer information.
-// If TrustProxy is unconditionally enabled, it first checks common proxy
-// headers (x-forwarded-for, x-real-ip) in the gRPC metadata.
+// When trustProxy is true it first checks common proxy headers
+// (x-forwarded-for, x-real-ip) in the gRPC metadata.
 // Otherwise, it falls back to the direct hardware peer connection.
-func peerKey(ctx context.Context) string {
-	if getConfig().trustProxy {
+//
+// The caller must pass the trustProxy value from its own config
+// snapshot so that a single consistent configuration generation is
+// used for the entire request.
+func peerKey(ctx context.Context, trustProxy bool) string {
+	if trustProxy {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
 				// x-forwarded-for can be a comma-separated list of IPs.

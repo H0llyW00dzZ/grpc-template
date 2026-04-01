@@ -35,7 +35,9 @@
 //
 // All interceptors read their configuration through a snapshot taken under
 // a read lock, so [Configure] may be called concurrently with in-flight
-// RPCs without data races.
+// RPCs without data races. Each interceptor uses a single config snapshot
+// for the entire request, including derived operations like peer key
+// extraction, ensuring consistency within a request.
 //
 // # Available Interceptors
 //

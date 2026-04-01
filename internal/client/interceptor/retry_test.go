@@ -218,3 +218,10 @@ func TestBackoffDuration_TinyBase(t *testing.T) {
 	d := interceptor.BackoffDuration(0, time.Nanosecond)
 	assert.GreaterOrEqual(t, d, time.Duration(0))
 }
+
+func TestBackoffDuration_OverflowCap(t *testing.T) {
+	// Attempt 100 would overflow int64 without the cap at 62.
+	// Verify it returns a positive duration instead of wrapping negative.
+	d := interceptor.BackoffDuration(100, time.Second)
+	assert.Greater(t, d, time.Duration(0), "overflow should be capped to a positive value")
+}

@@ -88,9 +88,7 @@ func startTestServer(t *testing.T, ctx context.Context) *bufconn.Listener {
 	srv.RegisterService(greeterSvc.Register)
 
 	go func() {
-		if err := srv.Run(ctx); err != nil {
-			t.Log("server stopped:", err)
-		}
+		_ = srv.Run(ctx)
 	}()
 
 	return lis
@@ -184,12 +182,13 @@ func TestConnectWithHealthWatch(t *testing.T) {
 	c := newBufClient(lis, client.WithHealthWatch())
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
-	// Give health watch goroutine a moment to start.
-	time.Sleep(100 * time.Millisecond)
-
-	err = c.Close()
-	assert.NoError(t, err)
+	// Wait for the connection to become ready, confirming the
+	// health watch goroutine is running.
+	require.Eventually(t, func() bool {
+		return c.State() == connectivity.Ready
+	}, 5*time.Second, 50*time.Millisecond, "connection should reach Ready state")
 }
 
 func TestCloseWithHealthWatch(t *testing.T) {
@@ -201,8 +200,10 @@ func TestCloseWithHealthWatch(t *testing.T) {
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
 
-	// Give health watch goroutine a moment to start.
-	time.Sleep(100 * time.Millisecond)
+	// Wait for the health watch goroutine to be running.
+	require.Eventually(t, func() bool {
+		return c.State() == connectivity.Ready
+	}, 5*time.Second, 50*time.Millisecond, "connection should reach Ready state")
 
 	// Close should cancel health watch and not hang.
 	err = c.Close()
@@ -282,17 +283,22 @@ func TestHealthWatch_ServerShutdown(t *testing.T) {
 	c := newBufClient(lis, client.WithHealthWatch())
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
-	// Give health watch time to start and receive initial status.
-	time.Sleep(200 * time.Millisecond)
+	// Wait for health watch to start and receive initial status.
+	require.Eventually(t, func() bool {
+		return c.State() == connectivity.Ready
+	}, 5*time.Second, 50*time.Millisecond, "connection should reach Ready state")
 
 	// Shut down the server — this causes the health watch stream to end
 	// with an error, exercising the stream error path in startHealthWatch.
 	cancel()
-	time.Sleep(200 * time.Millisecond)
 
-	err = c.Close()
-	assert.NoError(t, err)
+	// Wait for the client to notice the server is gone.
+	require.Eventually(t, func() bool {
+		s := c.State()
+		return s == connectivity.TransientFailure || s == connectivity.Idle
+	}, 5*time.Second, 50*time.Millisecond, "client should detect server shutdown")
 }
 
 func TestHealthWatch_NoHealthService(t *testing.T) {
@@ -301,11 +307,17 @@ func TestHealthWatch_NoHealthService(t *testing.T) {
 	srv := grpc.NewServer()
 	go func() {
 		if err := srv.Serve(lis); err != nil {
-			t.Log("server exited:", err)
+			// Only log if test is still running.
+			select {
+			case <-t.Context().Done():
+			default:
+				t.Log("server exited:", err)
+			}
 		}
 	}()
 	t.Cleanup(func() { srv.GracefulStop() })
 
+	var watchAttempts atomic.Int32
 	c := client.New("passthrough:///bufconn",
 		client.WithDialOptions(
 			grpc.WithContextDialer(testutil.BufDialer(lis)),
@@ -314,15 +326,20 @@ func TestHealthWatch_NoHealthService(t *testing.T) {
 		client.WithLogger(logging.Default()),
 		client.WithHealthWatch(),
 	)
+	// Wrap the real health watch to count attempts.
+	c.SetWatchFunc(func(ctx context.Context, conn *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
+		watchAttempts.Add(1)
+		return healthgrpc.NewHealthClient(conn).Watch(ctx, &healthgrpc.HealthCheckRequest{})
+	})
 
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
-	// Give health watch time to attempt and fail.
-	time.Sleep(200 * time.Millisecond)
-
-	err = c.Close()
-	assert.NoError(t, err)
+	// Wait for the health watch to attempt at least once.
+	require.Eventually(t, func() bool {
+		return watchAttempts.Load() >= 1
+	}, 5*time.Second, 50*time.Millisecond, "health watch should attempt to connect")
 }
 
 func TestHealthWatch_ImmediateClose(t *testing.T) {
@@ -360,27 +377,30 @@ func TestConnect_DialError(t *testing.T) {
 
 func TestHealthWatch_WatchRPCError(t *testing.T) {
 	// To cover the stream.Recv() error path where ctx.Err() == nil,
-	// we close the raw *grpc.ClientConn (bypassing Client.Close) so
-	// the health context is still active but the transport is broken.
+	// we inject a watch function that returns a stream which fails on
+	// the second Recv call, simulating a broken transport while the
+	// health context is still active.
 	ctx := t.Context()
 
 	lis := startTestServer(t, ctx)
 
+	var recvCalls atomic.Int32
 	c := newBufClient(lis, client.WithHealthWatch())
+	c.SetWatchFunc(func(wctx context.Context, conn *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
+		// First call succeeds (returns a stream that errors on Recv),
+		// covering the stream.Recv error path.
+		recvCalls.Add(1)
+		return &errorWatchStream{err: fmt.Errorf("transport broken")}, nil
+	})
+
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
-	// Let health watch start and receive the initial status.
-	time.Sleep(200 * time.Millisecond)
-
-	// Close the raw conn — this kills the transport without cancelling
-	// the health watch context, causing stream.Recv to fail with a
-	// transport error while ctx.Err() is still nil.
-	rawConn := c.Conn()
-	rawConn.Close()
-
-	// Wait for the health goroutine to log the warning and exit.
-	time.Sleep(200 * time.Millisecond)
+	// Wait for the health goroutine to hit the Recv error and retry.
+	require.Eventually(t, func() bool {
+		return recvCalls.Load() >= 2
+	}, 5*time.Second, 50*time.Millisecond, "health watch should retry after stream Recv error")
 }
 
 func TestHealthWatch_WatchCtxCancelled(t *testing.T) {
@@ -408,19 +428,21 @@ func TestHealthWatch_WatchFuncError(t *testing.T) {
 
 	lis := startTestServer(t, ctx)
 
+	var calls atomic.Int32
 	c := newBufClient(lis, client.WithHealthWatch())
 	c.SetWatchFunc(func(_ context.Context, _ *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
+		calls.Add(1)
 		return nil, fmt.Errorf("injected watch error")
 	})
 
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
-	// Give the goroutine time to call the injected watch func and hit the warn path.
-	time.Sleep(100 * time.Millisecond)
-
-	err = c.Close()
-	assert.NoError(t, err)
+	// Wait for the goroutine to call the injected watch func.
+	require.Eventually(t, func() bool {
+		return calls.Load() >= 1
+	}, 5*time.Second, 50*time.Millisecond, "health watch should call injected func")
 }
 
 func TestHealthWatch_RetriesAfterWatchError(t *testing.T) {
@@ -440,14 +462,12 @@ func TestHealthWatch_RetriesAfterWatchError(t *testing.T) {
 
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
 	// Poll until the goroutine has retried at least once (after 500ms backoff).
 	require.Eventually(t, func() bool {
 		return calls.Load() >= 2
 	}, 5*time.Second, 50*time.Millisecond, "health watch should retry after backoff")
-
-	err = c.Close()
-	assert.NoError(t, err)
 }
 
 func TestHealthWatch_ReconnectsAfterStreamEnd(t *testing.T) {
@@ -467,12 +487,26 @@ func TestHealthWatch_ReconnectsAfterStreamEnd(t *testing.T) {
 
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
 
 	// Poll until the goroutine has reconnected at least once (after 500ms backoff).
 	require.Eventually(t, func() bool {
 		return calls.Load() >= 2
 	}, 5*time.Second, 50*time.Millisecond, "health watch should reconnect after stream error")
+}
 
-	err = c.Close()
-	assert.NoError(t, err)
+func TestConnect_AlreadyConnected(t *testing.T) {
+	ctx := t.Context()
+
+	lis := startTestServer(t, ctx)
+
+	c := newBufClient(lis)
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
+
+	// Second Connect should fail without leaking the first connection.
+	err = c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already connected")
 }

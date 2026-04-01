@@ -16,6 +16,9 @@ import (
 )
 
 func TestConfigure_WithLogger(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
 	l := &stubLogger{}
 
 	// Configure the interceptor package with a logger.
@@ -24,14 +27,11 @@ func TestConfigure_WithLogger(t *testing.T) {
 	// Verify by creating an interceptor — it should not panic.
 	i := interceptor.Logging()
 	assert.NotNil(t, i)
-
-	// Reset to default.
-	interceptor.Configure(interceptor.WithLogger(nil))
 }
 
 func TestConfigure_DefaultLogger(t *testing.T) {
-	// Reset config to default.
-	interceptor.Configure(interceptor.WithLogger(nil))
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
 
 	// Interceptors should still work, falling back to logging.Default().
 	i := interceptor.Recovery()
@@ -39,6 +39,9 @@ func TestConfigure_DefaultLogger(t *testing.T) {
 }
 
 func TestConfigure_CustomLoggerUsedByInterceptors(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
 	l := &stubLogger{}
 	interceptor.Configure(interceptor.WithLogger(l))
 
@@ -54,9 +57,6 @@ func TestConfigure_CustomLoggerUsedByInterceptors(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp)
 	assert.True(t, l.called, "custom logger should have been invoked")
-
-	// Reset to default to avoid affecting other tests.
-	interceptor.Configure(interceptor.WithLogger(nil))
 }
 
 // stubLogger is a custom logging.Handler that records whether it was called.
