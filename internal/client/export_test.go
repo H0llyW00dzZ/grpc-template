@@ -14,12 +14,18 @@ import (
 
 // SetDialFunc overrides the gRPC dial function for testing.
 // Pass nil to restore the default [grpc.NewClient].
+//
+// Must be called before [Client.Connect]; these fields are treated
+// as immutable once the connection lifecycle begins.
 func (c *Client) SetDialFunc(fn func(string, ...grpc.DialOption) (*grpc.ClientConn, error)) {
 	c.dialFunc = fn
 }
 
 // SetWatchFunc overrides the health Watch creation for testing.
 // Pass nil to restore the default health client.
+//
+// Must be called before [Client.Connect]; these fields are treated
+// as immutable once the connection lifecycle begins.
 func (c *Client) SetWatchFunc(fn func(context.Context, *grpc.ClientConn) (healthgrpc.Health_WatchClient, error)) {
 	c.watchFunc = fn
 }

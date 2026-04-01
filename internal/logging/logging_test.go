@@ -3,6 +3,9 @@
 // By accessing or using this software, you agree to be bound by the terms
 // of the License Agreement, which you can find at LICENSE files.
 
+// Tests in this file mutate the global slog default and the package-level
+// logging.Default handler. They must NOT use t.Parallel() to avoid
+// cross-test interference.
 package logging_test
 
 import (
@@ -60,6 +63,12 @@ func TestSlogHandler_Error(t *testing.T) {
 	})
 	assert.Contains(t, out, "error message")
 	assert.Contains(t, out, "key=value")
+}
+
+func TestSetDefault_NilPanics(t *testing.T) {
+	require.Panics(t, func() {
+		logging.SetDefault(nil)
+	})
 }
 
 func TestCustomHandler_ReceivesCalls(t *testing.T) {

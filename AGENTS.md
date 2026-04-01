@@ -109,7 +109,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - gRPC errors: `status.Errorf(codes.InvalidArgument, "msg: %v", err)` or `status.Error`
 - In interceptors: use codes.Internal for panics/recovery (see recovery.go:33)
 - Never panic in production code
-- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `c.configErr`) and return it from a later method like `Connect()` — see `client/option.go` WithTLS/WithMutualTLS
+- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `configErr`) and return it from a later method like `Connect()` or `Run()` — see `client/option.go` and `server/option.go` WithTLS/WithMutualTLS. A succeeding TLS option clears `configErr`. `client.WithInsecure()` also clears `configErr` and `tlsConfig`.
 - Log errors with structured logging using logger.Error(msg, "key", value)
 - In tests: use require.NoError(t, err), assert.Equal
 
@@ -119,6 +119,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Always include context like "method", req fields
 - See internal/logging/logging.go:28
 - Services receive logger via NewService(l logging.Handler)
+- `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)
@@ -140,14 +141,16 @@ And every `.proto` file must also start with the identical header (same `//` com
 
 ### Server and Interceptors
 - Use functional options: `server.WithXXX()` and `client.WithXXX()`
-- Register services via `RegisterService(registrar func(*grpc.Server))`
+- Register services via `RegisterService(registrar func(*grpc.Server))` — must be called before `Run`; not safe for concurrent use
 - Server interceptors in `internal/server/interceptor/`
 - Client interceptors in `internal/client/interceptor/`
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
 - See `internal/server/server.go:42` for New(), `option.go` for options
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
-- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot. Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
+- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot (returned by value in both packages). Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
 - `Client.Connect()` rejects double invocation — call `Close()` before reconnecting to prevent connection and goroutine leaks.
+- `Server.Run()` drains the serve goroutine before returning — no goroutine leaks on shutdown. It logs the actual listener address via `lis.Addr()`. On graceful shutdown, `healthSrv.Shutdown()` atomically transitions all registered services to NOT_SERVING.
+- When replacing a rate limiter via `WithRateLimiter` or `WithRateLimit`, the previous limiter is automatically stopped if it implements `Stop()` (e.g., `MemoryRateLimiter`), preventing background goroutine leaks.
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/
@@ -160,7 +163,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Go 1.26+
 - Use context everywhere
 - Graceful shutdown in server
-- Avoid global state except for logging.Default()
+- Avoid global state except for logging.Default() (which is atomic/thread-safe)
 - Error strings should not be capitalized or end with punctuation
 - Use %w for wrapping in fmt.Errorf
 - Struct tags for any JSON if needed (though rare in gRPC)

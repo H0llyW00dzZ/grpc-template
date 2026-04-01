@@ -11,11 +11,15 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
-COPY . .
+# Copy only the source directories needed for the build so that
+# changes to docs, tests, or deploy files do not invalidate the
+# build layer cache.
+COPY cmd/ cmd/
+COPY internal/ internal/
+COPY pkg/ pkg/
 
 # Build the server
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /server ./cmd/server
 
 # Final stage
 FROM alpine:3.23

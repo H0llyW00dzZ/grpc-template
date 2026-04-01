@@ -55,7 +55,11 @@
 //   - [RateLimit] / [StreamRateLimit] — configurable per-peer rate limiting
 //     powered by a [RateLimiter] interface (scalable to Redis or other databases).
 //     The default [MemoryRateLimiter] executes a token-bucket algorithm with
-//     automatic stale-limiter cleanup. Supports proxy-aware client IP
+//     automatic stale-limiter cleanup (at half the TTL interval for tighter
+//     memory reclamation). When a rate limiter is replaced via
+//     [WithRateLimiter] or [WithRateLimit], the previous limiter is stopped
+//     automatically if it implements a Stop method (e.g., [MemoryRateLimiter]),
+//     preventing background goroutine leaks. Supports proxy-aware client IP
 //     extraction via [WithTrustProxy] (X-Forwarded-For, X-Real-IP).
 //
 // # Usage

@@ -10,7 +10,9 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Auth returns a unary client interceptor that injects a bearer token
@@ -32,7 +34,8 @@ func Auth() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		ctx, err := injectToken(ctx)
+		cfg := getConfig()
+		ctx, err := injectToken(ctx, cfg.tokenSource)
 		if err != nil {
 			return err
 		}
@@ -53,7 +56,8 @@ func StreamAuth() grpc.StreamClientInterceptor {
 		streamer grpc.Streamer,
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
-		ctx, err := injectToken(ctx)
+		cfg := getConfig()
+		ctx, err := injectToken(ctx, cfg.tokenSource)
 		if err != nil {
 			return nil, err
 		}
@@ -61,10 +65,10 @@ func StreamAuth() grpc.StreamClientInterceptor {
 	}
 }
 
-// injectToken calls the configured TokenSource and injects the bearer token
-// into outgoing metadata.
-func injectToken(ctx context.Context) (context.Context, error) {
-	src := getConfig().tokenSource
+// injectToken calls the given TokenSource and injects the bearer token
+// into outgoing metadata. The caller passes the token source from its
+// own config snapshot so that a single snapshot is used per request.
+func injectToken(ctx context.Context, src TokenSource) (context.Context, error) {
 	if src == nil {
 		return ctx, nil
 	}
@@ -76,7 +80,7 @@ func injectToken(ctx context.Context) (context.Context, error) {
 
 	token, ok := ctx.Value(tokenKey{}).(string)
 	if !ok || token == "" {
-		return ctx, fmt.Errorf("client interceptor: no token in context")
+		return ctx, status.Error(codes.Unauthenticated, "client interceptor: no token in context")
 	}
 
 	md, ok := metadata.FromOutgoingContext(ctx)

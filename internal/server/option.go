@@ -39,12 +39,16 @@ func WithReflection() Option {
 
 // WithTLS enables TLS on the server using the given certificate and key files.
 // This encrypts all connections between clients and the server.
+// If the certificate cannot be loaded, the error is deferred and
+// returned from [Server.Run].
 func WithTLS(certFile, keyFile string) Option {
 	return func(s *Server) {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to load TLS certificate: %v", err))
+			s.configErr = fmt.Errorf("failed to load TLS certificate: %w", err)
+			return
 		}
+		s.configErr = nil
 		s.tlsConfig = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			MinVersion:   tls.VersionTLS13,
@@ -55,23 +59,29 @@ func WithTLS(certFile, keyFile string) Option {
 // WithMutualTLS enables mutual TLS (mTLS) on the server.
 // Both the server and client verify each other's certificates.
 // Use this for zero-trust environments and service-to-service communication.
+// If any certificate cannot be loaded or parsed, the error is deferred
+// and returned from [Server.Run].
 func WithMutualTLS(certFile, keyFile, caCertFile string) Option {
 	return func(s *Server) {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to load TLS certificate: %v", err))
+			s.configErr = fmt.Errorf("failed to load TLS certificate: %w", err)
+			return
 		}
 
 		caCert, err := os.ReadFile(caCertFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to read CA certificate: %v", err))
+			s.configErr = fmt.Errorf("failed to read CA certificate: %w", err)
+			return
 		}
 
 		caPool := x509.NewCertPool()
 		if !caPool.AppendCertsFromPEM(caCert) {
-			panic("failed to parse CA certificate")
+			s.configErr = fmt.Errorf("failed to parse CA certificate from %s", caCertFile)
+			return
 		}
 
+		s.configErr = nil
 		s.tlsConfig = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			ClientAuth:   tls.RequireAndVerifyClientCert,

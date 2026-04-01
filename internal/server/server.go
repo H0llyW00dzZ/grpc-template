@@ -37,6 +37,11 @@ type Server struct {
 	grpcOpts           []grpc.ServerOption
 	listener           net.Listener
 	healthSrv          *health.Server
+
+	// configErr captures errors from functional options (e.g., TLS
+	// certificate loading) so they can be returned from [Server.Run]
+	// instead of panicking during construction.
+	configErr error
 }
 
 // New creates a new Server with the given functional options.
@@ -77,6 +82,9 @@ func (s *Server) Health() *health.Server {
 // RegisterService adds one or more service registrars that will be called
 // when the server starts. This is the primary way to add your
 // gRPC service implementations to the server.
+//
+// RegisterService must be called before [Run]; it is not safe for
+// concurrent use.
 //
 //	srv.RegisterService(greeterSvc.Register, authSvc.Register, kvSvc.Register)
 func (s *Server) RegisterService(registrars ...ServiceRegistrar) {
@@ -129,8 +137,15 @@ func (s *Server) setupServer() *grpc.Server {
 // Run starts the gRPC server and blocks until the context is cancelled
 // or an OS interrupt/termination signal is received.
 //
+// It returns an error if any functional option (e.g., [WithTLS],
+// [WithMutualTLS]) recorded a configuration error during construction.
+//
 // It performs a graceful shutdown, allowing in-flight RPCs to complete.
 func (s *Server) Run(ctx context.Context) error {
+	if s.configErr != nil {
+		return fmt.Errorf("server: configuration error: %w", s.configErr)
+	}
+
 	// Listen for OS signals for graceful shutdown.
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -147,25 +162,27 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}
 
-	// Start serving in a goroutine.
+	// Start serving in a goroutine. The channel always receives exactly
+	// one value so the drain on the shutdown path never blocks.
 	errCh := make(chan error, 1)
 	go func() {
-		s.logger.Info("gRPC server listening", "port", s.port)
-		if err := grpcServer.Serve(lis); err != nil {
-			errCh <- fmt.Errorf("failed to serve: %w", err)
-		}
-		close(errCh)
+		s.logger.Info("gRPC server listening", "address", lis.Addr().String())
+		errCh <- grpcServer.Serve(lis)
 	}()
 
 	// Wait for shutdown signal or serve error.
 	select {
 	case <-ctx.Done():
 		s.logger.Info("shutdown signal received, draining connections...")
-		s.healthSrv.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
+		s.healthSrv.Shutdown()
 		grpcServer.GracefulStop()
 		s.logger.Info("gRPC server stopped gracefully")
+		// Drain the serve result so the goroutine is guaranteed to
+		// exit before Run returns. After GracefulStop the error is
+		// always nil or ErrServerStopped — neither is actionable.
+		<-errCh
 		return nil
 	case err := <-errCh:
-		return err
+		return fmt.Errorf("failed to serve: %w", err)
 	}
 }

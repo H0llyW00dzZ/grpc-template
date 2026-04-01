@@ -24,9 +24,15 @@ type Option func(*Client)
 
 // WithInsecure disables transport security.
 // Use only for development and testing environments.
+//
+// If a preceding TLS option recorded a configuration error,
+// WithInsecure clears it because the caller has explicitly
+// opted out of TLS.
 func WithInsecure() Option {
 	return func(c *Client) {
 		c.insecureCreds = true
+		c.tlsConfig = nil
+		c.configErr = nil
 	}
 }
 

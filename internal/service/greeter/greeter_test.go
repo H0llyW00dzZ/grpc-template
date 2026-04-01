@@ -9,6 +9,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
@@ -17,8 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
+
+// testTimeout is the maximum time any single greeter test should take.
+const testTimeout = 10 * time.Second
 
 func startGreeterServer(t *testing.T) *bufconn.Listener {
 	t.Helper()
@@ -26,12 +32,18 @@ func startGreeterServer(t *testing.T) *bufconn.Listener {
 	srv := grpc.NewServer()
 	svc := greeter.NewService(logging.Default())
 	svc.Register(srv)
+
+	// Capture serve errors via a channel so we never call t.Errorf
+	// from a goroutine that may outlive the test function.
+	errCh := make(chan error, 1)
 	go func() {
-		if err := srv.Serve(lis); err != nil {
-			t.Errorf("server exited with error: %v", err)
-		}
+		errCh <- srv.Serve(lis)
 	}()
-	t.Cleanup(func() { srv.GracefulStop() })
+	t.Cleanup(func() {
+		srv.GracefulStop()
+		// Drain errCh to ensure the goroutine has exited.
+		<-errCh
+	})
 	return lis
 }
 
@@ -48,7 +60,10 @@ func TestSayHello(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: "World"})
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	resp, err := client.SayHello(ctx, &pb.SayHelloRequest{Name: "World"})
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!", resp.GetMessage())
 }
@@ -57,7 +72,10 @@ func TestSayHello_EmptyName(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	resp, err := client.SayHello(context.Background(), &pb.SayHelloRequest{Name: ""})
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	resp, err := client.SayHello(ctx, &pb.SayHelloRequest{Name: ""})
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, !", resp.GetMessage())
 }
@@ -66,7 +84,10 @@ func TestSayHelloServerStream(t *testing.T) {
 	lis := startGreeterServer(t)
 	client := newGreeterClient(t, lis)
 
-	stream, err := client.SayHelloServerStream(context.Background(), &pb.SayHelloServerStreamRequest{Name: "Alice"})
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	stream, err := client.SayHelloServerStream(ctx, &pb.SayHelloServerStreamRequest{Name: "Alice"})
 	require.NoError(t, err)
 
 	want := []string{
@@ -97,14 +118,15 @@ func TestSayHelloServerStream_ClientCancel(t *testing.T) {
 	stream, err := client.SayHelloServerStream(ctx, &pb.SayHelloServerStreamRequest{Name: "Cancel"})
 	require.NoError(t, err)
 
-	// Receive first message successfully
+	// Receive first message successfully.
 	_, err = stream.Recv()
 	require.NoError(t, err)
 
-	// Cancel context to force stream.Send() to fail on the server
+	// Cancel context to force stream.Send() to fail on the server.
 	cancel()
 
-	// Subsequent reads fail on the client
+	// Subsequent reads must fail with Canceled.
 	_, err = stream.Recv()
 	require.Error(t, err)
+	assert.Equal(t, codes.Canceled, status.Code(err))
 }

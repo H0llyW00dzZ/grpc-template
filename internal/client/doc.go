@@ -87,7 +87,7 @@
 //
 // # Available Options
 //
-//   - [WithInsecure] — disable transport security (dev/testing)
+//   - [WithInsecure] — disable transport security (dev/testing); clears any prior TLS config error
 //   - [WithTLS] — TLS with server CA verification (errors deferred to [Client.Connect])
 //   - [WithMutualTLS] — mutual TLS for service-to-service (errors deferred to [Client.Connect])
 //   - [WithLogger] — pluggable logger (syncs to interceptors)
@@ -95,7 +95,7 @@
 //   - [WithDefaultTimeout] — default RPC deadline (syncs to interceptors)
 //   - [WithRetry] — retry on transient failures (syncs to interceptors)
 //   - [WithRetryCodes] — override retryable status codes (syncs to interceptors)
-//   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [StaticToken] and [OAuth2TokenSource])
+//   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [interceptor.StaticToken] and [interceptor.OAuth2TokenSource])
 //   - [WithHealthWatch] — background health monitoring with auto-reconnect
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

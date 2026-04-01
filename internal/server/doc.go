@@ -46,8 +46,13 @@
 // # Running and Shutdown
 //
 // [Server.Run] starts the server and blocks until the context is cancelled
-// or a SIGINT/SIGTERM signal is received. The server performs a graceful
-// shutdown, draining in-flight RPCs before stopping:
+// or a SIGINT/SIGTERM signal is received. It returns immediately with an
+// error if any option recorded a configuration failure (e.g., invalid TLS
+// certificates from [WithTLS] or [WithMutualTLS]). A succeeding TLS
+// option clears the error from a preceding one.
+// The server performs a graceful shutdown, draining in-flight RPCs
+// before stopping. The internal serve goroutine is always joined before
+// Run returns, preventing goroutine leaks:
 //
 //	if err := srv.Run(ctx); err != nil {
 //	    log.Fatal(err)
@@ -64,19 +69,20 @@
 //	    healthgrpc.HealthCheckResponse_NOT_SERVING,
 //	)
 //
-// On graceful shutdown, the overall health status is automatically set
-// to NOT_SERVING before draining connections.
+// On graceful shutdown, all registered services are atomically
+// transitioned to NOT_SERVING before draining connections.
 //
 // # Available Options
 //
 //   - [WithPort] — TCP port to listen on (default "50051")
 //   - [WithReflection] — enable gRPC server reflection
-//   - [WithTLS] / [WithMutualTLS] — TLS and mutual TLS
+//   - [WithTLS] / [WithMutualTLS] — TLS and mutual TLS (errors deferred to [Run])
 //   - [WithLogger] — pluggable logger (syncs to interceptors)
 //   - [WithAuthFunc] — authentication function (syncs to interceptors)
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
-//   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors). For custom backends like Redis, configure [interceptor.WithRateLimiter] directly.
+//   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors)
+//   - [WithRateLimiter] — custom [interceptor.RateLimiter] backend (e.g., Redis) (syncs to interceptors)
 //   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

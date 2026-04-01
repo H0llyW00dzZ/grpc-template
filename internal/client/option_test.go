@@ -27,6 +27,17 @@ func TestWithInsecure(t *testing.T) {
 	require.NotNil(t, c)
 }
 
+func TestWithInsecure_ClearsTLSError(t *testing.T) {
+	// A preceding TLS error should be cleared by WithInsecure.
+	c := client.New("localhost:50051",
+		client.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"),
+		client.WithInsecure(),
+	)
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
+}
+
 func TestWithTLS(t *testing.T) {
 	dir := t.TempDir()
 	_, _, caCertFile := generateTestCert(t, dir)

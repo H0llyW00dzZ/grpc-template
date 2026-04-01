@@ -17,7 +17,6 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
-	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -112,9 +111,11 @@ func TestWithTLS(t *testing.T) {
 }
 
 func TestWithTLS_InvalidFiles(t *testing.T) {
-	require.Panics(t, func() {
-		server.New(server.WithTLS("/no/such/cert.pem", "/no/such/key.pem"))
-	})
+	srv := server.New(server.WithTLS("/no/such/cert.pem", "/no/such/key.pem"), server.WithPort("0"))
+	err := srv.Run(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to load TLS certificate")
 }
 
 func TestWithMutualTLS(t *testing.T) {
@@ -133,18 +134,42 @@ func TestWithMutualTLS(t *testing.T) {
 }
 
 func TestWithMutualTLS_InvalidCert(t *testing.T) {
-	require.Panics(t, func() {
-		server.New(server.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"))
-	})
+	srv := server.New(server.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"), server.WithPort("0"))
+	err := srv.Run(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to load TLS certificate")
 }
 
 func TestWithMutualTLS_InvalidCA(t *testing.T) {
 	dir := t.TempDir()
 	certFile, keyFile, _ := generateTestCert(t, dir)
 
-	require.Panics(t, func() {
-		server.New(server.WithMutualTLS(certFile, keyFile, "/no/such/ca.pem"))
-	})
+	srv := server.New(server.WithMutualTLS(certFile, keyFile, "/no/such/ca.pem"), server.WithPort("0"))
+	err := srv.Run(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to read CA certificate")
+}
+
+func TestWithTLS_SuccessOverridesPreviousError(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile, _ := generateTestCert(t, dir)
+
+	// A failing option followed by a succeeding one should not error
+	// because the second option clears configErr.
+	srv := server.New(
+		server.WithTLS("/no/such/cert.pem", "/no/such/key.pem"),
+		server.WithTLS(certFile, keyFile),
+		server.WithPort("0"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
 }
 
 func TestWithMutualTLS_InvalidCAPEM(t *testing.T) {
@@ -154,9 +179,11 @@ func TestWithMutualTLS_InvalidCAPEM(t *testing.T) {
 	badCA := filepath.Join(dir, "bad_ca.pem")
 	require.NoError(t, os.WriteFile(badCA, []byte("not a PEM"), 0o600))
 
-	require.Panics(t, func() {
-		server.New(server.WithMutualTLS(certFile, keyFile, badCA))
-	})
+	srv := server.New(server.WithMutualTLS(certFile, keyFile, badCA), server.WithPort("0"))
+	err := srv.Run(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to parse CA certificate")
 }
 
 func TestWithKeepalive(t *testing.T) {
@@ -207,8 +234,6 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestServer_RunAndShutdown(t *testing.T) {
-	_ = testutil.NewBufListener()
-
 	srv := server.New(server.WithPort("0"))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -221,6 +246,24 @@ func TestServer_RunAndShutdown(t *testing.T) {
 	cancel()
 
 	require.NoError(t, <-errCh)
+}
+
+func TestServer_RunTwice(t *testing.T) {
+	srv := server.New(server.WithPort("0"))
+
+	// First Run: start and immediately cancel.
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+	require.NoError(t, <-errCh)
+
+	// Second Run on the same server should succeed (not blocked).
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	errCh2 := make(chan error, 1)
+	go func() { errCh2 <- srv.Run(ctx2) }()
+	cancel2()
+	require.NoError(t, <-errCh2)
 }
 
 func TestServer_RunWithAllOptions(t *testing.T) {

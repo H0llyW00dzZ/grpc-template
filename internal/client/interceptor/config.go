@@ -84,12 +84,15 @@ var defaultConfig = &config{
 	retryCodes: defaultRetryCodes,
 }
 
-// getConfig returns the current package-level configuration under a read lock.
-func getConfig() *config {
+// getConfig returns a snapshot of the current package-level configuration
+// under a read lock. The returned struct is safe to use without holding
+// the lock because its value fields are copied; however the slice fields
+// still alias the originals (which are only written at init time via
+// [Configure]).
+func getConfig() config {
 	configMu.RLock()
 	defer configMu.RUnlock()
-	cfg := *defaultConfig
-	return &cfg
+	return *defaultConfig
 }
 
 // Option configures the client interceptor package.
