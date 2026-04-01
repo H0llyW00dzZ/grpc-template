@@ -34,4 +34,5 @@ spec:
     port: 50051
     targetPort: 50051
     protocol: TCP
+    appProtocol: grpc            # Tells K8s, Gateway API, and service meshes this is gRPC
   type: ClusterIP

@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
@@ -38,6 +39,11 @@ type Client struct {
 	healthWatch        bool
 	healthCancel       context.CancelFunc
 	mu                 sync.RWMutex
+
+	// configErr captures errors from functional options (e.g., TLS
+	// certificate loading) so they can be returned from [Client.Connect]
+	// instead of panicking during construction.
+	configErr error
 
 	// dialFunc overrides grpc.NewClient for testing. If nil, the real
 	// grpc.NewClient is used.
@@ -93,6 +99,10 @@ func (c *Client) Logger() logging.Handler {
 // If [WithHealthWatch] was configured, a background goroutine is started
 // to monitor the server's health status.
 func (c *Client) Connect(ctx context.Context) error {
+	if c.configErr != nil {
+		return fmt.Errorf("client: configuration error: %w", c.configErr)
+	}
+
 	opts := c.buildDialOpts()
 
 	dial := grpc.NewClient
@@ -180,7 +190,10 @@ func (c *Client) buildDialOpts() []grpc.DialOption {
 	case c.insecureCreds:
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	default:
-		// Default to insecure for template convenience.
+		// Default to insecure for template convenience; warn so
+		// production deployments don't silently skip TLS.
+		c.logger.Warn("no TLS configured, using insecure credentials — do not use in production",
+			"target", c.target)
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
@@ -211,30 +224,64 @@ func (c *Client) startHealthWatch() {
 			watchFn = defaultHealthWatch
 		}
 
-		stream, err := watchFn(ctx, conn)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			c.logger.Warn("health watch failed to start", "target", c.target, "error", err)
-			return
-		}
+		const (
+			initialBackoff = 500 * time.Millisecond
+			maxBackoff     = 30 * time.Second
+		)
+		backoff := initialBackoff
 
 		for {
-			resp, err := stream.Recv()
+			stream, err := watchFn(ctx, conn)
 			if err != nil {
 				if ctx.Err() != nil {
 					return
 				}
-				c.logger.Warn("health watch stream ended", "target", c.target, "error", err)
+				c.logger.Warn("health watch failed to start, retrying",
+					"target", c.target, "backoff", backoff, "error", err)
+				if !c.sleepOrDone(ctx, backoff) {
+					return
+				}
+				backoff = min(backoff*2, maxBackoff)
+				continue
+			}
+
+			// Reset backoff on successful connection.
+			backoff = initialBackoff
+
+			for {
+				resp, err := stream.Recv()
+				if err != nil {
+					if ctx.Err() != nil {
+						return
+					}
+					c.logger.Warn("health watch stream ended, reconnecting",
+						"target", c.target, "backoff", backoff, "error", err)
+					break
+				}
+				c.logger.Info("health status changed",
+					"target", c.target,
+					"status", resp.GetStatus().String(),
+				)
+			}
+
+			// Wait before reconnecting after a stream error.
+			if !c.sleepOrDone(ctx, backoff) {
 				return
 			}
-			c.logger.Info("health status changed",
-				"target", c.target,
-				"status", resp.GetStatus().String(),
-			)
+			backoff = min(backoff*2, maxBackoff)
 		}
 	}()
+}
+
+// sleepOrDone blocks for the given duration or until the context is cancelled.
+// Returns true if the sleep completed, false if the context was cancelled.
+func (c *Client) sleepOrDone(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-time.After(d):
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // defaultHealthWatch creates a health Watch stream using the standard

@@ -8,6 +8,7 @@ package interceptor
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
@@ -35,6 +36,11 @@ func StaticToken(token string) TokenSource {
 
 // OAuth2TokenSource adapts [oauth2.TokenSource] to this package's
 // TokenSource. The oauth2 package handles token caching and automatic refresh.
+//
+// Note: the [oauth2.TokenSource] interface does not accept a context, so
+// token refresh cannot be cancelled via the RPC context. For context-aware
+// token fetching, implement a custom [TokenSource] that calls
+// [oauth2.Config.TokenSource] with the desired context.
 func OAuth2TokenSource(ts oauth2.TokenSource) TokenSource {
 	return func(ctx context.Context) (context.Context, error) {
 		if ts == nil {
@@ -70,9 +76,20 @@ var defaultRetryCodes = []codes.Code{
 	codes.Aborted,
 }
 
+// configMu guards all reads and writes to defaultConfig.
+var configMu sync.RWMutex
+
 // defaultConfig is the package-level configuration used by all client interceptors.
 var defaultConfig = &config{
 	retryCodes: defaultRetryCodes,
+}
+
+// getConfig returns the current package-level configuration under a read lock.
+func getConfig() *config {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	cfg := *defaultConfig
+	return &cfg
 }
 
 // Option configures the client interceptor package.
@@ -154,6 +171,8 @@ func WithTokenSource(fn TokenSource) Option {
 // [github.com/H0llyW00dzZ/grpc-template/internal/client.WithLogger] calls this
 // automatically—no manual configuration is needed.
 func Configure(opts ...Option) {
+	configMu.Lock()
+	defer configMu.Unlock()
 	for _, opt := range opts {
 		opt(defaultConfig)
 	}
@@ -162,8 +181,9 @@ func Configure(opts ...Option) {
 // logger returns the configured logger, falling back to [logging.Default]
 // if none has been set via [Configure].
 func logger() logging.Handler {
-	if defaultConfig.logger != nil {
-		return defaultConfig.logger
+	cfg := getConfig()
+	if cfg.logger != nil {
+		return cfg.logger
 	}
 	return logging.Default()
 }

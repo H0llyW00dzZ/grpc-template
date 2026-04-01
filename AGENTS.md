@@ -109,6 +109,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - gRPC errors: `status.Errorf(codes.InvalidArgument, "msg: %v", err)` or `status.Error`
 - In interceptors: use codes.Internal for panics/recovery (see recovery.go:33)
 - Never panic in production code
+- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `c.configErr`) and return it from a later method like `Connect()` — see `client/option.go` WithTLS/WithMutualTLS
 - Log errors with structured logging using logger.Error(msg, "key", value)
 - In tests: use require.NoError(t, err), assert.Equal
 
@@ -145,6 +146,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
 - See `internal/server/server.go:42` for New(), `option.go` for options
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
+- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot.
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/

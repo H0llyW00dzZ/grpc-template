@@ -119,6 +119,7 @@ grpc-template/
 ├── pkg/gen-ts/                 # Generated TypeScript/JS code (do not edit)
 ├── pkg/gen-php/                # Generated PHP code (do not edit)
 ├── pkg/gen-cpp/                # Generated C/C++ protobuf (client only)
+├── .dockerignore               # Excludes .git, bin/, deploy/ from Docker context
 ├── Dockerfile                  # Multi-stage build (Go 1.26 + Alpine)
 ├── buf.yaml                    # Buf module config
 ├── buf.gen.yaml                # Buf generation config
@@ -239,10 +240,10 @@ The `internal/client` package provides a high-level client with functional optio
 
 See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key options include:
 
-- `client.WithInsecure()` / `client.WithTLS()` / `client.WithMutualTLS()`
+- `client.WithInsecure()` / `client.WithTLS()` / `client.WithMutualTLS()` (TLS errors are deferred and returned from `Connect()`)
 - `client.WithLogger()`, `client.WithDefaultTimeout()`, `client.WithRetry()`
 - `client.WithUnaryInterceptors()` and `client.WithStreamInterceptors()`
-- `client.WithHealthWatch()` for background health monitoring
+- `client.WithHealthWatch()` for background health monitoring with automatic reconnect
 - `client.WithTokenSource()` for auth (supports `StaticToken` and `OAuth2TokenSource`)
 
 The client automatically configures shared interceptors via `clientinterceptor.Configure()` when options are used.
@@ -294,12 +295,12 @@ srv.RegisterService(
 | What | Where | How |
 |------|-------|-----|
 | Target address | `cmd/client/main.go` | `client.New("localhost:50051", ...)` |
-| TLS / mTLS | `cmd/client/main.go` | `client.WithTLS(...)`, `client.WithMutualTLS(...)` |
+| TLS / mTLS | `cmd/client/main.go` | `client.WithTLS(...)`, `client.WithMutualTLS(...)` (errors deferred to `Connect()`) |
 | Custom logger | `cmd/client/main.go` | `client.WithLogger(l)` — auto-syncs to `clientinterceptor.Configure()` |
 | Timeouts & Retry | `cmd/client/main.go` | `client.WithDefaultTimeout()`, `client.WithRetry(3, time.Second)` |
 | Unary interceptors | `cmd/client/main.go` | `client.WithUnaryInterceptors(clientinterceptor.Logging(), clientinterceptor.Timeout(), ...)` |
 | Stream interceptors | `cmd/client/main.go` | `client.WithStreamInterceptors(clientinterceptor.StreamLogging(), ...)` |
-| Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` |
+| Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` — auto-reconnects with exponential backoff |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
 
 ### Project

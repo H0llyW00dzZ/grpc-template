@@ -36,9 +36,11 @@ func TestWithTLS(t *testing.T) {
 }
 
 func TestWithTLS_InvalidFile(t *testing.T) {
-	require.Panics(t, func() {
-		client.New("localhost:50051", client.WithTLS("/no/such/ca.pem"))
-	})
+	c := client.New("localhost:50051", client.WithTLS("/no/such/ca.pem"))
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to read CA certificate")
 }
 
 func TestWithTLS_InvalidPEM(t *testing.T) {
@@ -46,9 +48,11 @@ func TestWithTLS_InvalidPEM(t *testing.T) {
 	badCA := filepath.Join(dir, "bad_ca.pem")
 	require.NoError(t, os.WriteFile(badCA, []byte("not a PEM"), 0o600))
 
-	require.Panics(t, func() {
-		client.New("localhost:50051", client.WithTLS(badCA))
-	})
+	c := client.New("localhost:50051", client.WithTLS(badCA))
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to parse CA certificate")
 }
 
 func TestWithMutualTLS(t *testing.T) {
@@ -60,18 +64,22 @@ func TestWithMutualTLS(t *testing.T) {
 }
 
 func TestWithMutualTLS_InvalidCert(t *testing.T) {
-	require.Panics(t, func() {
-		client.New("localhost:50051", client.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"))
-	})
+	c := client.New("localhost:50051", client.WithMutualTLS("/bad/cert.pem", "/bad/key.pem", "/bad/ca.pem"))
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to load client TLS certificate")
 }
 
 func TestWithMutualTLS_InvalidCA(t *testing.T) {
 	dir := t.TempDir()
 	certFile, keyFile, _ := generateTestCert(t, dir)
 
-	require.Panics(t, func() {
-		client.New("localhost:50051", client.WithMutualTLS(certFile, keyFile, "/no/such/ca.pem"))
-	})
+	c := client.New("localhost:50051", client.WithMutualTLS(certFile, keyFile, "/no/such/ca.pem"))
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to read CA certificate")
 }
 
 func TestWithMutualTLS_InvalidCAPEM(t *testing.T) {
@@ -81,9 +89,11 @@ func TestWithMutualTLS_InvalidCAPEM(t *testing.T) {
 	badCA := filepath.Join(dir, "bad_ca.pem")
 	require.NoError(t, os.WriteFile(badCA, []byte("not a PEM"), 0o600))
 
-	require.Panics(t, func() {
-		client.New("localhost:50051", client.WithMutualTLS(certFile, keyFile, badCA))
-	})
+	c := client.New("localhost:50051", client.WithMutualTLS(certFile, keyFile, badCA))
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "failed to parse CA certificate")
 }
 
 func TestWithLogger(t *testing.T) {

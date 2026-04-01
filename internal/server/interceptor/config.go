@@ -7,6 +7,7 @@ package interceptor
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
@@ -27,9 +28,23 @@ type config struct {
 	trustProxy      bool
 }
 
+// configMu guards all reads and writes to defaultConfig.
+var configMu sync.RWMutex
+
 // defaultConfig is the package-level configuration used by all interceptors.
 var defaultConfig = &config{
 	excludedMethods: make(map[string]struct{}),
+}
+
+// getConfig returns a snapshot of the current package-level configuration
+// under a read lock. The returned struct is safe to use without holding
+// the lock because its value fields are copied; however the map and
+// interface fields still alias the originals (which are only written at
+// init time via [Configure]).
+func getConfig() config {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	return *defaultConfig
 }
 
 // Option configures the interceptor package.
@@ -87,6 +102,8 @@ func WithExcludedMethods(methods ...string) Option {
 // When using the [server] package, [server.WithLogger] calls this
 // automatically—no manual configuration is needed.
 func Configure(opts ...Option) {
+	configMu.Lock()
+	defer configMu.Unlock()
 	for _, opt := range opts {
 		opt(defaultConfig)
 	}
@@ -136,8 +153,9 @@ func WithTrustProxy(trust bool) Option {
 // logger returns the configured logger, falling back to [logging.Default]
 // if none has been set via [Configure].
 func logger() logging.Handler {
-	if defaultConfig.logger != nil {
-		return defaultConfig.logger
+	cfg := getConfig()
+	if cfg.logger != nil {
+		return cfg.logger
 	}
 	return logging.Default()
 }

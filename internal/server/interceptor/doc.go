@@ -31,6 +31,12 @@
 // [server.WithRateLimit], [server.WithTrustProxy]) call [Configure]
 // automatically — no manual setup needed.
 //
+// # Thread Safety
+//
+// All interceptors read their configuration through a snapshot taken under
+// a read lock, so [Configure] may be called concurrently with in-flight
+// RPCs without data races.
+//
 // # Available Interceptors
 //
 //   - [Logging] / [StreamLogging] — logs method, duration, gRPC status code,

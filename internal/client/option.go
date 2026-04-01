@@ -31,7 +31,8 @@ func WithInsecure() Option {
 }
 
 // WithTLS enables TLS on the client using the given CA certificate file
-// to verify the server's identity.
+// to verify the server's identity. If the certificate cannot be read or
+// parsed, the error is deferred and returned from [Client.Connect].
 //
 //	c := client.New("example.com:443",
 //	    client.WithTLS("/path/to/ca.pem"),
@@ -40,12 +41,14 @@ func WithTLS(caCertFile string) Option {
 	return func(c *Client) {
 		caCert, err := os.ReadFile(caCertFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to read CA certificate: %v", err))
+			c.configErr = fmt.Errorf("failed to read CA certificate: %w", err)
+			return
 		}
 
 		caPool := x509.NewCertPool()
 		if !caPool.AppendCertsFromPEM(caCert) {
-			panic("failed to parse CA certificate")
+			c.configErr = fmt.Errorf("failed to parse CA certificate from %s", caCertFile)
+			return
 		}
 
 		c.tlsConfig = &tls.Config{
@@ -58,22 +61,26 @@ func WithTLS(caCertFile string) Option {
 // WithMutualTLS enables mutual TLS (mTLS) on the client.
 // The client presents its own certificate and verifies the server's
 // certificate against the given CA. Use this for zero-trust environments
-// and service-to-service communication.
+// and service-to-service communication. If any certificate cannot be
+// loaded or parsed, the error is deferred and returned from [Client.Connect].
 func WithMutualTLS(certFile, keyFile, caCertFile string) Option {
 	return func(c *Client) {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to load client TLS certificate: %v", err))
+			c.configErr = fmt.Errorf("failed to load client TLS certificate: %w", err)
+			return
 		}
 
 		caCert, err := os.ReadFile(caCertFile)
 		if err != nil {
-			panic(fmt.Sprintf("failed to read CA certificate: %v", err))
+			c.configErr = fmt.Errorf("failed to read CA certificate: %w", err)
+			return
 		}
 
 		caPool := x509.NewCertPool()
 		if !caPool.AppendCertsFromPEM(caCert) {
-			panic("failed to parse CA certificate")
+			c.configErr = fmt.Errorf("failed to parse CA certificate from %s", caCertFile)
+			return
 		}
 
 		c.tlsConfig = &tls.Config{

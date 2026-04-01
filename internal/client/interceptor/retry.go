@@ -38,7 +38,7 @@ func Retry() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		cfg := defaultConfig
+		cfg := getConfig()
 		if cfg.retryMax <= 0 {
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}

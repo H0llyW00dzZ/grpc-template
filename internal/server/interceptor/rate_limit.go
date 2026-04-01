@@ -112,7 +112,7 @@ func RateLimit() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		cfg := defaultConfig
+		cfg := getConfig()
 		if cfg.rateLimiter == nil {
 			return handler(ctx, req)
 		}
@@ -139,7 +139,7 @@ func StreamRateLimit() grpc.StreamServerInterceptor {
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		cfg := defaultConfig
+		cfg := getConfig()
 		if cfg.rateLimiter == nil {
 			return handler(srv, ss)
 		}
@@ -195,7 +195,7 @@ func (p *peerLimiters) cleanup(ttl time.Duration) {
 // headers (x-forwarded-for, x-real-ip) in the gRPC metadata.
 // Otherwise, it falls back to the direct hardware peer connection.
 func peerKey(ctx context.Context) string {
-	if defaultConfig.trustProxy {
+	if getConfig().trustProxy {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
 				// x-forwarded-for can be a comma-separated list of IPs.

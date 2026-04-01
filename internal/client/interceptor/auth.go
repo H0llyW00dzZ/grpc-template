@@ -64,7 +64,7 @@ func StreamAuth() grpc.StreamClientInterceptor {
 // injectToken calls the configured TokenSource and injects the bearer token
 // into outgoing metadata.
 func injectToken(ctx context.Context) (context.Context, error) {
-	src := defaultConfig.tokenSource
+	src := getConfig().tokenSource
 	if src == nil {
 		return ctx, nil
 	}

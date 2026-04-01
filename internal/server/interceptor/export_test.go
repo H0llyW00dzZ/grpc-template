@@ -22,10 +22,9 @@ func PeerKey(ctx interface{ Value(any) any }) string {
 
 // ActiveMemoryLimiter gets the currently configured MemoryRateLimiter for testing.
 func ActiveMemoryLimiter() *MemoryRateLimiter {
-	if defaultConfig != nil {
-		if m, ok := defaultConfig.rateLimiter.(*MemoryRateLimiter); ok {
-			return m
-		}
+	cfg := getConfig()
+	if m, ok := cfg.rateLimiter.(*MemoryRateLimiter); ok {
+		return m
 	}
 	return nil
 }
