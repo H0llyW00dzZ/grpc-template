@@ -7,7 +7,6 @@ package interceptor
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -75,7 +74,7 @@ func injectToken(ctx context.Context, src TokenSource) (context.Context, error) 
 
 	ctx, err := src(ctx)
 	if err != nil {
-		return ctx, fmt.Errorf("client interceptor: token source failed: %w", err)
+		return ctx, status.Errorf(codes.Unauthenticated, "client interceptor: token source failed: %v", err)
 	}
 
 	token, ok := ctx.Value(tokenKey{}).(string)

@@ -65,10 +65,10 @@ func StreamLogging() grpc.StreamClientInterceptor {
 		streamer grpc.Streamer,
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
-		start := time.Now()
 		l := logger()
 		l.Info("stream opening", "method", method)
 
+		start := time.Now()
 		cs, err := streamer(ctx, desc, cc, method, opts...)
 		if err != nil {
 			st, _ := status.FromError(err)

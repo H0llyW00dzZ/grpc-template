@@ -7,6 +7,7 @@ package interceptor_test
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
@@ -17,7 +18,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
-	"net"
 )
 
 func TestLogging(t *testing.T) {
