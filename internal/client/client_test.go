@@ -8,6 +8,7 @@ package client_test
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -24,6 +25,16 @@ import (
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/test/bufconn"
 )
+
+// errorWatchStream is a mock Health_WatchClient that returns an error on Recv.
+type errorWatchStream struct {
+	grpc.ClientStream
+	err error
+}
+
+func (s *errorWatchStream) Recv() (*healthgrpc.HealthCheckResponse, error) {
+	return nil, s.err
+}
 
 func TestNew(t *testing.T) {
 	c := client.New("localhost:50051")
@@ -410,4 +421,62 @@ func TestHealthWatch_WatchFuncError(t *testing.T) {
 
 	err = c.Close()
 	assert.NoError(t, err)
+}
+
+func TestHealthWatch_RetriesAfterWatchError(t *testing.T) {
+	// Verify that the health watch goroutine retries after the backoff
+	// sleep completes (covers sleepOrDone time.After path and the
+	// backoff-doubling continue in startHealthWatch).
+	ctx := t.Context()
+
+	lis := startTestServer(t, ctx)
+
+	var calls atomic.Int32
+	c := newBufClient(lis, client.WithHealthWatch())
+	c.SetWatchFunc(func(_ context.Context, _ *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
+		calls.Add(1)
+		return nil, fmt.Errorf("injected watch error")
+	})
+
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+
+	// Wait long enough for the initial 500ms backoff to complete
+	// so the goroutine retries.
+	time.Sleep(700 * time.Millisecond)
+
+	err = c.Close()
+	assert.NoError(t, err)
+
+	// Should have been called at least twice: initial + retry after backoff.
+	assert.GreaterOrEqual(t, calls.Load(), int32(2))
+}
+
+func TestHealthWatch_ReconnectsAfterStreamEnd(t *testing.T) {
+	// Verify that the health watch goroutine reconnects after a stream
+	// error once the backoff sleep completes (covers the post-stream-error
+	// sleep path and backoff doubling in startHealthWatch).
+	ctx := t.Context()
+
+	lis := startTestServer(t, ctx)
+
+	var calls atomic.Int32
+	c := newBufClient(lis, client.WithHealthWatch())
+	c.SetWatchFunc(func(_ context.Context, _ *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
+		calls.Add(1)
+		return &errorWatchStream{err: fmt.Errorf("stream broken")}, nil
+	})
+
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+
+	// Wait long enough for the initial 500ms backoff after stream error
+	// to complete so the goroutine reconnects.
+	time.Sleep(700 * time.Millisecond)
+
+	err = c.Close()
+	assert.NoError(t, err)
+
+	// Should have been called at least twice: initial + reconnect after backoff.
+	assert.GreaterOrEqual(t, calls.Load(), int32(2))
 }
