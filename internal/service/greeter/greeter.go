@@ -57,8 +57,14 @@ func (s *Service) SayHelloServerStream(req *pb.SayHelloServerStreamRequest, stre
 		if err := stream.Send(&pb.SayHelloServerStreamResponse{Message: greeting}); err != nil {
 			return fmt.Errorf("failed to send greeting: %w", err)
 		}
-		// Simulate some processing delay between messages.
-		time.Sleep(500 * time.Millisecond)
+		// Simulate some processing delay between messages, respecting
+		// client cancellation so the server stops promptly instead of
+		// sleeping the full duration. On cancellation, the next Send
+		// will return the appropriate error.
+		select {
+		case <-time.After(500 * time.Millisecond):
+		case <-stream.Context().Done():
+		}
 	}
 
 	return nil

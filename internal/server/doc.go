@@ -71,7 +71,7 @@
 //
 //   - [WithPort] — TCP port to listen on (default "50051")
 //   - [WithReflection] — enable gRPC server reflection
-//   - [WithTLS] / [WithMutualTLS] — TLS and mutual TLS
+//   - [WithTLS] / [WithMutualTLS] — TLS and mutual TLS (errors deferred to [Run])
 //   - [WithLogger] — pluggable logger (syncs to interceptors)
 //   - [WithAuthFunc] — authentication function (syncs to interceptors)
 //   - [WithExcludedMethods] — methods to skip auth (syncs to interceptors)

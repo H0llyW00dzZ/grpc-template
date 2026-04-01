@@ -18,6 +18,9 @@ import (
 )
 
 func TestRecovery(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
 	i := interceptor.Recovery()
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -96,6 +99,9 @@ func TestRecovery_CustomLogger(t *testing.T) {
 }
 
 func TestRecovery_NilLogger(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
 	i := interceptor.Recovery()
 
 	handler := func(ctx context.Context, req any) (any, error) {
@@ -109,6 +115,9 @@ func TestRecovery_NilLogger(t *testing.T) {
 }
 
 func TestStreamRecovery_NilLogger(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
 	i := interceptor.StreamRecovery()
 
 	handler := func(srv any, stream grpc.ServerStream) error {

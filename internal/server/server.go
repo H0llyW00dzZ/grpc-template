@@ -37,6 +37,11 @@ type Server struct {
 	grpcOpts           []grpc.ServerOption
 	listener           net.Listener
 	healthSrv          *health.Server
+
+	// configErr captures errors from functional options (e.g., TLS
+	// certificate loading) so they can be returned from [Server.Run]
+	// instead of panicking during construction.
+	configErr error
 }
 
 // New creates a new Server with the given functional options.
@@ -129,8 +134,15 @@ func (s *Server) setupServer() *grpc.Server {
 // Run starts the gRPC server and blocks until the context is cancelled
 // or an OS interrupt/termination signal is received.
 //
+// It returns an error if any functional option (e.g., [WithTLS],
+// [WithMutualTLS]) recorded a configuration error during construction.
+//
 // It performs a graceful shutdown, allowing in-flight RPCs to complete.
 func (s *Server) Run(ctx context.Context) error {
+	if s.configErr != nil {
+		return fmt.Errorf("server: configuration error: %w", s.configErr)
+	}
+
 	// Listen for OS signals for graceful shutdown.
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

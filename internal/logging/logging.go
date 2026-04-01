@@ -20,7 +20,10 @@
 //	logging.SetDefault(myZapAdapter)
 package logging
 
-import "log/slog"
+import (
+	"log/slog"
+	"sync/atomic"
+)
 
 // Handler is the interface for structured logging at four severity levels.
 // Each method accepts a message and alternating key-value pairs, following
@@ -36,14 +39,23 @@ type Handler interface {
 	Error(msg string, args ...any)
 }
 
-// defaultHandler is the package-level default handler.
-var defaultHandler Handler = &slogHandler{}
+// handlerBox wraps a [Handler] so that [atomic.Value] always stores the
+// same concrete type, regardless of which Handler implementation is inside.
+type handlerBox struct{ h Handler }
+
+// defaultHandler is the package-level default handler, stored atomically
+// so that concurrent calls to [Default] and [SetDefault] are safe.
+var defaultHandler atomic.Value
+
+func init() { defaultHandler.Store(handlerBox{h: &slogHandler{}}) }
 
 // Default returns the current default Handler (slog-backed unless overridden).
-func Default() Handler { return defaultHandler }
+// It is safe for concurrent use.
+func Default() Handler { return defaultHandler.Load().(handlerBox).h }
 
 // SetDefault replaces the package-level default Handler.
-func SetDefault(h Handler) { defaultHandler = h }
+// It is safe for concurrent use.
+func SetDefault(h Handler) { defaultHandler.Store(handlerBox{h: h}) }
 
 // slogHandler adapts [log/slog] to the [Handler] interface.
 type slogHandler struct{}

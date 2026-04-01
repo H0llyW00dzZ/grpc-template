@@ -7,6 +7,7 @@ package interceptor
 
 import (
 	"context"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"time"
@@ -90,7 +91,11 @@ const maxBackoffShift = 62
 // backoffDuration calculates the wait time for the given attempt using
 // exponential growth with jitter. The result is uniformly distributed
 // between base/2 and base × 2^attempt, capped to prevent int64 overflow.
+// A non-positive base returns immediately (zero duration).
 func backoffDuration(attempt int, base time.Duration) time.Duration {
+	if base <= 0 {
+		return 0
+	}
 	if attempt > maxBackoffShift {
 		attempt = maxBackoffShift
 	}
@@ -98,8 +103,8 @@ func backoffDuration(attempt int, base time.Duration) time.Duration {
 
 	// Detect multiplication overflow: if both operands are positive
 	// but the result is not, the product wrapped around.
-	if base > 0 && expBackoff <= 0 {
-		expBackoff = 1<<63 - 1 // math.MaxInt64 as time.Duration
+	if expBackoff <= 0 {
+		expBackoff = time.Duration(math.MaxInt64)
 	}
 
 	halfBackoff := expBackoff / 2

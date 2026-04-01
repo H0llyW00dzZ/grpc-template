@@ -34,6 +34,12 @@ spec:
     ports:
     - protocol: TCP
       port: 50051
+  # Uncomment the rule below to allow external traffic through a LoadBalancer
+  # (service-lb.yaml). Without this, the NetworkPolicy blocks all traffic
+  # that does not originate from pods matching the selector above.
+  # - ports:
+  #   - protocol: TCP
+  #     port: 50051
   egress:
   - to:
     - podSelector:

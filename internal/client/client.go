@@ -27,7 +27,14 @@ type healthWatchFunc func(ctx context.Context, conn *grpc.ClientConn) (healthgrp
 // Client wraps a gRPC client connection with lifecycle management
 // and functional options configuration. It is the client-side
 // counterpart of [github.com/H0llyW00dzZ/grpc-template/internal/server.Server].
+//
+// Fields set during [New] (target, insecureCreds, tlsConfig, logger,
+// interceptors, dialOpts, healthWatch, dialFunc, watchFunc) are
+// immutable after construction and are read without holding mu.
+// Only conn and healthCancel are guarded by mu because they change
+// during [Connect] and [Close].
 type Client struct {
+	// Immutable after New — safe to read without mu.
 	target             string
 	insecureCreds      bool
 	tlsConfig          *tls.Config
@@ -35,10 +42,12 @@ type Client struct {
 	unaryInterceptors  []grpc.UnaryClientInterceptor
 	streamInterceptors []grpc.StreamClientInterceptor
 	dialOpts           []grpc.DialOption
-	conn               *grpc.ClientConn
 	healthWatch        bool
-	healthCancel       context.CancelFunc
-	mu                 sync.RWMutex
+
+	// Guarded by mu — mutable during Connect/Close lifecycle.
+	conn         *grpc.ClientConn
+	healthCancel context.CancelFunc
+	mu           sync.RWMutex
 
 	// configErr captures errors from functional options (e.g., TLS
 	// certificate loading) so they can be returned from [Client.Connect]
