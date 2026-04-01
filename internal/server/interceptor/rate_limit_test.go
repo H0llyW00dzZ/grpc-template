@@ -418,6 +418,42 @@ func TestRateLimit_NilLimiter(t *testing.T) {
 	assert.Equal(t, "ok", resp)
 }
 
+// stoppableLimiter is a mock RateLimiter that records whether Stop
+// was called, used to test the stop-on-replace logic in WithRateLimiter.
+type stoppableLimiter struct {
+	stopped bool
+}
+
+func (s *stoppableLimiter) Allow(ctx context.Context, key string) (bool, error) {
+	return true, nil
+}
+
+func (s *stoppableLimiter) Stop() { s.stopped = true }
+
+func TestWithRateLimiter_StopsPreviousLimiter(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
+
+	old := &stoppableLimiter{}
+	interceptor.Configure(interceptor.WithRateLimiter(old))
+
+	// Replace with a new limiter — old should be stopped automatically.
+	interceptor.Configure(interceptor.WithRateLimiter(&errorLimiter{}))
+	assert.True(t, old.stopped, "previous limiter should have been stopped")
+}
+
+func TestWithRateLimit_StopsPreviousLimiter(t *testing.T) {
+	resetRateLimitConfig(t)
+	t.Cleanup(func() { resetRateLimitConfig(t) })
+
+	old := &stoppableLimiter{}
+	interceptor.Configure(interceptor.WithRateLimiter(old))
+
+	// WithRateLimit replaces with a new MemoryRateLimiter — old should be stopped.
+	interceptor.Configure(interceptor.WithRateLimit(50, 100))
+	assert.True(t, old.stopped, "previous limiter should have been stopped")
+}
+
 func TestStreamRateLimit_NilLimiter(t *testing.T) {
 	resetRateLimitConfig(t)
 	t.Cleanup(func() { resetRateLimitConfig(t) })

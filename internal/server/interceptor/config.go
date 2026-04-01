@@ -113,11 +113,16 @@ func Configure(opts ...Option) {
 // When set, this overrides any limiter configured via [WithRateLimit],
 // since both options write to the same config field.
 //
+// If the previous rate limiter implements a Stop method (e.g.,
+// [MemoryRateLimiter]), it is stopped automatically to prevent
+// background goroutine leaks.
+//
 //	interceptor.Configure(
 //	    interceptor.WithRateLimiter(interceptor.NewMemoryRateLimiter(100, 200, 10*time.Minute)),
 //	)
 func WithRateLimiter(l RateLimiter) Option {
 	return func(c *config) {
+		stopPreviousLimiter(c.rateLimiter)
 		c.rateLimiter = l
 	}
 }
@@ -127,13 +132,29 @@ func WithRateLimiter(l RateLimiter) Option {
 // A rate of 0 or negative disables rate limiting.
 //
 // If [WithRateLimiter] is also used, whichever is applied last takes effect.
+// The previous limiter (if any) is stopped automatically.
 //
 //	interceptor.Configure(
 //	    interceptor.WithRateLimit(100, 200), // 100 req/s, burst up to 200
 //	)
 func WithRateLimit(rps float64, burst int) Option {
 	return func(c *config) {
+		stopPreviousLimiter(c.rateLimiter)
 		c.rateLimiter = NewMemoryRateLimiter(rps, burst, 10*time.Minute)
+	}
+}
+
+// stoppable is an optional interface that rate limiters can implement
+// to allow cleanup of background resources when replaced.
+type stoppable interface {
+	Stop()
+}
+
+// stopPreviousLimiter stops the given rate limiter's background
+// resources if it implements the [stoppable] interface.
+func stopPreviousLimiter(rl RateLimiter) {
+	if s, ok := rl.(stoppable); ok {
+		s.Stop()
 	}
 }
 

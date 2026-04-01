@@ -204,6 +204,8 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// buildDialOpts assembles the gRPC dial options from the client's
+// configuration (TLS, interceptors, extra dial options).
 func (c *Client) buildDialOpts() []grpc.DialOption {
 	var opts []grpc.DialOption
 

@@ -54,8 +54,15 @@ func init() { defaultHandler.Store(handlerBox{h: &slogHandler{}}) }
 func Default() Handler { return defaultHandler.Load().(handlerBox).h }
 
 // SetDefault replaces the package-level default Handler.
+// It panics if h is nil to fail fast rather than causing a nil-pointer
+// dereference on the next call to [Default].
 // It is safe for concurrent use.
-func SetDefault(h Handler) { defaultHandler.Store(handlerBox{h: h}) }
+func SetDefault(h Handler) {
+	if h == nil {
+		panic("logging: SetDefault called with nil Handler")
+	}
+	defaultHandler.Store(handlerBox{h: h})
+}
 
 // slogHandler adapts [log/slog] to the [Handler] interface.
 type slogHandler struct{}

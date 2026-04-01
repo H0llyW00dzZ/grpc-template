@@ -17,7 +17,6 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
-	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -235,8 +234,6 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestServer_RunAndShutdown(t *testing.T) {
-	_ = testutil.NewBufListener()
-
 	srv := server.New(server.WithPort("0"))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -249,6 +246,24 @@ func TestServer_RunAndShutdown(t *testing.T) {
 	cancel()
 
 	require.NoError(t, <-errCh)
+}
+
+func TestServer_RunTwice(t *testing.T) {
+	srv := server.New(server.WithPort("0"))
+
+	// First Run: start and immediately cancel.
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+	require.NoError(t, <-errCh)
+
+	// Second Run on the same server should succeed (not blocked).
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	errCh2 := make(chan error, 1)
+	go func() { errCh2 <- srv.Run(ctx2) }()
+	cancel2()
+	require.NoError(t, <-errCh2)
 }
 
 func TestServer_RunWithAllOptions(t *testing.T) {

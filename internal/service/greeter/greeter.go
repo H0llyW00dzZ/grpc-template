@@ -61,9 +61,11 @@ func (s *Service) SayHelloServerStream(req *pb.SayHelloServerStreamRequest, stre
 		// client cancellation so the server stops promptly instead of
 		// sleeping the full duration. On cancellation, the next Send
 		// will return the appropriate error.
+		delay := time.NewTimer(500 * time.Millisecond)
 		select {
-		case <-time.After(500 * time.Millisecond):
+		case <-delay.C:
 		case <-stream.Context().Done():
+			delay.Stop()
 		}
 	}
 

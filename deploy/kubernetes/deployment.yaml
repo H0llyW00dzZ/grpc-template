@@ -25,6 +25,15 @@ metadata:
     app: grpc-template
 spec:
   replicas: 3
+  # gRPC uses persistent HTTP/2 connections, so existing clients won't
+  # move to new pods unless connections are explicitly drained. Ensuring
+  # the new pod is ready before removing the old one (maxUnavailable: 0)
+  # minimizes in-flight RPC failures during rolling updates.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: grpc-template
@@ -52,7 +61,6 @@ spec:
         startupProbe:
           grpc:
             port: 50051
-          initialDelaySeconds: 5
           periodSeconds: 5
           failureThreshold: 10
         livenessProbe:

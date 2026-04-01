@@ -12,6 +12,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,7 +64,11 @@ func Retry() grpc.UnaryClientInterceptor {
 
 			wait := backoffDuration(attempt, cfg.retryBackoff)
 
-			logger().Warn("retrying RPC",
+			log := cfg.logger
+			if log == nil {
+				log = logging.Default()
+			}
+			log.Warn("retrying RPC",
 				"method", method,
 				"attempt", attempt+1,
 				"max_retries", cfg.retryMax,

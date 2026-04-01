@@ -5,5 +5,9 @@ coverage.txt
 .github/
 *.md
 LICENSE
+Makefile
+.gitignore
+proto/
+AGENTS.md
 Dockerfile
 .dockerignore

@@ -159,14 +159,12 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}
 
-	// Start serving in a goroutine.
+	// Start serving in a goroutine. The channel always receives exactly
+	// one value so the drain on the shutdown path never blocks.
 	errCh := make(chan error, 1)
 	go func() {
-		s.logger.Info("gRPC server listening", "port", s.port)
-		if err := grpcServer.Serve(lis); err != nil {
-			errCh <- fmt.Errorf("failed to serve: %w", err)
-		}
-		close(errCh)
+		s.logger.Info("gRPC server listening", "address", lis.Addr().String())
+		errCh <- grpcServer.Serve(lis)
 	}()
 
 	// Wait for shutdown signal or serve error.
@@ -176,8 +174,12 @@ func (s *Server) Run(ctx context.Context) error {
 		s.healthSrv.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
 		grpcServer.GracefulStop()
 		s.logger.Info("gRPC server stopped gracefully")
+		// Drain the serve result so the goroutine is guaranteed to
+		// exit before Run returns. After GracefulStop the error is
+		// always nil or ErrServerStopped — neither is actionable.
+		<-errCh
 		return nil
 	case err := <-errCh:
-		return err
+		return fmt.Errorf("failed to serve: %w", err)
 	}
 }

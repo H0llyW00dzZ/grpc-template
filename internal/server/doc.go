@@ -51,7 +51,8 @@
 // certificates from [WithTLS] or [WithMutualTLS]). A succeeding TLS
 // option clears the error from a preceding one.
 // The server performs a graceful shutdown, draining in-flight RPCs
-// before stopping:
+// before stopping. The internal serve goroutine is always joined before
+// Run returns, preventing goroutine leaks:
 //
 //	if err := srv.Run(ctx); err != nil {
 //	    log.Fatal(err)

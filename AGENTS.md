@@ -119,6 +119,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Always include context like "method", req fields
 - See internal/logging/logging.go:28
 - Services receive logger via NewService(l logging.Handler)
+- `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)
@@ -148,6 +149,8 @@ And every `.proto` file must also start with the identical header (same `//` com
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
 - Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot. Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
 - `Client.Connect()` rejects double invocation — call `Close()` before reconnecting to prevent connection and goroutine leaks.
+- `Server.Run()` drains the serve goroutine before returning — no goroutine leaks on shutdown. It logs the actual listener address via `lis.Addr()`.
+- When replacing a rate limiter via `WithRateLimiter` or `WithRateLimit`, the previous limiter is automatically stopped if it implements `Stop()` (e.g., `MemoryRateLimiter`), preventing background goroutine leaks.
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/
