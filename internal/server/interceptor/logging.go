@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
@@ -23,13 +24,17 @@ func Logging() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		l := logger()
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
 		start := time.Now()
 
 		resp, err := handler(ctx, req)
 		duration := time.Since(start)
 
-		attrs := buildLogArgs(ctx, info.FullMethod, duration, err)
+		attrs := buildLogArgs(ctx, info.FullMethod, duration, err, cfg.trustProxy)
 
 		if err != nil {
 			l.Error("rpc failed", attrs...)
@@ -51,13 +56,17 @@ func StreamLogging() grpc.StreamServerInterceptor {
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		l := logger()
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
 		start := time.Now()
 
 		err := handler(srv, ss)
 		duration := time.Since(start)
 
-		attrs := buildLogArgs(ss.Context(), info.FullMethod, duration, err)
+		attrs := buildLogArgs(ss.Context(), info.FullMethod, duration, err, cfg.trustProxy)
 
 		if err != nil {
 			l.Error("stream rpc failed", attrs...)
@@ -71,9 +80,11 @@ func StreamLogging() grpc.StreamServerInterceptor {
 
 // buildLogArgs creates the common key-value pairs for both unary and stream
 // logging interceptors, including method, duration, gRPC status code, and peer address.
-// When [WithTrustProxy] is enabled, the logged peer reflects the true client IP
+// The trustProxy parameter must come from the caller's config snapshot so that
+// a single consistent configuration generation is used for the entire request.
+// When trustProxy is true, the logged peer reflects the true client IP
 // extracted from proxy headers (X-Forwarded-For, X-Real-IP).
-func buildLogArgs(ctx context.Context, method string, duration time.Duration, err error) []any {
+func buildLogArgs(ctx context.Context, method string, duration time.Duration, err error, trustProxy bool) []any {
 	st, _ := status.FromError(err)
 
 	args := []any{
@@ -82,7 +93,7 @@ func buildLogArgs(ctx context.Context, method string, duration time.Duration, er
 		"code", st.Code().String(),
 	}
 
-	if key := peerKey(ctx); key != "unknown" {
+	if key := peerKey(ctx, trustProxy); key != "unknown" {
 		args = append(args, "peer", key)
 	}
 

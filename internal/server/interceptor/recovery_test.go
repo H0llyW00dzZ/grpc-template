@@ -75,6 +75,26 @@ func TestStreamRecovery_NoPanic(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestRecovery_CustomLogger(t *testing.T) {
+	interceptor.ResetConfig()
+	t.Cleanup(interceptor.ResetConfig)
+
+	l := &stubLogger{}
+	interceptor.Configure(interceptor.WithLogger(l))
+
+	i := interceptor.Recovery()
+
+	handler := func(ctx context.Context, req any) (any, error) {
+		panic("test panic")
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.TestService/PanicMethod"}
+
+	resp, err := i(context.Background(), "request", info, handler)
+	require.Error(t, err)
+	assert.Nil(t, resp)
+	assert.True(t, l.called, "custom logger should have been used by recovery")
+}
+
 func TestRecovery_NilLogger(t *testing.T) {
 	i := interceptor.Recovery()
 

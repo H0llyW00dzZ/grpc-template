@@ -149,13 +149,3 @@ func WithTrustProxy(trust bool) Option {
 		c.trustProxy = trust
 	}
 }
-
-// logger returns the configured logger, falling back to [logging.Default]
-// if none has been set via [Configure].
-func logger() logging.Handler {
-	cfg := getConfig()
-	if cfg.logger != nil {
-		return cfg.logger
-	}
-	return logging.Default()
-}

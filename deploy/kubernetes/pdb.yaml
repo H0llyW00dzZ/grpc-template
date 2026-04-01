@@ -18,7 +18,7 @@ kind: PodDisruptionBudget
 metadata:
   name: grpc-server
 spec:
-  minAvailable: 2
+  maxUnavailable: 1
   selector:
     matchLabels:
       app: grpc-template

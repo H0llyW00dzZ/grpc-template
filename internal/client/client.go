@@ -96,6 +96,11 @@ func (c *Client) Logger() logging.Handler {
 // handshake occurs when the first RPC is made or [Client.WaitReady] is
 // called.
 //
+// Connect returns an error if called more than once without an
+// intervening [Client.Close]. This prevents connection and goroutine
+// leaks that would occur if a previous connection were silently
+// overwritten.
+//
 // If [WithHealthWatch] was configured, a background goroutine is started
 // to monitor the server's health status.
 func (c *Client) Connect(ctx context.Context) error {
@@ -110,12 +115,21 @@ func (c *Client) Connect(ctx context.Context) error {
 		dial = c.dialFunc
 	}
 
-	conn, err := dial(c.target, opts...)
-	if err != nil {
-		return fmt.Errorf("client: failed to create connection to %s: %w", c.target, err)
+	// Hold the lock across the entire check-dial-assign sequence to
+	// prevent two concurrent Connect calls from both passing the
+	// guard and overwriting c.conn (TOCTOU race). This is safe
+	// because grpc.NewClient is non-blocking.
+	c.mu.Lock()
+	if c.conn != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("client: already connected (call Close before reconnecting)")
 	}
 
-	c.mu.Lock()
+	conn, err := dial(c.target, opts...)
+	if err != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("client: failed to create connection to %s: %w", c.target, err)
+	}
 	c.conn = conn
 	c.mu.Unlock()
 

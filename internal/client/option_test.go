@@ -55,7 +55,7 @@ func TestWithTLS_SuccessOverridesPreviousError(t *testing.T) {
 	)
 	err := c.Connect(context.Background())
 	require.NoError(t, err)
-	_ = c.Close()
+	t.Cleanup(func() { c.Close() })
 }
 
 func TestWithTLS_InvalidPEM(t *testing.T) {

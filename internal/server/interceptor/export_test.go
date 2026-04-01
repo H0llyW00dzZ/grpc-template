@@ -6,18 +6,14 @@
 package interceptor
 
 import (
+	"context"
 	"time"
 )
 
-// PeerKey is exported for testing. It calls the unexported peerKey function.
-func PeerKey(ctx interface{ Value(any) any }) string {
-	// Type assert to context.Context by using the concrete function.
-	return peerKey(ctx.(interface {
-		Deadline() (time.Time, bool)
-		Done() <-chan struct{}
-		Err() error
-		Value(any) any
-	}))
+// PeerKey is exported for testing. It calls the unexported peerKey function
+// with the given trustProxy setting.
+func PeerKey(ctx context.Context, trustProxy bool) string {
+	return peerKey(ctx, trustProxy)
 }
 
 // ActiveMemoryLimiter gets the currently configured MemoryRateLimiter for testing.
@@ -61,7 +57,8 @@ func SetLimiterLastSeen(key string, t time.Time) {
 	}
 }
 
-// StopCleanup signals the cleanup goroutine to stop on the active memory limiter.
+// StopCleanup signals the cleanup goroutine to stop on the active memory
+// limiter, if one is configured. Safe to call when no limiter is active.
 func StopCleanup() {
 	if m := ActiveMemoryLimiter(); m != nil {
 		m.Stop()

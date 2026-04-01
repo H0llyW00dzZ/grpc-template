@@ -146,7 +146,8 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
 - See `internal/server/server.go:42` for New(), `option.go` for options
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
-- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot.
+- Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot. Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
+- `Client.Connect()` rejects double invocation — call `Close()` before reconnecting to prevent connection and goroutine leaks.
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/

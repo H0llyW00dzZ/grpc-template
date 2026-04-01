@@ -9,6 +9,7 @@ import (
 	"context"
 	"runtime/debug"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,14 +24,24 @@ func Recovery() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp any, err error) {
+		// Take a single config snapshot before the handler runs so
+		// the deferred recover uses the same generation as any other
+		// interceptor in the chain (consistent with the single-snapshot
+		// contract documented in doc.go).
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
+
 		defer func() {
 			if r := recover(); r != nil {
-				logger().Error("panic recovered in gRPC handler",
+				l.Error("panic recovered in gRPC handler",
 					"method", info.FullMethod,
 					"panic", r,
 					"stack", string(debug.Stack()),
 				)
-				err = status.Errorf(codes.Internal, "internal server error")
+				err = status.Error(codes.Internal, "internal server error")
 			}
 		}()
 
@@ -47,14 +58,20 @@ func StreamRecovery() grpc.StreamServerInterceptor {
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) (err error) {
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
+
 		defer func() {
 			if r := recover(); r != nil {
-				logger().Error("panic recovered in gRPC stream handler",
+				l.Error("panic recovered in gRPC stream handler",
 					"method", info.FullMethod,
 					"panic", r,
 					"stack", string(debug.Stack()),
 				)
-				err = status.Errorf(codes.Internal, "internal server error")
+				err = status.Error(codes.Internal, "internal server error")
 			}
 		}()
 

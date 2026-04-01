@@ -59,7 +59,9 @@
 //
 // [Client.Connect] creates the gRPC connection using [grpc.NewClient],
 // which connects lazily. It also validates any deferred configuration
-// errors (e.g., invalid TLS certificates) before dialling.
+// errors (e.g., invalid TLS certificates) before dialling. Calling
+// Connect on an already-connected client returns an error; call
+// [Client.Close] first to reconnect.
 // To block until the connection is ready, use [Client.WaitReady]:
 //
 //	if err := c.Connect(ctx); err != nil { ... }
