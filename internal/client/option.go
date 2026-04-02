@@ -109,10 +109,8 @@ func WithMutualTLS(certFile, keyFile, caCertFile string) Option {
 // so that all client interceptors automatically use the same logger.
 func WithLogger(l logging.Handler) Option {
 	return func(c *Client) {
-		if l != nil {
-			c.logger = l
-			interceptor.Configure(interceptor.WithLogger(l))
-		}
+		c.logger = logging.Resolve(l)
+		interceptor.Configure(interceptor.WithLogger(l))
 	}
 }
 
