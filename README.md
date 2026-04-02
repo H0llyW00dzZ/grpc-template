@@ -68,6 +68,55 @@ With server reflection enabled, the client discovers all available services at r
 
 ![gRPC Streaming Interceptor with Reflection](assets/image/grpc-go-streaming-Interceptor-with-reflection.gif)
 
+With request ID tracing added to the interceptor chain, every unary and streaming RPC is tagged with a unique `request_id` for end-to-end correlation — making it easy to trace individual requests across logs:
+
+![gRPC Streaming Interceptor with Reflection and Request ID](assets/image/grpc-go-streaming-Interceptor-with-reflection-and-request-id.gif)
+
+<details>
+<summary><b>Server configuration</b> — <code>cmd/server/main.go</code></summary>
+
+```go
+func main() {
+	// Enable debug logging (shows Debug level + reflection calls)
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(h))
+	// Initialize logger
+	l := logging.Default()
+
+	// Create and configure the gRPC server.
+	srv := server.New(
+		server.WithPort("50051"),
+		server.WithReflection(),
+		server.WithLogger(l),
+		server.WithUnaryInterceptors(
+			interceptor.RequestID(),
+			interceptor.Recovery(),
+			interceptor.Logging(),
+		),
+		server.WithStreamInterceptors(
+			interceptor.StreamRequestID(),
+			interceptor.StreamRecovery(),
+			interceptor.StreamLogging(),
+		),
+	)
+
+	// Create the greeter service utilizing the server's integrated logger.
+	greeterSvc := greeter.NewService(srv.Logger())
+
+	// Register services.
+	srv.RegisterService(greeterSvc.Register)
+
+	// Run the server (blocks until shutdown).
+	if err := srv.Run(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+</details>
+
 ## Project Structure
 
 ```text
