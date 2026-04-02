@@ -15,6 +15,8 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/client/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
+	_ "google.golang.org/grpc/balancer/roundrobin" // register round_robin policy
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 )
@@ -212,5 +214,29 @@ func WithRetryCodes(retryCodes ...codes.Code) Option {
 func WithTokenSource(fn interceptor.TokenSource) Option {
 	return func(c *Client) {
 		interceptor.Configure(interceptor.WithTokenSource(fn))
+	}
+}
+
+// WithLoadBalancing configures client-side load balancing policy.
+// Target should use dns:/// prefix when using service names (e.g. "dns:///my-service:50051").
+//
+// The policy name is validated against the registered gRPC balancer registry.
+// If the policy is not registered, the error is deferred and returned from
+// [Client.Connect]. Common policies: "round_robin", "pick_first" (default).
+//
+// If both WithLoadBalancing and [WithDialOptions] with
+// [grpc.WithDefaultServiceConfig] are used, whichever is applied last
+// takes effect because both write to the same underlying service config.
+func WithLoadBalancing(policy string) Option {
+	return func(c *Client) {
+		if policy == "" {
+			return
+		}
+		if balancer.Get(policy) == nil {
+			c.configErr = fmt.Errorf("unknown load balancing policy %q", policy)
+			return
+		}
+		config := fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, policy)
+		c.dialOpts = append(c.dialOpts, grpc.WithDefaultServiceConfig(config))
 	}
 }

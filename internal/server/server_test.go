@@ -413,3 +413,34 @@ func TestWithDemotedMethods(t *testing.T) {
 
 	require.NoError(t, <-errCh)
 }
+
+func TestWithDefaultServiceConfig(t *testing.T) {
+	config := `{"loadBalancingConfig": [{"round_robin":{}}]}`
+	srv := server.New(
+		server.WithDefaultServiceConfig(config),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+	assert.Equal(t, config, srv.ServiceConfig())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}
+
+func TestWithDefaultServiceConfig_Empty(t *testing.T) {
+	srv := server.New(
+		server.WithDefaultServiceConfig(""),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+	assert.Empty(t, srv.ServiceConfig())
+}
+
+func TestServiceConfig_Default(t *testing.T) {
+	srv := server.New(server.WithPort("0"))
+	assert.Empty(t, srv.ServiceConfig())
+}

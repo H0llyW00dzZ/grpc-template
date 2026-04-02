@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/client"
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"
@@ -129,4 +130,27 @@ func TestSayHelloServerStream_ClientCancel(t *testing.T) {
 	_, err = stream.Recv()
 	require.Error(t, err)
 	assert.Equal(t, codes.Canceled, status.Code(err))
+}
+
+func TestLoadBalancing_RoundRobin(t *testing.T) {
+	lis := startGreeterServer(t)
+
+	c := client.New("passthrough:///bufconn",
+		client.WithInsecure(),
+		client.WithLoadBalancing("round_robin"),
+		client.WithDialOptions(
+			grpc.WithContextDialer(testutil.BufDialer(lis)),
+		),
+	)
+	require.NoError(t, c.Connect(context.Background()))
+	t.Cleanup(func() { c.Close() })
+
+	caller := greeter.NewCaller(c.Conn(), logging.Default())
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	resp, err := caller.SayHello(ctx, "LoadBalanced")
+	require.NoError(t, err)
+	assert.Equal(t, "Hello, LoadBalanced!", resp.GetMessage())
 }

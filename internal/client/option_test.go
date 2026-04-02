@@ -196,3 +196,24 @@ func TestWithTokenSource(t *testing.T) {
 	)
 	require.NotNil(t, c)
 }
+
+func TestWithLoadBalancing(t *testing.T) {
+	c := client.New("localhost:50051", client.WithLoadBalancing("round_robin"))
+	require.NotNil(t, c)
+}
+
+func TestWithLoadBalancing_Empty(t *testing.T) {
+	c := client.New("localhost:50051", client.WithLoadBalancing(""))
+	require.NotNil(t, c)
+}
+
+func TestWithLoadBalancing_InvalidPolicy(t *testing.T) {
+	c := client.New("localhost:50051",
+		client.WithInsecure(),
+		client.WithLoadBalancing("banana"),
+	)
+	err := c.Connect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "unknown load balancing policy")
+}

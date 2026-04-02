@@ -94,6 +94,7 @@
 //   - [WithMaxConcurrentStreams] — concurrent stream limit
 //   - [WithGrpcOptions] — raw grpc.ServerOption pass-through
 //   - [WithListener] — custom net.Listener (e.g., bufconn for testing); consumed by first [Run]
+//   - [WithDefaultServiceConfig] — default service config JSON (e.g., LB policy) for name resolvers
 //
 // [gRPC Health Checking Protocol]: https://github.com/grpc/grpc/blob/master/doc/health-checking.md
 package server
