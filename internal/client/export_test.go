@@ -29,3 +29,13 @@ func (c *Client) SetDialFunc(fn func(string, ...grpc.DialOption) (*grpc.ClientCo
 func (c *Client) SetWatchFunc(fn func(context.Context, *grpc.ClientConn) (healthgrpc.Health_WatchClient, error)) {
 	c.watchFunc = fn
 }
+
+// SetListFunc overrides the list services function for testing.
+// Pass nil to restore the default reflection-based implementation.
+func (c *Client) SetListFunc(fn func(context.Context, *grpc.ClientConn) ([]string, error)) {
+	c.listFunc = fn
+}
+
+// DefaultListServices exposes the default reflection-based implementation
+// for testing its error branches.
+var DefaultListServices = defaultListServices

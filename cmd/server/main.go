@@ -9,6 +9,8 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/server"
@@ -17,6 +19,11 @@ import (
 )
 
 func main() {
+	// Enable debug logging (shows Debug level + reflection calls)
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(h))
 	// Initialize logger
 	l := logging.Default()
 

@@ -11,7 +11,9 @@ import (
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/server/interceptor"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // BenchmarkGetConfig measures the cost of taking a config snapshot under
@@ -48,6 +50,27 @@ func BenchmarkLoggingInterceptor(b *testing.B) {
 		return nil, nil
 	}
 	info := &grpc.UnaryServerInfo{FullMethod: "/bench.v1.Service/Method"}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = i(context.Background(), nil, info, handler)
+	}
+}
+
+// BenchmarkLoggingInterceptor_Reflection measures the logging interceptor
+// on the reflection+canceled path, exercising the HasPrefix check and
+// debug-level demotion. This is the hot path when clients use ListServices.
+func BenchmarkLoggingInterceptor_Reflection(b *testing.B) {
+	interceptor.ResetConfig()
+	interceptor.Configure(interceptor.WithLogger(&noopLogger{}))
+	b.Cleanup(interceptor.ResetConfig)
+
+	i := interceptor.Logging()
+	handler := func(_ context.Context, _ any) (any, error) {
+		return nil, status.Error(codes.Canceled, "context canceled")
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"}
 
 	b.ReportAllocs()
 	b.ResetTimer()

@@ -398,3 +398,18 @@ func TestWithRateLimiter(t *testing.T) {
 
 	require.NoError(t, <-errCh)
 }
+
+func TestWithDemotedMethods(t *testing.T) {
+	srv := server.New(
+		server.WithDemotedMethods("/myapp.v1.LongPoll/Watch"),
+		server.WithPort("0"),
+	)
+	require.NotNil(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}

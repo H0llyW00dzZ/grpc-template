@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 	"google.golang.org/grpc/test/bufconn"
 )
 
@@ -82,6 +83,7 @@ func startTestServer(t *testing.T, ctx context.Context) *bufconn.Listener {
 	srv := server.New(
 		server.WithListener(lis),
 		server.WithLogger(l),
+		server.WithReflection(),
 	)
 
 	greeterSvc := greeter.NewService(l)
@@ -529,4 +531,139 @@ func TestConnect_ReconnectAfterClose(t *testing.T) {
 	t.Cleanup(func() { c.Close() })
 
 	assert.NotEqual(t, connectivity.Shutdown, c.State())
+}
+
+func TestClient_ListServices(t *testing.T) {
+	ctx := t.Context()
+	lis := startTestServer(t, ctx)
+
+	c := newBufClient(lis)
+	require.NoError(t, c.Connect(ctx))
+	t.Cleanup(func() { c.Close() })
+
+	services, err := c.ListServices(ctx)
+	require.NoError(t, err)
+	require.Contains(t, services, "helloworld.v1.GreeterService")
+	require.Contains(t, services, "grpc.reflection.v1.ServerReflection")
+}
+
+func TestClient_ListServices_NoReflection(t *testing.T) {
+	// Start a server without reflection to exercise the Recv error path
+	// (the server sends an error response when it doesn't support reflection).
+	lis := testutil.NewBufListener()
+	srv := grpc.NewServer()
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(func() { srv.GracefulStop() })
+
+	c := newBufClient(lis)
+	require.NoError(t, c.Connect(context.Background()))
+	t.Cleanup(func() { c.Close() })
+
+	_, err := c.ListServices(context.Background())
+	require.Error(t, err)
+}
+
+func TestClient_ListServices_CancelledContext(t *testing.T) {
+	ctx := t.Context()
+	lis := startTestServer(t, ctx)
+
+	c := newBufClient(lis)
+	require.NoError(t, c.Connect(context.Background()))
+	t.Cleanup(func() { c.Close() })
+
+	// Use an already-cancelled context so the stream Send/Recv fails,
+	// exercising the Send error path (the stream is created lazily so
+	// ServerReflectionInfo itself succeeds even with a cancelled context).
+	cancelledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := c.ListServices(cancelledCtx)
+	require.Error(t, err)
+}
+
+func TestClient_ListServices_SendError(t *testing.T) {
+	ctx := t.Context()
+	lis := startTestServer(t, ctx)
+
+	c := newBufClient(lis)
+	require.NoError(t, c.Connect(context.Background()))
+	t.Cleanup(func() { c.Close() })
+
+	// Inject a list function that returns an error to exercise
+	// the error propagation path in ListServices.
+	c.SetListFunc(func(_ context.Context, _ *grpc.ClientConn) ([]string, error) {
+		return nil, fmt.Errorf("injected list error")
+	})
+
+	_, err := c.ListServices(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "injected list error")
+}
+
+// fakeReflectionServer returns an ErrorResponse instead of a ListServicesResponse,
+// exercising the "unexpected response type" branch in defaultListServices.
+type fakeReflectionServer struct {
+	grpc_reflection_v1.UnimplementedServerReflectionServer
+}
+
+func (s *fakeReflectionServer) ServerReflectionInfo(stream grpc_reflection_v1.ServerReflection_ServerReflectionInfoServer) error {
+	// Read the client's request.
+	if _, err := stream.Recv(); err != nil {
+		return err
+	}
+	// Reply with an error response — not ListServicesResponse.
+	return stream.Send(&grpc_reflection_v1.ServerReflectionResponse{
+		MessageResponse: &grpc_reflection_v1.ServerReflectionResponse_ErrorResponse{
+			ErrorResponse: &grpc_reflection_v1.ErrorResponse{
+				ErrorCode:    1,
+				ErrorMessage: "fake",
+			},
+		},
+	})
+}
+
+func TestDefaultListServices_UnexpectedResponse(t *testing.T) {
+	lis := testutil.NewBufListener()
+	srv := grpc.NewServer()
+	grpc_reflection_v1.RegisterServerReflectionServer(srv, &fakeReflectionServer{})
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(func() { srv.GracefulStop() })
+
+	conn, err := grpc.NewClient("passthrough:///bufconn",
+		grpc.WithContextDialer(testutil.BufDialer(lis)),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	_, err = client.DefaultListServices(context.Background(), conn)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected response type")
+}
+
+func TestDefaultListServices_SendError(t *testing.T) {
+	lis := testutil.NewBufListener()
+	srv := grpc.NewServer()
+	grpc_reflection_v1.RegisterServerReflectionServer(srv, &fakeReflectionServer{})
+	go func() { _ = srv.Serve(lis) }()
+
+	conn, err := grpc.NewClient("passthrough:///bufconn",
+		grpc.WithContextDialer(testutil.BufDialer(lis)),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	require.NoError(t, err)
+
+	// Force the connection to become ready, then close it.
+	// The closed connection makes Send fail.
+	conn.Connect()
+	require.Eventually(t, func() bool {
+		return conn.GetState() == connectivity.Ready
+	}, 3*time.Second, 10*time.Millisecond)
+	conn.Close()
+
+	// Stop the server too so the transport is fully dead.
+	srv.Stop()
+
+	_, err = client.DefaultListServices(context.Background(), conn)
+	require.Error(t, err)
 }
