@@ -217,3 +217,16 @@ func TestWithLoadBalancing_InvalidPolicy(t *testing.T) {
 	assert.Contains(t, err.Error(), "configuration error")
 	assert.Contains(t, err.Error(), "unknown load balancing policy")
 }
+
+func TestWithLoadBalancing_SuccessOverridesPreviousError(t *testing.T) {
+	// A failing option followed by a succeeding one should connect
+	// without error because the second option clears configErr.
+	c := client.New("localhost:50051",
+		client.WithInsecure(),
+		client.WithLoadBalancing("banana"),
+		client.WithLoadBalancing("round_robin"),
+	)
+	err := c.Connect(context.Background())
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Close() })
+}
