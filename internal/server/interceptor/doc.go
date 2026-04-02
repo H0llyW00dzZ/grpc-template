@@ -64,6 +64,17 @@
 //     preventing background goroutine leaks. Supports proxy-aware client IP
 //     extraction via [WithTrustProxy] (X-Forwarded-For, X-Real-IP).
 //
+// # Benchmarks
+//
+// The package includes benchmarks for every interceptor and the config
+// snapshot mechanism. Run them with:
+//
+//	go test ./internal/server/interceptor -bench=. -benchmem
+//
+// Or filter to a specific interceptor:
+//
+//	go test ./internal/server/interceptor -bench=BenchmarkRecovery -benchmem
+//
 // # Usage
 //
 //	srv := server.New(

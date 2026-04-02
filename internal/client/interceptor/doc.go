@@ -42,4 +42,11 @@
 //   - [Retry] — retries transient failures with exponential backoff and jitter
 //   - [Auth] / [StreamAuth] — injects bearer tokens into outgoing metadata
 //     (use [OAuth2TokenSource] for golang.org/x/oauth2 support)
+//
+// # Benchmarks
+//
+// The package includes benchmarks for every interceptor and the config
+// snapshot mechanism. Run them with:
+//
+//	go test ./internal/client/interceptor -bench=. -benchmem
 package interceptor

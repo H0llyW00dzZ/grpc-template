@@ -234,6 +234,27 @@ make test
 
 Shared test helpers live in `internal/testutil/`. See `internal/service/greeter/greeter_test.go` for a working example of unary and server-streaming RPC tests.
 
+## Benchmarks
+
+The template ships with comprehensive benchmarks covering interceptors, logging, and service handlers:
+
+```bash
+# Run all benchmarks
+make bench
+
+# Run only specific benchmarks
+make bench BENCH_FILTER=GetConfig
+make bench BENCH_FILTER=SayHello
+```
+
+Benchmarks are organized by package:
+- **Server interceptors** — recovery, logging, auth, rate limiting, peer key extraction (`internal/server/interceptor/`)
+- **Client interceptors** — logging, auth, retry, timeout, backoff (`internal/client/interceptor/`)
+- **Logging** — atomic default logger operations (`internal/logging/`)
+- **Greeter service** — end-to-end unary, parallel, and streaming RPCs over bufconn (`internal/service/greeter/`)
+
+Benchmarks run in CI on every push/PR across all matrix OS/Go-version combinations.
+
 ## Using the Client
 
 The `internal/client` package provides a high-level client with functional options, automatic interceptor configuration, health watching, and graceful lifecycle management.
@@ -324,6 +345,8 @@ srv.RegisterService(
 | `make run-client` | Run the client demo |
 | `make test` | Run all tests with race detector |
 | `make test-cover` | Run tests with coverage (atomic + race, generates coverage.txt) |
+| `make bench` | Run all benchmarks with `-benchmem` |
+| `make bench BENCH_FILTER=GetConfig` | Run only matching benchmarks |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
 | `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |
