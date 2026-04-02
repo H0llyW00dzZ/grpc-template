@@ -64,6 +64,10 @@ With streaming interceptors enabled, both unary and streaming RPCs are logged wi
 
 ![gRPC Streaming Interceptor Demo](assets/image/grpc-go-streaming-Interceptor.gif)
 
+With server reflection enabled, the client discovers all available services at runtime via `ListServices` and logs each fully-qualified service name before invoking RPCs:
+
+![gRPC Streaming Interceptor with Reflection](assets/image/grpc-go-streaming-Interceptor-with-reflection.gif)
+
 ## Project Structure
 
 ```text
