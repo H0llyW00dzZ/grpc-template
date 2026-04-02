@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
@@ -37,6 +38,7 @@ type Server struct {
 	grpcOpts           []grpc.ServerOption
 	listener           net.Listener
 	healthSrv          *health.Server
+	mu                 sync.RWMutex
 
 	// configErr captures errors from functional options (e.g., TLS
 	// certificate loading) so they can be returned from [Server.Run]
@@ -83,12 +85,16 @@ func (s *Server) Health() *health.Server {
 // when the server starts. This is the primary way to add your
 // gRPC service implementations to the server.
 //
-// RegisterService must be called before [Run]; it is not safe for
-// concurrent use.
+// It is safe for concurrent use.
 //
 //	srv.RegisterService(greeterSvc.Register, authSvc.Register, kvSvc.Register)
 func (s *Server) RegisterService(registrars ...ServiceRegistrar) {
+	if len(registrars) == 0 {
+		return
+	}
+	s.mu.Lock()
 	s.registrars = append(s.registrars, registrars...)
+	s.mu.Unlock()
 }
 
 func (s *Server) buildOptions() []grpc.ServerOption {
@@ -116,9 +122,15 @@ func (s *Server) buildOptions() []grpc.ServerOption {
 
 func (s *Server) setupServer() *grpc.Server {
 	opts := s.buildOptions()
+
+	s.mu.RLock()
+	registrars := make([]ServiceRegistrar, len(s.registrars))
+	copy(registrars, s.registrars)
+	s.mu.RUnlock()
+
 	grpcServer := grpc.NewServer(opts...)
 
-	for _, registrar := range s.registrars {
+	for _, registrar := range registrars {
 		registrar(grpcServer)
 	}
 
