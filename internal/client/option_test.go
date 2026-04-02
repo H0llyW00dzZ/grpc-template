@@ -130,10 +130,8 @@ func TestWithLogger(t *testing.T) {
 }
 
 func TestWithLogger_Nil(t *testing.T) {
-	l := logging.Default()
-	c := client.New("localhost:50051", client.WithLogger(l), client.WithLogger(nil))
-	// Logger should remain the previously set one, not nil.
-	assert.Equal(t, l, c.Logger())
+	c := client.New("localhost:50051", client.WithLogger(nil))
+	assert.Equal(t, logging.Default(), c.Logger())
 }
 
 func TestWithUnaryInterceptors(t *testing.T) {
