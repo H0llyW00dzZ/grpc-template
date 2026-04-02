@@ -222,6 +222,11 @@ func TestRegisterService(t *testing.T) {
 	}
 
 	srv := server.New(server.WithPort("0"))
+
+	// Test empty call (early return)
+	srv.RegisterService()
+
+	// Test normal registration
 	srv.RegisterService(registrar)
 
 	ctx, cancel := context.WithCancel(context.Background())
