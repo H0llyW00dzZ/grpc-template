@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/client"
+	_ "github.com/H0llyW00dzZ/grpc-template/internal/client/balancer"
 	clientinterceptor "github.com/H0llyW00dzZ/grpc-template/internal/client/interceptor"
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"

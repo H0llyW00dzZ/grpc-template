@@ -107,9 +107,22 @@
 //   - [WithRetry] — retry on transient failures (syncs to interceptors)
 //   - [WithRetryCodes] — override retryable status codes (syncs to interceptors)
 //   - [WithTokenSource] — bearer token injection (syncs to interceptors, supports [interceptor.StaticToken] and [interceptor.OAuth2TokenSource])
-//   - [WithLoadBalancing] — client-side load balancing ("round_robin", "pick_first")
+//   - [WithLoadBalancing] — client-side load balancing (requires balancer policy registration; see below)
 //   - [WithHealthWatch] — background health monitoring with auto-reconnect
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size
 //   - [WithDialOptions] — raw grpc.DialOption pass-through
+//
+// # Load Balancing
+//
+// [WithLoadBalancing] requires the desired balancer policies to be
+// registered in the process before [Client.Connect] is called.
+// Import the convenience package to register all built-in policies:
+//
+//	import _ "github.com/H0llyW00dzZ/grpc-template/internal/client/balancer"
+//
+// Or import only the policies you need to reduce binary size:
+//
+//	import _ "google.golang.org/grpc/balancer/roundrobin"         // round_robin
+//	import _ "google.golang.org/grpc/balancer/weightedroundrobin" // weighted_round_robin
 package client
