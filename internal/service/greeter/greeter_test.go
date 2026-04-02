@@ -133,25 +133,56 @@ func TestSayHelloServerStream_ClientCancel(t *testing.T) {
 	assert.Equal(t, codes.Canceled, status.Code(err))
 }
 
-func TestLoadBalancing_RoundRobin(t *testing.T) {
-	lis := startGreeterServer(t)
+func TestLoadBalancing(t *testing.T) {
+	// ring_hash_experimental is excluded because it requires an xDS
+	// config selector to set the request hash, which is unavailable
+	// in a plain bufconn setup.
+	policies := []string{
+		"pick_first",
+		"round_robin",
+		"weighted_round_robin",
+		"least_request_experimental",
+	}
 
-	c := client.New("passthrough:///bufconn",
-		client.WithInsecure(),
-		client.WithLoadBalancing("round_robin"),
-		client.WithDialOptions(
-			grpc.WithContextDialer(testutil.BufDialer(lis)),
-		),
-	)
-	require.NoError(t, c.Connect(context.Background()))
-	t.Cleanup(func() { c.Close() })
+	for _, policy := range policies {
+		t.Run(policy, func(t *testing.T) {
+			lis := startGreeterServer(t)
 
-	caller := greeter.NewCaller(c.Conn(), logging.Default())
+			c := client.New("passthrough:///bufconn",
+				client.WithInsecure(),
+				client.WithLoadBalancing(policy),
+				client.WithDialOptions(
+					grpc.WithContextDialer(testutil.BufDialer(lis)),
+				),
+			)
+			require.NoError(t, c.Connect(context.Background()))
+			t.Cleanup(func() { c.Close() })
 
-	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
-	defer cancel()
+			caller := greeter.NewCaller(c.Conn(), logging.Default())
 
-	resp, err := caller.SayHello(ctx, "LoadBalanced")
-	require.NoError(t, err)
-	assert.Equal(t, "Hello, LoadBalanced!", resp.GetMessage())
+			ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+			defer cancel()
+
+			// Unary RPC.
+			resp, err := caller.SayHello(ctx, "LoadBalanced")
+			require.NoError(t, err)
+			assert.Equal(t, "Hello, LoadBalanced!", resp.GetMessage())
+
+			// Server streaming RPC.
+			stream, err := caller.SayHelloServerStream(ctx, "StreamLB")
+			require.NoError(t, err)
+
+			var msgs []string
+			for {
+				reply, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+				require.NoError(t, err)
+				msgs = append(msgs, reply.GetMessage())
+			}
+			require.Len(t, msgs, 3)
+			assert.Equal(t, "Hello, StreamLB!", msgs[0])
+		})
+	}
 }
