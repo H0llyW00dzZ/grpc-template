@@ -9,7 +9,7 @@ import (
 	// Register all built-in gRPC load-balancing policies.
 	// Each package's init() calls balancer.Register, making the policy
 	// available to [client.WithLoadBalancing] at runtime.
-	_ "google.golang.org/grpc/balancer/leastrequest"      // least_request_experimental
+	_ "google.golang.org/grpc/balancer/leastrequest"       // least_request_experimental
 	_ "google.golang.org/grpc/balancer/pickfirst"          // pick_first
 	_ "google.golang.org/grpc/balancer/ringhash"           // ring_hash_experimental
 	_ "google.golang.org/grpc/balancer/roundrobin"         // round_robin
