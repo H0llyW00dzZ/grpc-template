@@ -9,9 +9,15 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"regexp"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+)
+
+// uuidPattern matches a canonical UUID (8-4-4-4-12 hex).
+var uuidPattern = regexp.MustCompile(
+	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`,
 )
 
 // requestIDKey is the private context key for the request ID.
@@ -68,25 +74,24 @@ func StreamRequestID() grpc.StreamServerInterceptor {
 	}
 }
 
-// ensureRequestID extracts the request ID from incoming metadata or generates
-// a new UUID if none is present, and returns a context with the ID stored.
+// ensureRequestID extracts the request ID from incoming metadata and validates
+// it against a strict UUID format. If the value is missing or does not match,
+// a new server-generated UUID is used instead. This prevents spoofing, log
+// injection, and oversized payloads from untrusted clients.
 func ensureRequestID(ctx context.Context) context.Context {
-	var id string
-
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if vals := md.Get("x-request-id"); len(vals) > 0 && vals[0] != "" {
-			id = vals[0]
+		if vals := md.Get("x-request-id"); len(vals) > 0 && uuidPattern.MatchString(vals[0]) {
+			return context.WithValue(ctx, requestIDKey{}, vals[0])
 		}
 	}
 
-	if id == "" {
-		id = generateUUID()
-	}
-
-	return context.WithValue(ctx, requestIDKey{}, id)
+	return context.WithValue(ctx, requestIDKey{}, generateUUID())
 }
 
-// generateUUID produces a version 4 UUID string using crypto/rand.
+// generateUUID produces a version 4 UUID string using [crypto/rand].
+//
+// Note: On Linux, [crypto/rand] reads from [/dev/urandom] which never
+// returns an error, so the error value is safe to discard.
 func generateUUID() string {
 	var uuid [16]byte
 	_, _ = rand.Read(uuid[:])
