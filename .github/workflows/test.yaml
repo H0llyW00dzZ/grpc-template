@@ -3,7 +3,7 @@
 # By accessing or using this software, you agree to be bound by the terms
 # of the License Agreement, which you can find at LICENSE files.
 
-name: 🧪 Vet & Test Coverage
+name: 🧪 Vet, Test Coverage & Benchmarks
 
 on:
   push:
@@ -40,7 +40,7 @@ on:
       - 'skills/*'
 jobs:
   coverage:
-    name: 🔢 Vet & Test Coverage on ${{ matrix.os }} (Go ${{ matrix.go-version }})
+    name: "🔢 Vet, Test & Bench on ${{ matrix.os }} (Go ${{ matrix.go-version }})"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -93,3 +93,8 @@ jobs:
         files: ./coverage.txt
         flags: unittests
         name: codecov-umbrella
+
+    - name: Run benchmarks
+      run: |
+        go test $(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$') -bench=. -benchmem -benchtime=1s -run='^$' -count=1 -timeout 300s
+      shell: bash

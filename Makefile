@@ -1,4 +1,4 @@
-.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover vet lint clean deps deps-cpp header init
+.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover bench vet lint clean deps deps-cpp header init
 
 # Binary output directory.
 BIN_DIR := bin
@@ -223,6 +223,16 @@ test-cover: header
 	go test $(TEST_PKGS) -race -v -coverprofile=coverage.txt -covermode=atomic -count=1
 	go tool cover -func=coverage.txt
 	@echo "==> Done. (To view in browser: go tool cover -html=coverage.txt)"
+
+# Run benchmarks with memory allocation reporting.
+# Usage:
+#   make bench                          # run all benchmarks
+#   make bench BENCH_FILTER=GetConfig   # run only matching benchmarks
+BENCH_FILTER ?= .
+bench: header
+	@echo "==> Running benchmarks..."
+	go test $(TEST_PKGS) -bench=$(BENCH_FILTER) -benchmem -benchtime=1s -run='^$$' -count=1 -timeout 300s
+	@echo "==> Done."
 
 # Run go vet.
 vet: header
