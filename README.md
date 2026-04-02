@@ -30,7 +30,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Functional Options** — clean, extensible configuration for both server and client
 - **TLS / mTLS** — secure connections with a single option (server + client)
 - **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend
-- **Built-in Interceptors** — server (recovery, logging, auth, validation, rate limiting) and client (logging, timeout, retry, auth) interceptor packages for both unary and streaming RPCs — with proxy-aware client IP extraction
+- **Built-in Interceptors** — server (recovery, logging, request ID, auth, validation, rate limiting) and client (logging, timeout, retry, auth) interceptor packages for both unary and streaming RPCs — with proxy-aware client IP extraction
 
 > [!TIP]
 > **New to gRPC?** Interceptors run *before* a request reaches your service handler — think of them as middleware that operates on the raw RPC layer using Go's native `context.Context`. This makes them more robust than most HTTP frameworks that rely on their own custom context types. Auth, logging, and recovery all happen transparently before your business logic is ever invoked.
