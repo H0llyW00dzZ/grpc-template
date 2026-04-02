@@ -455,3 +455,20 @@ func TestWithDefaultServiceConfig_InvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "configuration error")
 	assert.Contains(t, err.Error(), "invalid service config JSON")
 }
+
+func TestWithDefaultServiceConfig_SuccessOverridesPreviousError(t *testing.T) {
+	// A failing option followed by a succeeding one should start
+	// without error because the second option clears configErr.
+	srv := server.New(
+		server.WithDefaultServiceConfig(`{not valid json`),
+		server.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
+		server.WithPort("0"),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Run(ctx) }()
+	cancel()
+
+	require.NoError(t, <-errCh)
+}

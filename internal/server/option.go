@@ -275,6 +275,7 @@ func WithDefaultServiceConfig(configJSON string) Option {
 			s.configErr = fmt.Errorf("invalid service config JSON: %s", configJSON)
 			return
 		}
+		s.configErr = nil
 		s.serviceConfig = configJSON
 	}
 }

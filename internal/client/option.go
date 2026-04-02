@@ -236,6 +236,7 @@ func WithLoadBalancing(policy string) Option {
 			c.configErr = fmt.Errorf("unknown load balancing policy %q", policy)
 			return
 		}
+		c.configErr = nil
 		config := fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, policy)
 		c.dialOpts = append(c.dialOpts, grpc.WithDefaultServiceConfig(config))
 	}
