@@ -156,15 +156,10 @@ func WithListener(lis net.Listener) Option {
 // WithLogger sets the logger used by the gRPC server and its interceptors.
 // It also calls [interceptor.Configure] with [interceptor.WithLogger] so that
 // all interceptors in the package automatically use the same logger.
-//
-// To change the process-wide default logger (used as a fallback by
-// [logging.Resolve]), call [logging.SetDefault] explicitly.
 func WithLogger(l logging.Handler) Option {
 	return func(s *Server) {
-		if l != nil {
-			s.logger = l
-			interceptor.Configure(interceptor.WithLogger(l))
-		}
+		s.logger = logging.Resolve(l)
+		interceptor.Configure(interceptor.WithLogger(l))
 	}
 }
 

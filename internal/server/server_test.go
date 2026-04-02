@@ -45,6 +45,11 @@ func TestServer_WithLoggerAndGetter(t *testing.T) {
 	assert.Equal(t, l, srv.Logger())
 }
 
+func TestServer_WithLogger_Nil(t *testing.T) {
+	srv := server.New(server.WithLogger(nil))
+	assert.Equal(t, logging.Default(), srv.Logger())
+}
+
 func TestServer_HealthGetter(t *testing.T) {
 	srv := server.New(server.WithPort("0"))
 	// Health is nil before Run/setupServer.
