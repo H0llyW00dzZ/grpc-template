@@ -1,0 +1,269 @@
+// Copyright (c) 2026 H0llyW00dzZ All rights reserved.
+//
+// By accessing or using this software, you agree to be bound by the terms
+// of the License Agreement, which you can find at LICENSE files.
+
+syntax = "proto3";
+
+package nawala.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/H0llyW00dzZ/grpc-template/pkg/gen/nawala/v1;nawalav1";
+option php_namespace = "Nawala\\V1";
+option php_metadata_namespace = "GPBMetadata\\Nawala\\V1";
+
+// NawalaCheckerService provides DNS-based domain blocking detection
+// for Indonesian ISP filters (Nawala and Komdigi).
+//
+// It wraps the core nawala-checker SDK operations as gRPC RPCs,
+// supporting single-domain checks, batch checks, streaming pipelines,
+// DNS server health monitoring, and runtime server management.
+//
+// See: https://github.com/H0llyW00dzZ/nawala-checker
+service NawalaCheckerService {
+  // CheckDomain checks a single domain for DNS blocking.
+  rpc CheckDomain(CheckDomainRequest) returns (CheckDomainResponse) {}
+
+  // CheckDomains checks multiple domains concurrently and returns all results.
+  rpc CheckDomains(CheckDomainsRequest) returns (CheckDomainsResponse) {}
+
+  // CheckDomainsStream checks domains via a bidirectional stream,
+  // enabling constant-memory processing of large domain lists.
+  rpc CheckDomainsStream(stream CheckDomainsStreamRequest) returns (stream CheckDomainsStreamResponse) {}
+
+  // DNSStatus returns the health status and latency for all configured DNS servers.
+  rpc DNSStatus(DNSStatusRequest) returns (DNSStatusResponse) {}
+
+  // ValidateDomain checks whether a domain string is well-formed
+  // (RFC 1035 compliant) without performing a DNS query.
+  rpc ValidateDomain(ValidateDomainRequest) returns (ValidateDomainResponse) {}
+
+  // SetServers adds or replaces DNS servers at runtime (hot-reload).
+  rpc SetServers(SetServersRequest) returns (SetServersResponse) {}
+
+  // DeleteServers removes DNS servers by address at runtime.
+  rpc DeleteServers(DeleteServersRequest) returns (DeleteServersResponse) {}
+
+  // ListServers returns the currently configured DNS servers.
+  rpc ListServers(ListServersRequest) returns (ListServersResponse) {}
+
+  // FlushCache clears all cached domain check results.
+  rpc FlushCache(FlushCacheRequest) returns (FlushCacheResponse) {}
+}
+
+// DNSServer represents a DNS server configuration used for blocking detection.
+message DNSServer {
+  // address is the server address in host:port format (e.g., "180.131.144.144:53").
+  string address = 1;
+
+  // keyword is the blocking indicator to search for in DNS responses
+  // (e.g., "internetpositif" for Nawala, "trustpositif" for Komdigi).
+  string keyword = 2;
+
+  // query_type is the DNS record type to query (e.g., "A", "AAAA").
+  string query_type = 3;
+}
+
+// DomainResult contains the outcome of a single domain blocking check.
+message DomainResult {
+  // domain is the normalized domain name that was checked.
+  string domain = 1;
+
+  // blocked indicates whether a blocking keyword was detected in the DNS response.
+  bool blocked = 2;
+
+  // server is the DNS server address that produced the result.
+  string server = 3;
+
+  // error is a human-readable error message if the check failed, empty on success.
+  string error = 4;
+
+  // error_code categorizes the failure type for programmatic handling.
+  ErrorCode error_code = 5;
+
+  // cached indicates whether this result was served from cache.
+  bool cached = 6;
+}
+
+// ErrorCode enumerates the possible error conditions from a domain check.
+enum ErrorCode {
+  // ERROR_CODE_UNSPECIFIED indicates no error occurred.
+  ERROR_CODE_UNSPECIFIED = 0;
+
+  // ERROR_CODE_INVALID_DOMAIN indicates the domain failed RFC 1035 validation.
+  ERROR_CODE_INVALID_DOMAIN = 1;
+
+  // ERROR_CODE_DNS_TIMEOUT indicates the query exceeded the configured timeout.
+  ERROR_CODE_DNS_TIMEOUT = 2;
+
+  // ERROR_CODE_NXDOMAIN indicates the domain does not exist in DNS.
+  ERROR_CODE_NXDOMAIN = 3;
+
+  // ERROR_CODE_QUERY_REJECTED indicates the server returned FORMERR, REFUSED, or NOTIMP.
+  ERROR_CODE_QUERY_REJECTED = 4;
+
+  // ERROR_CODE_ALL_DNS_FAILED indicates every configured server failed for the domain.
+  ERROR_CODE_ALL_DNS_FAILED = 5;
+
+  // ERROR_CODE_NO_DNS_SERVERS indicates no DNS servers are configured.
+  ERROR_CODE_NO_DNS_SERVERS = 6;
+
+  // ERROR_CODE_INTERNAL indicates an internal error (e.g., recovered panic).
+  ERROR_CODE_INTERNAL = 7;
+}
+
+// ServerStatus describes the health of a single DNS server.
+message ServerStatus {
+  // server is the DNS server address.
+  string server = 1;
+
+  // online indicates whether the server is reachable.
+  bool online = 2;
+
+  // latency is the round-trip response time.
+  google.protobuf.Duration latency = 3;
+
+  // error is a human-readable error message if the health check failed.
+  string error = 4;
+}
+
+// BlockingMethod describes the DNS blocking mechanism detected.
+enum BlockingMethod {
+  // BLOCKING_METHOD_UNSPECIFIED indicates no blocking was detected.
+  BLOCKING_METHOD_UNSPECIFIED = 0;
+
+  // BLOCKING_METHOD_NAWALA_CNAME indicates a Nawala CNAME redirect
+  // to internetpositif.id was detected.
+  BLOCKING_METHOD_NAWALA_CNAME = 1;
+
+  // BLOCKING_METHOD_KOMDIGI_EDE indicates a Komdigi Extended DNS Error (EDE 15)
+  // with trustpositif.komdigi.go.id metadata was detected.
+  BLOCKING_METHOD_KOMDIGI_EDE = 2;
+}
+
+// DNSProtocol specifies the transport protocol for DNS queries.
+enum DNSProtocol {
+  // DNS_PROTOCOL_UNSPECIFIED defaults to UDP.
+  DNS_PROTOCOL_UNSPECIFIED = 0;
+
+  // DNS_PROTOCOL_UDP uses standard UDP transport.
+  DNS_PROTOCOL_UDP = 1;
+
+  // DNS_PROTOCOL_TCP uses TCP transport.
+  DNS_PROTOCOL_TCP = 2;
+
+  // DNS_PROTOCOL_TCP_TLS uses DNS-over-TLS (DoT) transport.
+  DNS_PROTOCOL_TCP_TLS = 3;
+}
+
+// --- Request/Response Messages ---
+
+// CheckDomainRequest is the request for checking a single domain.
+message CheckDomainRequest {
+  // domain is the domain name to check (e.g., "example.com").
+  string domain = 1;
+}
+
+// CheckDomainResponse is the response for a single domain check.
+message CheckDomainResponse {
+  // result contains the check outcome.
+  DomainResult result = 1;
+}
+
+// CheckDomainsRequest is the request for checking multiple domains.
+message CheckDomainsRequest {
+  // domains is the list of domain names to check.
+  repeated string domains = 1;
+}
+
+// CheckDomainsResponse is the response for a batch domain check.
+message CheckDomainsResponse {
+  // results contains the check outcomes for all requested domains.
+  repeated DomainResult results = 1;
+}
+
+// CheckDomainsStreamRequest is a streaming request carrying one domain per message.
+message CheckDomainsStreamRequest {
+  // domain is the domain name to check.
+  string domain = 1;
+}
+
+// CheckDomainsStreamResponse is a streaming response carrying one result per message.
+message CheckDomainsStreamResponse {
+  // result contains the check outcome for one domain.
+  DomainResult result = 1;
+}
+
+// DNSStatusRequest is the request for checking DNS server health.
+message DNSStatusRequest {}
+
+// DNSStatusResponse contains the health status of all configured DNS servers.
+message DNSStatusResponse {
+  // servers contains the health status for each configured DNS server.
+  repeated ServerStatus servers = 1;
+
+  // checked_at is the timestamp when the health check was performed.
+  google.protobuf.Timestamp checked_at = 2;
+}
+
+// ValidateDomainRequest is the request for validating a domain string.
+message ValidateDomainRequest {
+  // domain is the domain string to validate.
+  string domain = 1;
+}
+
+// ValidateDomainResponse contains the validation result.
+message ValidateDomainResponse {
+  // valid indicates whether the domain is well-formed.
+  bool valid = 1;
+
+  // normalized is the normalized form of the domain (lowercase, Punycode-encoded).
+  string normalized = 2;
+
+  // error is a description of the validation failure, empty if valid.
+  string error = 3;
+}
+
+// SetServersRequest adds or replaces DNS servers at runtime.
+message SetServersRequest {
+  // servers is the list of DNS servers to add or replace.
+  repeated DNSServer servers = 1;
+}
+
+// SetServersResponse is returned after servers are set.
+message SetServersResponse {
+  // server_count is the total number of configured servers after the operation.
+  int32 server_count = 1;
+}
+
+// DeleteServersRequest removes DNS servers by address.
+message DeleteServersRequest {
+  // addresses is the list of server addresses to remove.
+  repeated string addresses = 1;
+}
+
+// DeleteServersResponse is returned after servers are removed.
+message DeleteServersResponse {
+  // removed_count is the number of servers that were removed.
+  int32 removed_count = 1;
+
+  // server_count is the total number of configured servers after the operation.
+  int32 server_count = 2;
+}
+
+// ListServersRequest queries the currently configured DNS servers.
+message ListServersRequest {}
+
+// ListServersResponse contains the currently configured DNS servers.
+message ListServersResponse {
+  // servers is the list of currently configured DNS servers.
+  repeated DNSServer servers = 1;
+}
+
+// FlushCacheRequest clears the domain check result cache.
+message FlushCacheRequest {}
+
+// FlushCacheResponse is returned after the cache is flushed.
+message FlushCacheResponse {}
