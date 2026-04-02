@@ -18,6 +18,7 @@
 //	    interceptor.WithLogger(myLogger),
 //	    interceptor.WithDefaultTimeout(5 * time.Second),
 //	    interceptor.WithRetry(3, time.Second),
+//	    interceptor.WithRetryCodes(codes.Unavailable, codes.ResourceExhausted),
 //	    interceptor.WithTokenSource(interceptor.StaticToken("my-token")),
 //	    // interceptor.WithTokenSource(interceptor.OAuth2TokenSource(oauth2Src)),
 //	)
@@ -30,7 +31,9 @@
 //
 // All interceptors read their configuration through a snapshot taken under
 // a read lock, so [Configure] may be called concurrently with in-flight
-// RPCs without data races.
+// RPCs without data races. Interceptors resolve the logger via the
+// snapshot's resolvedLogger method, which falls back to [logging.Default]
+// when no logger has been configured.
 //
 // # Available Interceptors
 //

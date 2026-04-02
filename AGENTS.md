@@ -109,7 +109,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - gRPC errors: `status.Errorf(codes.InvalidArgument, "msg: %v", err)` or `status.Error`
 - In interceptors: use codes.Internal for panics/recovery (see recovery.go:33)
 - Never panic in production code
-- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `configErr`) and return it from a later method like `Connect()` or `Run()` — see `client/option.go` and `server/option.go` WithTLS/WithMutualTLS. A succeeding TLS option clears `configErr`. `client.WithInsecure()` also clears `configErr` and `tlsConfig`.
+- For functional options that can fail (e.g., TLS cert loading), store the error on the struct (e.g., `configErr`) and return it from a later method like `Connect()` or `Run()` — see `client/option.go` and `server/option.go` WithTLS/WithMutualTLS. A succeeding TLS option clears `configErr`. A failing TLS option nils out `tlsConfig` to prevent stale config from being used. `client.WithInsecure()` also clears `configErr` and `tlsConfig`.
 - Log errors with structured logging using logger.Error(msg, "key", value)
 - In tests: use require.NoError(t, err), assert.Equal
 
@@ -120,6 +120,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - See internal/logging/logging.go:28
 - Services receive logger via NewService(l logging.Handler)
 - `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
+- In interceptors, use `cfg.resolvedLogger()` (defined on the config snapshot) instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`. See `server/interceptor/config.go` and `client/interceptor/config.go`.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)

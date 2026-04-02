@@ -38,10 +38,13 @@
 //
 // # Registering Services
 //
-// Use [Server.RegisterService] to attach gRPC service implementations:
+// Use [Server.RegisterService] to attach one or more gRPC service
+// implementations. The method is variadic, so multiple services can
+// be registered in a single call:
 //
 //	greeterSvc := greeter.NewService(srv.Logger())
-//	srv.RegisterService(greeterSvc.Register)
+//	authSvc    := auth.NewService(srv.Logger())
+//	srv.RegisterService(greeterSvc.Register, authSvc.Register)
 //
 // # Running and Shutdown
 //
@@ -49,7 +52,8 @@
 // or a SIGINT/SIGTERM signal is received. It returns immediately with an
 // error if any option recorded a configuration failure (e.g., invalid TLS
 // certificates from [WithTLS] or [WithMutualTLS]). A succeeding TLS
-// option clears the error from a preceding one.
+// option clears the error from a preceding one; a failing TLS option
+// nils out the TLS config to prevent stale credentials from being used.
 // The server performs a graceful shutdown, draining in-flight RPCs
 // before stopping. The internal serve goroutine is always joined before
 // Run returns, preventing goroutine leaks:
