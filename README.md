@@ -477,7 +477,7 @@ srv.RegisterService(
 | Max message size | `cmd/client/main.go` | `client.WithMaxMsgSize(maxBytes)` — override default 4 MB limit |
 | Raw dial options | `cmd/client/main.go` | `client.WithDialOptions(opts...)` — pass-through any `grpc.DialOption` |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
-| Load balancing | `cmd/client/main.go` | `client.WithLoadBalancing("round_robin")` — client-side LB; use `dns:///` target prefix for multi-endpoint resolution |
+| Load balancing | `cmd/client/main.go` | `client.WithLoadBalancing(policy)` — client-side LB (`pick_first`, `round_robin`, `weighted_round_robin`, `least_request_experimental`, `ring_hash_experimental`); use `dns:///` target prefix for multi-endpoint resolution |
 | Service discovery | runtime | `c.ListServices(ctx)` — query available services via gRPC reflection (requires `server.WithReflection()`) |
 | Connection state | runtime | `c.State()` — returns current [connectivity.State]; `c.WaitReady(ctx)` — blocks until Ready |
 
