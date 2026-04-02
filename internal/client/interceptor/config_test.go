@@ -80,7 +80,7 @@ func TestAuth_TokenSourceError(t *testing.T) {
 
 	err := i(context.Background(), "/test/Method", nil, nil, nil, invoker)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "token source failed")
+	assert.Contains(t, err.Error(), "authentication failed")
 }
 
 func TestAuth_ExistingMetadata(t *testing.T) {
@@ -288,7 +288,7 @@ func TestAuth_NoTokenInContext(t *testing.T) {
 
 	err := i(context.Background(), "/test/Method", nil, nil, nil, invoker)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no token in context")
+	assert.Contains(t, err.Error(), "authentication failed")
 }
 
 func TestOAuth2TokenSource(t *testing.T) {

@@ -8,6 +8,7 @@ package interceptor
 import (
 	"context"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -34,7 +35,11 @@ func Auth() grpc.UnaryClientInterceptor {
 		opts ...grpc.CallOption,
 	) error {
 		cfg := getConfig()
-		ctx, err := injectToken(ctx, cfg.tokenSource)
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
+		ctx, err := injectToken(ctx, cfg.tokenSource, l)
 		if err != nil {
 			return err
 		}
@@ -56,7 +61,11 @@ func StreamAuth() grpc.StreamClientInterceptor {
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
 		cfg := getConfig()
-		ctx, err := injectToken(ctx, cfg.tokenSource)
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
+		ctx, err := injectToken(ctx, cfg.tokenSource, l)
 		if err != nil {
 			return nil, err
 		}
@@ -65,21 +74,26 @@ func StreamAuth() grpc.StreamClientInterceptor {
 }
 
 // injectToken calls the given TokenSource and injects the bearer token
-// into outgoing metadata. The caller passes the token source from its
-// own config snapshot so that a single snapshot is used per request.
-func injectToken(ctx context.Context, src TokenSource) (context.Context, error) {
+// into outgoing metadata. The caller passes the token source and logger
+// from its own config snapshot so that a single snapshot is used per request.
+//
+// On token source failure the detailed error is logged for debugging;
+// clients always receive a generic "authentication failed" message to
+// avoid leaking internal details (OWASP / CWE-209).
+func injectToken(ctx context.Context, src TokenSource, l logging.Handler) (context.Context, error) {
 	if src == nil {
 		return ctx, nil
 	}
 
 	ctx, err := src(ctx)
 	if err != nil {
-		return ctx, status.Errorf(codes.Unauthenticated, "client interceptor: token source failed: %v", err)
+		l.Error("token source failed", "error", err.Error())
+		return ctx, status.Error(codes.Unauthenticated, "authentication failed")
 	}
 
 	token, ok := ctx.Value(tokenKey{}).(string)
 	if !ok || token == "" {
-		return ctx, status.Error(codes.Unauthenticated, "client interceptor: no token in context")
+		return ctx, status.Error(codes.Unauthenticated, "authentication failed")
 	}
 
 	md, ok := metadata.FromOutgoingContext(ctx)
