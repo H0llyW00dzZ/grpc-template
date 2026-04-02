@@ -38,6 +38,7 @@ type Server struct {
 	grpcOpts           []grpc.ServerOption
 	listener           net.Listener
 	healthSrv          *health.Server
+	serviceConfig      string
 	mu                 sync.RWMutex
 
 	// configErr captures errors from functional options (e.g., TLS
@@ -79,6 +80,17 @@ func (s *Server) Logger() logging.Handler {
 //	)
 func (s *Server) Health() *health.Server {
 	return s.healthSrv
+}
+
+// ServiceConfig returns the default gRPC service configuration JSON
+// string set via [WithDefaultServiceConfig]. Returns an empty string
+// if no service config was configured.
+//
+// This value is intended for use by name resolvers, deployment
+// manifests, or custom service discovery mechanisms that advertise
+// server-chosen defaults (e.g., load balancing policy) to clients.
+func (s *Server) ServiceConfig() string {
+	return s.serviceConfig
 }
 
 // RegisterService adds one or more service registrars that will be called

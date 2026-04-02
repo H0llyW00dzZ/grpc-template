@@ -72,6 +72,10 @@ With request ID tracing added to the interceptor chain, every unary and streamin
 
 ![gRPC Streaming Interceptor with Reflection and Request ID](assets/image/grpc-go-streaming-Interceptor-with-reflection-and-request-id.gif)
 
+With client-side load balancing (`round_robin`) and server-advertised service config, the client distributes RPCs across available backends while the server declares its preferred balancing policy via `WithDefaultServiceConfig`:
+
+![gRPC Streaming Interceptor with Load Balancing](assets/image/grpc-go-streaming-Interceptor-with-load-balancing.gif)
+
 <details>
 <summary><b>Server configuration</b> — <code>cmd/server/main.go</code></summary>
 
@@ -100,6 +104,7 @@ func main() {
 			interceptor.StreamRecovery(),
 			interceptor.StreamLogging(),
 		),
+		server.WithDefaultServiceConfig(`{"loadBalancingConfig":[{"round_robin":{}}]}`),
 	)
 
 	// Create the greeter service utilizing the server's integrated logger.
@@ -112,6 +117,91 @@ func main() {
 	if err := srv.Run(context.Background()); err != nil {
 		log.Fatal(err)
 	}
+}
+```
+
+</details>
+
+<details>
+<summary><b>Client configuration</b> — <code>cmd/client/main.go</code></summary>
+
+```go
+const (
+	defaultAddr = "dns:///localhost:50051"
+	defaultName = "World"
+)
+
+func main() {
+	// Enable debug logging (shows Debug level + reflection calls)
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(h))
+	// Initialize logger.
+	l := logging.Default()
+
+	// Create and configure the gRPC client.
+	c := client.New(defaultAddr,
+		client.WithInsecure(),
+		client.WithLogger(l),
+		client.WithDefaultTimeout(5*time.Second),
+		client.WithRetry(3, time.Second),
+		client.WithUnaryInterceptors(
+			clientinterceptor.Logging(),
+			clientinterceptor.Timeout(),
+			clientinterceptor.Retry(),
+		),
+		client.WithStreamInterceptors(
+			clientinterceptor.StreamLogging(),
+		),
+		client.WithLoadBalancing("round_robin"),
+	)
+
+	// Connect to the server.
+	ctx := context.Background()
+	if err := c.Connect(ctx); err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	// List available services via runtime reflection.
+	services, err := c.ListServices(ctx)
+	if err != nil {
+		l.Error("ListServices: %v", err)
+	} else {
+		for _, svc := range services {
+			l.Info("available service", "name", svc)
+		}
+	}
+
+	// Create the greeter caller using the client's connection and logger.
+	caller := greeter.NewCaller(c.Conn(), c.Logger())
+
+	// --- Unary RPC ---
+	reply, err := caller.SayHello(ctx, defaultName)
+	if err != nil {
+		log.Fatalf("SayHello failed: %v", err)
+	}
+	l.Info("SayHello response", "message", reply.GetMessage())
+
+	// --- Server Streaming RPC ---
+	stream, err := caller.SayHelloServerStream(ctx, defaultName)
+	if err != nil {
+		log.Fatalf("SayHelloServerStream failed: %v", err)
+	}
+
+	for {
+		reply, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("stream recv failed: %v", err)
+		}
+		l.Info("stream response", "message", reply.GetMessage())
+	}
+
+	l.Info("client demo completed")
 }
 ```
 
@@ -365,6 +455,7 @@ srv.RegisterService(
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
 | Custom listener | `cmd/server/main.go` | `server.WithListener(lis)` |
+| Default service config | `cmd/server/main.go` | `server.WithDefaultServiceConfig(json)` — advertise LB policy / service config to clients via name resolvers |
 | Raw gRPC options | `cmd/server/main.go` | `server.WithGrpcOptions(opts...)` — pass-through any `grpc.ServerOption` |
 | Health status | runtime | `srv.Health().SetServingStatus(svc, status)` — toggle per-service health at runtime |
 
@@ -384,6 +475,7 @@ srv.RegisterService(
 | Max message size | `cmd/client/main.go` | `client.WithMaxMsgSize(maxBytes)` — override default 4 MB limit |
 | Raw dial options | `cmd/client/main.go` | `client.WithDialOptions(opts...)` — pass-through any `grpc.DialOption` |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
+| Load balancing | `cmd/client/main.go` | `client.WithLoadBalancing("round_robin")` — client-side LB; use `dns:///` target prefix for multi-endpoint resolution |
 | Service discovery | runtime | `c.ListServices(ctx)` — query available services via gRPC reflection (requires `server.WithReflection()`) |
 | Connection state | runtime | `c.State()` — returns current [connectivity.State]; `c.WaitReady(ctx)` — blocks until Ready |
 

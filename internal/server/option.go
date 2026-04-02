@@ -8,6 +8,7 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -248,5 +249,32 @@ func WithRateLimiter(l interceptor.RateLimiter) Option {
 func WithTrustProxy(trust bool) Option {
 	return func(s *Server) {
 		interceptor.Configure(interceptor.WithTrustProxy(trust))
+	}
+}
+
+// WithDefaultServiceConfig sets the default gRPC service configuration
+// returned to clients via the name resolver. This is the server-side
+// counterpart of the client's [github.com/H0llyW00dzZ/grpc-template/internal/client.WithLoadBalancing].
+//
+// The configJSON must be a valid gRPC service config JSON string. If it
+// cannot be parsed, the error is deferred and returned from [Server.Run].
+//
+// Example: advertise round-robin load balancing to all clients:
+//
+//	srv := server.New(
+//	    server.WithDefaultServiceConfig(
+//	        `{"loadBalancingConfig": [{"round_robin":{}}]}`,
+//	    ),
+//	)
+func WithDefaultServiceConfig(configJSON string) Option {
+	return func(s *Server) {
+		if configJSON == "" {
+			return
+		}
+		if !json.Valid([]byte(configJSON)) {
+			s.configErr = fmt.Errorf("invalid service config JSON: %s", configJSON)
+			return
+		}
+		s.serviceConfig = configJSON
 	}
 }
