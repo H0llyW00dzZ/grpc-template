@@ -31,6 +31,8 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 - `make vet` - go vet ./cmd/... ./internal/...
 - `make test` - Runs tests with -race (excludes testutil, cmd/client/server)
 - Test coverage: `make test-cover` (generates coverage.txt with atomic mode + race)
+- Benchmarks: `make bench` (runs all benchmarks with -benchmem)
+- Filtered benchmarks: `make bench BENCH_FILTER=GetConfig` (run only matching)
 - Full: `go test ./... -race -count=1`
 
 ### Running a Single Test (Important)
@@ -42,8 +44,9 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 - Coverage for one: `go test -run TestFoo ./pkg -coverprofile=coverage.txt`
 
 ### CI Commands
-- See .github/workflows/test.yaml: go vet, go test with race and coverage
+- See .github/workflows/test.yaml: go vet, go test with race and coverage, benchmarks
 - Use `go test $(go list ./cmd/... ./internal/... | grep -v -E '/testutil|cmd/(client|server)$') -race`
+- Benchmarks run in CI on every push/PR across all matrix OS/Go-version combinations
 
 ### Cleanup
 - `make clean` - Removes binaries and generated files (pkg/gen*, pkg/gen-ts, pkg/gen-php, pkg/gen-cpp)
