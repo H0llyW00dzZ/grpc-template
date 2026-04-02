@@ -65,6 +65,12 @@ func StopCleanup() {
 	}
 }
 
+// ExtractBearerToken is exported for benchmarking. It calls the unexported
+// extractBearerToken function.
+func ExtractBearerToken(ctx context.Context) (string, error) {
+	return extractBearerToken(ctx)
+}
+
 // ResetConfig resets the package-level configuration to defaults.
 // It stops any previously configured rate limiter to prevent cleanup
 // goroutine leaks between tests.
