@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
@@ -17,6 +18,8 @@ import (
 // with its method name, duration, and resulting gRPC status code.
 //
 // It uses the logger configured via [Configure] or [logging.Default].
+// A single configuration snapshot is taken at the start of each RPC
+// to ensure consistent logger usage throughout the request.
 func Logging() grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
@@ -26,12 +29,16 @@ func Logging() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
 		start := time.Now()
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		duration := time.Since(start)
 
 		st, _ := status.FromError(err)
-		l := logger()
 
 		if err != nil {
 			l.Error("RPC failed",
@@ -56,6 +63,8 @@ func Logging() grpc.UnaryClientInterceptor {
 // a stream is opened and the resulting gRPC status code.
 //
 // It uses the logger configured via [Configure] or [logging.Default].
+// A single configuration snapshot is taken at the start of each stream
+// to ensure consistent logger usage throughout the request.
 func StreamLogging() grpc.StreamClientInterceptor {
 	return func(
 		ctx context.Context,
@@ -65,7 +74,11 @@ func StreamLogging() grpc.StreamClientInterceptor {
 		streamer grpc.Streamer,
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
-		l := logger()
+		cfg := getConfig()
+		l := cfg.logger
+		if l == nil {
+			l = logging.Default()
+		}
 		l.Info("stream opening", "method", method)
 
 		start := time.Now()
