@@ -21,6 +21,7 @@
 //	    interceptor.WithLogger(myLogger),
 //	    interceptor.WithAuthFunc(myAuthFunc),
 //	    interceptor.WithExcludedMethods("/grpc.health.v1.Health/Check"),
+//	    interceptor.WithDemotedMethods("/myapp.v1.LongPoll/Watch"), // extend built-in defaults
 //	    interceptor.WithRateLimit(100, 200), // uses default in-memory rate limiter
 //	    // interceptor.WithRateLimiter(myRedisLimiter), // or inject a custom backend!
 //	    interceptor.WithTrustProxy(true), // only behind a trusted reverse proxy
@@ -28,8 +29,8 @@
 //
 // When using the [server] package, the equivalent server options
 // ([server.WithLogger], [server.WithAuthFunc], [server.WithExcludedMethods],
-// [server.WithRateLimit], [server.WithTrustProxy]) call [Configure]
-// automatically — no manual setup needed.
+// [server.WithDemotedMethods], [server.WithRateLimit], [server.WithTrustProxy])
+// call [Configure] automatically — no manual setup needed.
 //
 // # Thread Safety
 //
@@ -45,6 +46,9 @@
 //   - [Logging] / [StreamLogging] — logs method, duration, gRPC status code,
 //     peer address, request ID, and error for every RPC. When [WithTrustProxy]
 //     is enabled, the logged peer reflects the true client IP from proxy headers.
+//     Methods configured via [WithDemotedMethods] have their [codes.Canceled]
+//     errors demoted from Error to Debug level. gRPC reflection methods are
+//     demoted by default; the option is additive (extends, never replaces).
 //   - [Recovery] / [StreamRecovery] — recovers from panics and returns
 //     codes.Internal to the client.
 //   - [RequestID] / [StreamRequestID] — extracts or generates a unique
