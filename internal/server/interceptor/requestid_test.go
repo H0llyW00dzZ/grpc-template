@@ -45,12 +45,46 @@ func TestRequestID_PreservesExisting(t *testing.T) {
 	}
 	info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
 
-	md := metadata.Pairs("x-request-id", "my-trace-id-123")
+	validUUID := "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+	md := metadata.Pairs("x-request-id", validUUID)
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	_, err := i(ctx, "req", info, handler)
 	require.NoError(t, err)
-	assert.Equal(t, "my-trace-id-123", interceptor.RequestIDFromContext(capturedCtx))
+	assert.Equal(t, validUUID, interceptor.RequestIDFromContext(capturedCtx))
+}
+
+func TestRequestID_RejectsInvalidID(t *testing.T) {
+	i := interceptor.RequestID()
+
+	spoofedValues := []string{
+		"my-trace-id-123",                             // not a UUID
+		"'; DROP TABLE users; --",                     // SQL injection attempt
+		"<script>alert('xss')</script>",               // XSS payload
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // oversized hex without dashes
+		"", // empty string
+	}
+
+	for _, spoofed := range spoofedValues {
+		t.Run(spoofed, func(t *testing.T) {
+			var capturedCtx context.Context
+			handler := func(ctx context.Context, req any) (any, error) {
+				capturedCtx = ctx
+				return "ok", nil
+			}
+			info := &grpc.UnaryServerInfo{FullMethod: "/test.v1.Svc/Method"}
+
+			md := metadata.Pairs("x-request-id", spoofed)
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			_, err := i(ctx, "req", info, handler)
+			require.NoError(t, err)
+
+			id := interceptor.RequestIDFromContext(capturedCtx)
+			assert.NotEqual(t, spoofed, id, "spoofed value should be rejected")
+			assert.GreaterOrEqual(t, len(id), 32, "should be a server-generated UUID")
+		})
+	}
 }
 
 func TestStreamRequestID(t *testing.T) {
