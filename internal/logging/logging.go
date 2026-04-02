@@ -18,6 +18,13 @@
 // [SetDefault]. Both functions are safe for concurrent use:
 //
 //	logging.SetDefault(myZapAdapter)
+//
+// # Nil-Safe Resolution
+//
+// [Resolve] returns the given handler if non-nil, otherwise falls back to
+// [Default]. Interceptors use this to avoid repetitive nil checks:
+//
+//	l := logging.Resolve(cfg.logger) // never nil
 package logging
 
 import (
@@ -62,6 +69,15 @@ func SetDefault(h Handler) {
 		panic("logging: SetDefault called with nil Handler")
 	}
 	defaultHandler.Store(handlerBox{h: h})
+}
+
+// Resolve returns l if it is non-nil, otherwise returns the default handler
+// from [Default]. This eliminates the repeated nil-check pattern in interceptors.
+func Resolve(l Handler) Handler {
+	if l != nil {
+		return l
+	}
+	return Default()
 }
 
 // slogHandler adapts [log/slog] to the [Handler] interface.

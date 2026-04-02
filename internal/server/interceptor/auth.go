@@ -125,7 +125,7 @@ func extractBearerToken(ctx context.Context) (string, error) {
 
 	// Support "Bearer <token>" format.
 	token := vals[0]
-	if strings.HasPrefix(strings.ToLower(token), "bearer ") {
+	if len(token) >= 7 && strings.EqualFold(token[:7], "bearer ") {
 		token = token[7:]
 	}
 

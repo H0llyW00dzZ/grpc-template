@@ -31,9 +31,8 @@
 //
 // All interceptors read their configuration through a snapshot taken under
 // a read lock, so [Configure] may be called concurrently with in-flight
-// RPCs without data races. Interceptors resolve the logger via the
-// snapshot's resolvedLogger method, which falls back to [logging.Default]
-// when no logger has been configured.
+// RPCs without data races. Interceptors should resolve the logger using
+// [logging.Resolve].
 //
 // # Available Interceptors
 //

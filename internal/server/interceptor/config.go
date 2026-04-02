@@ -36,16 +36,6 @@ var defaultConfig = &config{
 	excludedMethods: make(map[string]struct{}),
 }
 
-// resolvedLogger returns the configured logger, falling back to [logging.Default]
-// if none was set. Use this instead of manually checking cfg.logger == nil
-// in every interceptor.
-func (c config) resolvedLogger() logging.Handler {
-	if c.logger != nil {
-		return c.logger
-	}
-	return logging.Default()
-}
-
 // getConfig returns a snapshot of the current package-level configuration
 // under a read lock. The returned struct is safe to use without holding
 // the lock because its value fields are copied; however the map and

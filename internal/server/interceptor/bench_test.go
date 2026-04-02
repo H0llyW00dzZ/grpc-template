@@ -188,6 +188,45 @@ func BenchmarkPeerKey_TrustProxy(b *testing.B) {
 	}
 }
 
+// BenchmarkExtractBearerToken measures token extraction with a standard
+// "Bearer <token>" header (the common hot path on every authenticated RPC).
+func BenchmarkExtractBearerToken(b *testing.B) {
+	md := metadata.Pairs("authorization", "Bearer my-secret-token-value")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = interceptor.ExtractBearerToken(ctx)
+	}
+}
+
+// BenchmarkExtractBearerToken_LowercasePrefix measures token extraction
+// with a lowercase "bearer" prefix to exercise the case-insensitive path.
+func BenchmarkExtractBearerToken_LowercasePrefix(b *testing.B) {
+	md := metadata.Pairs("authorization", "bearer my-secret-token-value")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = interceptor.ExtractBearerToken(ctx)
+	}
+}
+
+// BenchmarkExtractBearerToken_NoPrefix measures token extraction when
+// the authorization header contains a raw token without a "Bearer " prefix.
+func BenchmarkExtractBearerToken_NoPrefix(b *testing.B) {
+	md := metadata.Pairs("authorization", "raw-api-key-no-bearer-prefix")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = interceptor.ExtractBearerToken(ctx)
+	}
+}
+
 // noopLogger is a zero-cost logger for benchmarks that discards all output.
 type noopLogger struct{}
 

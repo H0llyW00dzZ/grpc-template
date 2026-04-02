@@ -24,7 +24,7 @@ func ResetConfig() {
 // TestableLogger returns the configured logger for testing,
 // falling back to [logging.Default] if none has been set.
 func TestableLogger() logging.Handler {
-	return getConfig().resolvedLogger()
+	return logging.Resolve(getConfig().logger)
 }
 
 // BackoffDuration exports backoffDuration for testing.

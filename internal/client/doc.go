@@ -71,6 +71,9 @@
 // If neither [WithTLS], [WithMutualTLS], nor [WithInsecure] is set,
 // the client defaults to insecure credentials and logs a warning.
 //
+// [Client.State] returns the current [connectivity.State] of the
+// underlying connection (or [connectivity.Shutdown] before Connect).
+//
 // [Client.Close] gracefully shuts down the connection and cancels
 // any background goroutines (e.g., health watching).
 //

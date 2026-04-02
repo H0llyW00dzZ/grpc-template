@@ -9,6 +9,7 @@ import (
 	"context"
 	"runtime/debug"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,7 +29,7 @@ func Recovery() grpc.UnaryServerInterceptor {
 		// interceptor in the chain (consistent with the single-snapshot
 		// contract documented in doc.go).
 		cfg := getConfig()
-		l := cfg.resolvedLogger()
+		l := logging.Resolve(cfg.logger)
 
 		defer func() {
 			if r := recover(); r != nil {
@@ -55,7 +56,7 @@ func StreamRecovery() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) (err error) {
 		cfg := getConfig()
-		l := cfg.resolvedLogger()
+		l := logging.Resolve(cfg.logger)
 
 		defer func() {
 			if r := recover(); r != nil {
