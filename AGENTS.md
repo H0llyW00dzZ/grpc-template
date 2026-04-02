@@ -7,7 +7,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 ## 1. Build, Lint, Test Commands
 
 ### Dependencies
-- `make deps` - Installs buf, protoc-gen-go, protoc-gen-go-grpc, golangci-lint
+- `make deps` - Installs buf, protoc-gen-go, protoc-gen-go-grpc, golangci-lint, gocyclo
 - `make deps-cpp` - Installs system packages for C++ protobuf/gRPC generation
 - `go mod tidy` - Update dependencies
 
@@ -28,6 +28,7 @@ This file contains instructions for AI agents (like opencode, Cursor, etc.) work
 
 ### Quality Checks (MUST RUN AFTER CHANGES)
 - `make lint` - golangci-lint run ./cmd/... ./internal/...
+- `make gocyclo` - cyclomatic complexity check (threshold 14, customizable via `CYCLO_THRESHOLD`)
 - `make vet` - go vet ./cmd/... ./internal/...
 - `make test` - Runs tests with -race (excludes testutil, cmd/client/server)
 - Test coverage: `make test-cover` (generates coverage.txt with atomic mode + race)

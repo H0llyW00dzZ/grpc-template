@@ -349,8 +349,10 @@ srv.RegisterService(
 | `make bench BENCH_FILTER=GetConfig` | Run only matching benchmarks |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
+| `make gocyclo` | Cyclomatic complexity check (threshold 14) |
+| `make gocyclo CYCLO_THRESHOLD=15` | Custom complexity threshold |
 | `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |
-| `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint) |
+| `make deps` | Install required tools (buf, protoc-gen-go, golangci-lint, gocyclo) |
 | `make deps-cpp` | Install system packages for C++ protobuf/gRPC code generation |
 
 ## Deployment
