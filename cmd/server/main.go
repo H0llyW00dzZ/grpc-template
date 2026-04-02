@@ -33,10 +33,12 @@ func main() {
 		server.WithReflection(),
 		server.WithLogger(l),
 		server.WithUnaryInterceptors(
+			interceptor.RequestID(),
 			interceptor.Recovery(),
 			interceptor.Logging(),
 		),
 		server.WithStreamInterceptors(
+			interceptor.StreamRequestID(),
 			interceptor.StreamRecovery(),
 			interceptor.StreamLogging(),
 		),
