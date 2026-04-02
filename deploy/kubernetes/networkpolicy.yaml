@@ -30,7 +30,7 @@ spec:
           app: grpc-client  # Adjust for your client pods
       namespaceSelector:
         matchLabels:
-          kubernetes.io/metadata.name: default
+          kubernetes.io/metadata.name: grpc-template  # Must match kustomization namespace
     ports:
     - protocol: TCP
       port: 50051

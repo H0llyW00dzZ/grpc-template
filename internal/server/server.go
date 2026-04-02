@@ -183,6 +183,7 @@ func (s *Server) Run(ctx context.Context) error {
 		<-errCh
 		return nil
 	case err := <-errCh:
+		s.healthSrv.Shutdown()
 		return fmt.Errorf("failed to serve: %w", err)
 	}
 }
