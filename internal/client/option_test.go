@@ -198,8 +198,19 @@ func TestWithTokenSource(t *testing.T) {
 }
 
 func TestWithLoadBalancing(t *testing.T) {
-	c := client.New("localhost:50051", client.WithLoadBalancing("round_robin"))
-	require.NotNil(t, c)
+	policies := []string{
+		"pick_first",
+		"round_robin",
+		"weighted_round_robin",
+		"least_request_experimental",
+		"ring_hash_experimental",
+	}
+	for _, policy := range policies {
+		t.Run(policy, func(t *testing.T) {
+			c := client.New("localhost:50051", client.WithLoadBalancing(policy))
+			require.NotNil(t, c)
+		})
+	}
 }
 
 func TestWithLoadBalancing_Empty(t *testing.T) {

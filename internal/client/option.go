@@ -16,7 +16,11 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
-	_ "google.golang.org/grpc/balancer/roundrobin" // register round_robin policy
+	_ "google.golang.org/grpc/balancer/leastrequest"       // register least_request_experimental policy
+	_ "google.golang.org/grpc/balancer/pickfirst"          // register pick_first policy
+	_ "google.golang.org/grpc/balancer/ringhash"           // register ring_hash_experimental policy
+	_ "google.golang.org/grpc/balancer/roundrobin"         // register round_robin policy
+	_ "google.golang.org/grpc/balancer/weightedroundrobin" // register weighted_round_robin policy
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 )
@@ -222,7 +226,15 @@ func WithTokenSource(fn interceptor.TokenSource) Option {
 //
 // The policy name is validated against the registered gRPC balancer registry.
 // If the policy is not registered, the error is deferred and returned from
-// [Client.Connect]. Common policies: "round_robin", "pick_first" (default).
+// [Client.Connect].
+//
+// Registered policies:
+//
+//   - "pick_first" — default gRPC policy; sends all RPCs to a single backend
+//   - "round_robin" — distributes RPCs across all resolved backends in order
+//   - "weighted_round_robin" — distributes RPCs proportionally based on backend-reported weights
+//   - "least_request_experimental" — sends RPCs to the backend with fewest outstanding requests
+//   - "ring_hash_experimental" — consistent-hashing ring; useful for cache-friendly routing
 //
 // If both WithLoadBalancing and [WithDialOptions] with
 // [grpc.WithDefaultServiceConfig] are used, whichever is applied last
