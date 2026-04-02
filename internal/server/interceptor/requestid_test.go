@@ -58,11 +58,11 @@ func TestRequestID_RejectsInvalidID(t *testing.T) {
 	i := interceptor.RequestID()
 
 	spoofedValues := []string{
-		"my-trace-id-123",                           // not a UUID
-		"'; DROP TABLE users; --",                    // SQL injection attempt
-		"<script>alert('xss')</script>",              // XSS payload
+		"my-trace-id-123",                             // not a UUID
+		"'; DROP TABLE users; --",                     // SQL injection attempt
+		"<script>alert('xss')</script>",               // XSS payload
 		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // oversized hex without dashes
-		"",                                           // empty string
+		"", // empty string
 	}
 
 	for _, spoofed := range spoofedValues {
