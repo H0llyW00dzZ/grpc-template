@@ -92,6 +92,8 @@ func ensureRequestID(ctx context.Context) context.Context {
 //
 // Note: On Linux, [crypto/rand] reads from [/dev/urandom] which never
 // returns an error, so the error value is safe to discard.
+//
+// [/dev/urandom]: https://grokipedia.com/page/%2Fdev%2Frandom
 func generateUUID() string {
 	var uuid [16]byte
 	_, _ = rand.Read(uuid[:])
