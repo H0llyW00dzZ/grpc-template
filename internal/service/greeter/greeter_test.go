@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/client"
+	_ "github.com/H0llyW00dzZ/grpc-template/internal/client/balancer"
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"github.com/H0llyW00dzZ/grpc-template/internal/service/greeter"
 	"github.com/H0llyW00dzZ/grpc-template/internal/testutil"

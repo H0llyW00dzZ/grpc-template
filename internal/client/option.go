@@ -16,11 +16,6 @@ import (
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
-	_ "google.golang.org/grpc/balancer/leastrequest"       // register least_request_experimental policy
-	_ "google.golang.org/grpc/balancer/pickfirst"          // register pick_first policy
-	_ "google.golang.org/grpc/balancer/ringhash"           // register ring_hash_experimental policy
-	_ "google.golang.org/grpc/balancer/roundrobin"         // register round_robin policy
-	_ "google.golang.org/grpc/balancer/weightedroundrobin" // register weighted_round_robin policy
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 )
