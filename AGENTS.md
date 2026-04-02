@@ -124,7 +124,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - See internal/logging/logging.go:28
 - Services receive logger via NewService(l logging.Handler)
 - `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
-- In interceptors, use `cfg.resolvedLogger()` (defined on the config snapshot) instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`. See `server/interceptor/config.go` and `client/interceptor/config.go`.
+- In interceptors, use `logging.Resolve(cfg.logger)` (or the deprecated `cfg.resolvedLogger()`) instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)

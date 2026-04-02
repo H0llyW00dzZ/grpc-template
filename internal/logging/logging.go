@@ -64,6 +64,15 @@ func SetDefault(h Handler) {
 	defaultHandler.Store(handlerBox{h: h})
 }
 
+// Resolve returns l if it is non-nil, otherwise returns the default handler
+// from [Default]. This eliminates the repeated nil-check pattern in interceptors.
+func Resolve(l Handler) Handler {
+	if l != nil {
+		return l
+	}
+	return Default()
+}
+
 // slogHandler adapts [log/slog] to the [Handler] interface.
 type slogHandler struct{}
 

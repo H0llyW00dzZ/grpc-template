@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
@@ -24,7 +25,7 @@ func Logging() grpc.UnaryServerInterceptor {
 		handler grpc.UnaryHandler,
 	) (any, error) {
 		cfg := getConfig()
-		l := cfg.resolvedLogger()
+		l := logging.Resolve(cfg.logger)
 		start := time.Now()
 
 		resp, err := handler(ctx, req)
@@ -53,7 +54,7 @@ func StreamLogging() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) error {
 		cfg := getConfig()
-		l := cfg.resolvedLogger()
+		l := logging.Resolve(cfg.logger)
 		start := time.Now()
 
 		err := handler(srv, ss)

@@ -71,6 +71,19 @@ func TestSetDefault_NilPanics(t *testing.T) {
 	})
 }
 
+func TestResolve(t *testing.T) {
+	t.Run("returns provided handler when non-nil", func(t *testing.T) {
+		stub := &stubHandler{}
+		got := logging.Resolve(stub)
+		assert.Equal(t, stub, got)
+	})
+
+	t.Run("falls back to Default when nil", func(t *testing.T) {
+		got := logging.Resolve(nil)
+		require.NotNil(t, got)
+	})
+}
+
 func TestCustomHandler_ReceivesCalls(t *testing.T) {
 	stub := &stubHandler{}
 	stub.Debug("d", "k", "v")

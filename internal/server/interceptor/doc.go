@@ -37,9 +37,8 @@
 // a read lock, so [Configure] may be called concurrently with in-flight
 // RPCs without data races. Each interceptor uses a single config snapshot
 // for the entire request, including derived operations like peer key
-// extraction, ensuring consistency within a request. Interceptors resolve
-// the logger via the snapshot's resolvedLogger method, which falls back
-// to [logging.Default] when no logger has been configured.
+// extraction, ensuring consistency within a request. Interceptors should
+// resolve the logger using [logging.Resolve].
 //
 // # Available Interceptors
 //
