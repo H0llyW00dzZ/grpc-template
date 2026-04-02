@@ -88,7 +88,7 @@
 //   - [WithMaxMsgSize] — maximum message size
 //   - [WithMaxConcurrentStreams] — concurrent stream limit
 //   - [WithGrpcOptions] — raw grpc.ServerOption pass-through
-//   - [WithListener] — custom net.Listener (e.g., bufconn for testing)
+//   - [WithListener] — custom net.Listener (e.g., bufconn for testing); consumed by first [Run]
 //
 // [gRPC Health Checking Protocol]: https://github.com/grpc/grpc/blob/master/doc/health-checking.md
 package server

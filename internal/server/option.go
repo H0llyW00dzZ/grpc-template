@@ -140,6 +140,9 @@ func WithGrpcOptions(opts ...grpc.ServerOption) Option {
 // instead of opening a new TCP listener on the configured port.
 // This is useful for testing (e.g., bufconn) and custom deployment
 // scenarios such as Unix domain sockets or systemd socket activation.
+//
+// The listener is consumed by the first [Server.Run] call; subsequent
+// Run calls on the same Server fall back to the configured port.
 func WithListener(lis net.Listener) Option {
 	return func(s *Server) {
 		s.listener = lis
