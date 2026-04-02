@@ -10,6 +10,8 @@ import (
 	"context"
 	"io"
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/client"
@@ -24,6 +26,11 @@ const (
 )
 
 func main() {
+	// Enable debug logging (shows Debug level + reflection calls)
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(h))
 	// Initialize logger.
 	l := logging.Default()
 
@@ -49,6 +56,16 @@ func main() {
 		log.Fatal(err)
 	}
 	defer c.Close()
+
+	// List available services via runtime reflection.
+	services, err := c.ListServices(ctx)
+	if err != nil {
+		l.Error("ListServices: %v", err)
+	} else {
+		for _, svc := range services {
+			l.Info("available service", "name", svc)
+		}
+	}
 
 	// Create the greeter caller using the client's connection and logger.
 	caller := greeter.NewCaller(c.Conn(), c.Logger())

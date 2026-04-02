@@ -191,3 +191,52 @@ func TestLogging_WithoutTrustProxy_IgnoresHeaders(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ok", resp)
 }
+
+func TestLogging_ReflectionCanceled(t *testing.T) {
+	i := interceptor.Logging()
+
+	handler := func(_ context.Context, _ any) (any, error) {
+		return nil, status.Error(codes.Canceled, "context canceled")
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"}
+
+	_, err := i(context.Background(), nil, info, handler)
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Canceled, st.Code())
+}
+
+func TestStreamLogging_ReflectionCanceled(t *testing.T) {
+	i := interceptor.StreamLogging()
+
+	handler := func(srv any, stream grpc.ServerStream) error {
+		return status.Error(codes.Canceled, "context canceled")
+	}
+	info := &grpc.StreamServerInfo{FullMethod: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"}
+	ss := &fakeServerStream{ctx: context.Background()}
+
+	err := i(nil, ss, info, handler)
+	require.Error(t, err)
+}
+
+func TestLogging_CustomDemotedMethod(t *testing.T) {
+	interceptor.ResetConfig()
+	interceptor.Configure(
+		interceptor.WithLogger(&noopLogger{}),
+		interceptor.WithDemotedMethods("/myapp.v1.LongPoll/Watch", ""),
+	)
+	t.Cleanup(interceptor.ResetConfig)
+
+	i := interceptor.Logging()
+
+	handler := func(_ context.Context, _ any) (any, error) {
+		return nil, status.Error(codes.Canceled, "context canceled")
+	}
+	info := &grpc.UnaryServerInfo{FullMethod: "/myapp.v1.LongPoll/Watch"}
+
+	// Should be demoted to Debug (not Error) — verifying no panic and error passes through.
+	_, err := i(context.Background(), nil, info, handler)
+	require.Error(t, err)
+	assert.Equal(t, codes.Canceled, status.Code(err))
+}

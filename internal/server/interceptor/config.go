@@ -24,6 +24,7 @@ type config struct {
 	logger          logging.Handler
 	authFunc        AuthFunc
 	excludedMethods map[string]struct{}
+	demotedMethods  map[string]struct{} // methods demoted to Debug level on Canceled
 	rateLimiter     RateLimiter
 	trustProxy      bool
 }
@@ -34,6 +35,7 @@ var configMu sync.RWMutex
 // defaultConfig is the package-level configuration used by all interceptors.
 var defaultConfig = &config{
 	excludedMethods: make(map[string]struct{}),
+	demotedMethods:  defaultDemotedMethods(),
 }
 
 // getConfig returns a snapshot of the current package-level configuration
@@ -45,6 +47,13 @@ func getConfig() config {
 	configMu.RLock()
 	defer configMu.RUnlock()
 	return *defaultConfig
+}
+
+// isDemoted reports whether the given method should be demoted to Debug
+// level when the RPC completes with [codes.Canceled].
+func (c config) isDemoted(method string) bool {
+	_, ok := c.demotedMethods[method]
+	return ok
 }
 
 // Option configures the interceptor package.
@@ -86,6 +95,39 @@ func WithExcludedMethods(methods ...string) Option {
 				c.excludedMethods[m] = struct{}{}
 			}
 		}
+	}
+}
+
+// WithDemotedMethods configures [Logging] and [StreamLogging] to demote
+// matching RPC errors from Error to Debug level when the gRPC status
+// code is [codes.Canceled]. This is useful for methods like
+// ServerReflection where client-initiated cancellation is expected.
+//
+// By default, both gRPC reflection v1 and v1alpha methods are demoted.
+// Calling this option adds to the existing set; it does not replace it.
+//
+//	interceptor.Configure(
+//	    interceptor.WithDemotedMethods(
+//	        "/myapp.v1.LongPoll/Watch",
+//	    ),
+//	)
+func WithDemotedMethods(methods ...string) Option {
+	return func(c *config) {
+		for _, m := range methods {
+			if m != "" {
+				c.demotedMethods[m] = struct{}{}
+			}
+		}
+	}
+}
+
+// defaultDemotedMethods returns the built-in set of methods that are
+// demoted to Debug level when cancelled. These are the standard gRPC
+// reflection endpoints whose cancellation is expected behaviour.
+func defaultDemotedMethods() map[string]struct{} {
+	return map[string]struct{}{
+		"/grpc.reflection.v1.ServerReflection/ServerReflectionInfo":      {},
+		"/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo": {},
 	}
 }
 

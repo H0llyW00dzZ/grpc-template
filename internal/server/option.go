@@ -180,6 +180,26 @@ func WithExcludedMethods(methods ...string) Option {
 	}
 }
 
+// WithDemotedMethods adds fully-qualified gRPC method names whose
+// [codes.Canceled] errors are demoted from Error to Debug level in the
+// logging interceptor. This prevents noisy error logs for methods
+// where client-initiated cancellation is expected behaviour (e.g.,
+// long-polling or streaming reflection calls).
+//
+// By default, gRPC ServerReflection v1 and v1alpha methods are already
+// demoted. Calling this option extends the default set.
+//
+// It delegates to [interceptor.Configure] with [interceptor.WithDemotedMethods].
+//
+//	srv := server.New(
+//	    server.WithDemotedMethods("/myapp.v1.LongPoll/Watch"),
+//	)
+func WithDemotedMethods(methods ...string) Option {
+	return func(s *Server) {
+		interceptor.Configure(interceptor.WithDemotedMethods(methods...))
+	}
+}
+
 // WithRateLimit sets the per-peer rate limit in requests per second and
 // the burst size (maximum number of requests allowed at once).
 // It uses the default in-memory token-bucket limiter.

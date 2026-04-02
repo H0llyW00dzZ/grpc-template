@@ -18,11 +18,16 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 )
 
 // healthWatchFunc creates a health Watch stream for the given connection.
 // The default implementation uses the standard gRPC health client.
 type healthWatchFunc func(ctx context.Context, conn *grpc.ClientConn) (healthgrpc.Health_WatchClient, error)
+
+// listServicesFunc queries the server for available service names.
+// The default implementation uses gRPC ServerReflection.
+type listServicesFunc func(ctx context.Context, conn *grpc.ClientConn) ([]string, error)
 
 // Client wraps a gRPC client connection with lifecycle management
 // and functional options configuration. It is the client-side
@@ -46,6 +51,7 @@ type Client struct {
 	configErr          error                                                                  // set only during New via options (e.g., TLS cert loading)
 	dialFunc           func(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) // nil = real grpc.NewClient
 	watchFunc          healthWatchFunc                                                        // nil = standard gRPC health client
+	listFunc           listServicesFunc                                                       // nil = standard gRPC reflection
 
 	// Guarded by mu — mutable during Connect/Close lifecycle.
 	conn         *grpc.ClientConn
@@ -308,4 +314,46 @@ func (c *Client) sleepOrDone(ctx context.Context, d time.Duration) bool {
 // gRPC Health Checking Protocol client.
 func defaultHealthWatch(ctx context.Context, conn *grpc.ClientConn) (healthgrpc.Health_WatchClient, error) {
 	return healthgrpc.NewHealthClient(conn).Watch(ctx, &healthgrpc.HealthCheckRequest{})
+}
+
+// ListServices returns the list of fully-qualified service names available
+// on the server using gRPC ServerReflection.
+func (c *Client) ListServices(ctx context.Context) ([]string, error) {
+	fn := c.listFunc
+	if fn == nil {
+		fn = defaultListServices
+	}
+	return fn(ctx, c.Conn())
+}
+
+// defaultListServices queries the server for service names using the
+// standard gRPC ServerReflection protocol.
+func defaultListServices(ctx context.Context, conn *grpc.ClientConn) ([]string, error) {
+	refClient := grpc_reflection_v1.NewServerReflectionClient(conn)
+	stream, err := refClient.ServerReflectionInfo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reflection: failed to open stream: %w", err)
+	}
+
+	// Send is non-blocking on bidi streams; errors surface at Recv.
+	_ = stream.Send(&grpc_reflection_v1.ServerReflectionRequest{
+		MessageRequest: &grpc_reflection_v1.ServerReflectionRequest_ListServices{},
+	})
+	_ = stream.CloseSend()
+
+	resp, err := stream.Recv()
+	if err != nil {
+		return nil, fmt.Errorf("reflection: failed to receive response: %w", err)
+	}
+
+	listResp := resp.GetListServicesResponse()
+	if listResp == nil {
+		return nil, fmt.Errorf("reflection: unexpected response type")
+	}
+
+	services := make([]string, len(listResp.GetService()))
+	for i, svc := range listResp.GetService() {
+		services[i] = svc.GetName()
+	}
+	return services, nil
 }

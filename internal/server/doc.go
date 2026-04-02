@@ -87,6 +87,7 @@
 //   - [WithUnaryInterceptors] / [WithStreamInterceptors] — interceptor chains
 //   - [WithRateLimit] — default in-memory per-peer rate limiting (syncs to interceptors)
 //   - [WithRateLimiter] — custom [interceptor.RateLimiter] backend (e.g., Redis) (syncs to interceptors)
+//   - [WithDemotedMethods] — demote Canceled errors to Debug for specified methods (syncs to interceptors; reflection methods demoted by default)
 //   - [WithTrustProxy] — trust X-Forwarded-For / X-Real-IP behind proxies (syncs to interceptors)
 //   - [WithKeepalive] — connection keepalive parameters
 //   - [WithMaxMsgSize] — maximum message size

@@ -77,6 +77,13 @@
 // [Client.Close] gracefully shuts down the connection and cancels
 // any background goroutines (e.g., health watching).
 //
+// # Service Discovery
+//
+// Use [Client.ListServices] to query available services at runtime via
+// gRPC reflection (requires server.WithReflection() on the server side):
+//
+//	services, err := c.ListServices(ctx)
+//
 // # Health Watching
 //
 // Enable [WithHealthWatch] to monitor the server's health status

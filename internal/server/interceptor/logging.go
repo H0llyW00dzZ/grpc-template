@@ -11,6 +11,7 @@ import (
 
 	"github.com/H0llyW00dzZ/grpc-template/internal/logging"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -34,7 +35,11 @@ func Logging() grpc.UnaryServerInterceptor {
 		attrs := buildLogArgs(ctx, info.FullMethod, duration, err, cfg.trustProxy)
 
 		if err != nil {
-			l.Error("rpc failed", attrs...)
+			if status.Code(err) == codes.Canceled && cfg.isDemoted(info.FullMethod) {
+				l.Debug("rpc completed", attrs...)
+			} else {
+				l.Error("rpc failed", attrs...)
+			}
 		} else {
 			l.Info("rpc completed", attrs...)
 		}
@@ -63,7 +68,11 @@ func StreamLogging() grpc.StreamServerInterceptor {
 		attrs := buildLogArgs(ss.Context(), info.FullMethod, duration, err, cfg.trustProxy)
 
 		if err != nil {
-			l.Error("stream rpc failed", attrs...)
+			if status.Code(err) == codes.Canceled && cfg.isDemoted(info.FullMethod) {
+				l.Debug("stream rpc completed", attrs...)
+			} else {
+				l.Error("stream rpc failed", attrs...)
+			}
 		} else {
 			l.Info("stream rpc completed", attrs...)
 		}

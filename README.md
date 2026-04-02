@@ -64,6 +64,10 @@ With streaming interceptors enabled, both unary and streaming RPCs are logged wi
 
 ![gRPC Streaming Interceptor Demo](assets/image/grpc-go-streaming-Interceptor.gif)
 
+With server reflection enabled, the client discovers all available services at runtime via `ListServices` and logs each fully-qualified service name before invoking RPCs:
+
+![gRPC Streaming Interceptor with Reflection](assets/image/grpc-go-streaming-Interceptor-with-reflection.gif)
+
 ## Project Structure
 
 ```text
@@ -257,7 +261,7 @@ Benchmarks run in CI on every push/PR across all matrix OS/Go-version combinatio
 
 ## Using the Client
 
-The `internal/client` package provides a high-level client with functional options, automatic interceptor configuration, health watching, and graceful lifecycle management.
+The `internal/client` package provides a high-level client with functional options, automatic interceptor configuration, service discovery, health watching, and graceful lifecycle management.
 
 See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key options include:
 
@@ -268,6 +272,8 @@ See `internal/client/doc.go` and `cmd/client/main.go` for usage examples. Key op
 - `client.WithTokenSource()` for auth (supports `StaticToken` and `OAuth2TokenSource`)
 
 The client automatically configures shared interceptors via `clientinterceptor.Configure()` when options are used.
+
+After connecting, use `c.ListServices(ctx)` to discover available services at runtime via gRPC reflection (requires `server.WithReflection()` on the server side).
 
 ## Adding a New Service
 
@@ -305,6 +311,7 @@ srv.RegisterService(
 | Rate limiting | `cmd/server/main.go` | `server.WithRateLimit(100, 200)` (or `interceptor.WithRateLimiter(custom)` for Redis) + `interceptor.RateLimit()` / `interceptor.StreamRateLimit()` |
 | Trust proxy headers | `cmd/server/main.go` | `server.WithTrustProxy(true)` — use X-Forwarded-For / X-Real-IP for client IP (only behind trusted proxies) |
 | Enable reflection | `cmd/server/main.go` | `server.WithReflection()` |
+| Demote cancel logs | `cmd/server/main.go` | `server.WithDemotedMethods("/myapp.v1.LongPoll/Watch")` — demote Canceled errors to Debug; reflection methods demoted by default |
 | Set keepalives | `cmd/server/main.go` | `server.WithKeepalive(...)` |
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
@@ -328,6 +335,7 @@ srv.RegisterService(
 | Max message size | `cmd/client/main.go` | `client.WithMaxMsgSize(maxBytes)` — override default 4 MB limit |
 | Raw dial options | `cmd/client/main.go` | `client.WithDialOptions(opts...)` — pass-through any `grpc.DialOption` |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
+| Service discovery | runtime | `c.ListServices(ctx)` — query available services via gRPC reflection (requires `server.WithReflection()`) |
 | Connection state | runtime | `c.State()` — returns current [connectivity.State]; `c.WaitReady(ctx)` — blocks until Ready |
 
 ### Project

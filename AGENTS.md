@@ -125,6 +125,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - Services receive logger via NewService(l logging.Handler)
 - `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
 - In interceptors, use `logging.Resolve(cfg.logger)` instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`.
+- Demoted methods: `WithDemotedMethods` configures logging interceptors to demote `codes.Canceled` errors to Debug level (instead of Error) for specified methods. gRPC reflection methods are demoted by default. The option is additive — calling it extends the built-in set, never replaces it.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)
@@ -154,8 +155,12 @@ And every `.proto` file must also start with the identical header (same `//` com
 - For new interceptors: implement both unary and stream versions (see client and server interceptor packages)
 - Interceptor config is thread-safe: both client and server interceptor packages use `sync.RWMutex` + `getConfig()` for all `defaultConfig` access. `Configure()` takes a write lock; interceptors read via `getConfig()` snapshot (returned by value in both packages). Each interceptor uses a single snapshot for the entire request (including derived operations like `peerKey`); never call `getConfig()` more than once per request path.
 - `Client.Connect()` rejects double invocation — call `Close()` before reconnecting to prevent connection and goroutine leaks.
+- `Client.ListServices(ctx)` queries available services via gRPC ServerReflection v1 (requires `server.WithReflection()` on the server side).
 - `Server.Run()` drains the serve goroutine before returning — no goroutine leaks on shutdown. It logs the actual listener address via `lis.Addr()`. On graceful shutdown, `healthSrv.Shutdown()` atomically transitions all registered services to NOT_SERVING. A `WithListener` listener is consumed by the first `Run`; subsequent calls fall back to the configured port.
+- `server.WithReflection()` enables gRPC server reflection for debugging with grpcurl and runtime service discovery via `Client.ListServices`.
+- `server.WithDemotedMethods(...)` and `interceptor.WithDemotedMethods(...)` configure logging interceptors to demote `codes.Canceled` errors to Debug level for specified methods. The option is additive (extends the default set which includes gRPC reflection methods).
 - When replacing a rate limiter via `WithRateLimiter` or `WithRateLimit`, the previous limiter is automatically stopped if it implements `Stop()` (e.g., `MemoryRateLimiter`), preventing background goroutine leaks.
+- Server/client `WithLogger` options auto-sync the logger to interceptors via `interceptor.Configure()` — no manual interceptor configuration needed.
 
 ### Proto and Generated Code
 - NEVER edit files in pkg/gen/

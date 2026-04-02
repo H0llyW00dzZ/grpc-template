@@ -81,5 +81,6 @@ func ResetConfig() {
 	stopPreviousLimiter(defaultConfig.rateLimiter)
 	defaultConfig = &config{
 		excludedMethods: make(map[string]struct{}),
+		demotedMethods:  defaultDemotedMethods(),
 	}
 }
