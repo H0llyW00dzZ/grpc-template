@@ -205,8 +205,12 @@ func peerKey(ctx context.Context, trustProxy bool) string {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if ips := md.Get("x-forwarded-for"); len(ips) > 0 && ips[0] != "" {
 				// x-forwarded-for can be a comma-separated list of IPs.
-				// The true client is the first IP.
-				clientIP := strings.Split(ips[0], ",")[0]
+				// The true client is the first IP. Use IndexByte instead
+				// of Split to avoid a []string allocation.
+				clientIP := ips[0]
+				if i := strings.IndexByte(clientIP, ','); i >= 0 {
+					clientIP = clientIP[:i]
+				}
 				return strings.TrimSpace(clientIP)
 			}
 			if ips := md.Get("x-real-ip"); len(ips) > 0 && ips[0] != "" {
