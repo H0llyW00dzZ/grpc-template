@@ -97,7 +97,11 @@ func (s *Server) ServiceConfig() string {
 // when the server starts. This is the primary way to add your
 // gRPC service implementations to the server.
 //
-// It is safe for concurrent use.
+// Registrars are collected and deferred until [Server.Run] creates the
+// underlying [grpc.Server], so they may be added from any goroutine at
+// any point before startup. The variadic signature keeps the call site
+// compact even for servers that host many services, and the method is
+// safe for concurrent use.
 //
 //	srv.RegisterService(greeterSvc.Register, authSvc.Register, kvSvc.Register)
 func (s *Server) RegisterService(registrars ...ServiceRegistrar) {
