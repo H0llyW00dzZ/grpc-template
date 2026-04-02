@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	defaultAddr = "localhost:50051"
+	defaultAddr = "dns:///localhost:50051"
 	defaultName = "World"
 )
 
@@ -48,6 +48,7 @@ func main() {
 		client.WithStreamInterceptors(
 			clientinterceptor.StreamLogging(),
 		),
+		client.WithLoadBalancing("round_robin"),
 	)
 
 	// Connect to the server.

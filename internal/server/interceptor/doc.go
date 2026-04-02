@@ -52,7 +52,10 @@
 //   - [Recovery] / [StreamRecovery] — recovers from panics and returns
 //     codes.Internal to the client.
 //   - [RequestID] / [StreamRequestID] — extracts or generates a unique
-//     request ID (x-request-id) for distributed tracing. Retrieve it
+//     request ID (x-request-id) for distributed tracing. Incoming values
+//     are validated against a strict UUID format (8-4-4-4-12 hex);
+//     non-matching or missing values are replaced with a server-generated
+//     UUID to prevent spoofing and log injection. Retrieve the ID
 //     downstream with [RequestIDFromContext].
 //   - [Auth] / [StreamAuth] — validates bearer tokens via a pluggable
 //     [AuthFunc] with support for method exclusion.

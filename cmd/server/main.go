@@ -42,6 +42,7 @@ func main() {
 			interceptor.StreamRecovery(),
 			interceptor.StreamLogging(),
 		),
+		server.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`),
 	)
 
 	// Create the greeter service utilizing the server's integrated logger.
