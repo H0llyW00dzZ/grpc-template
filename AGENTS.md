@@ -146,7 +146,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 
 ### Server and Interceptors
 - Use functional options: `server.WithXXX()` and `client.WithXXX()`
-- Register services via `RegisterService(registrars ...ServiceRegistrar)` (variadic) — must be called before `Run`; not safe for concurrent use
+- Register services via `RegisterService(registrars ...ServiceRegistrar)` (variadic) — safe for concurrent use (protected by RWMutex)
 - Server interceptors in `internal/server/interceptor/`
 - Client interceptors in `internal/client/interceptor/`
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
