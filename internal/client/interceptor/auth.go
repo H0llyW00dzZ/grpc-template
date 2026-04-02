@@ -35,10 +35,7 @@ func Auth() grpc.UnaryClientInterceptor {
 		opts ...grpc.CallOption,
 	) error {
 		cfg := getConfig()
-		l := cfg.logger
-		if l == nil {
-			l = logging.Default()
-		}
+		l := cfg.resolvedLogger()
 		ctx, err := injectToken(ctx, cfg.tokenSource, l)
 		if err != nil {
 			return err
@@ -61,10 +58,7 @@ func StreamAuth() grpc.StreamClientInterceptor {
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
 		cfg := getConfig()
-		l := cfg.logger
-		if l == nil {
-			l = logging.Default()
-		}
+		l := cfg.resolvedLogger()
 		ctx, err := injectToken(ctx, cfg.tokenSource, l)
 		if err != nil {
 			return nil, err

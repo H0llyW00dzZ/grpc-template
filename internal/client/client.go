@@ -95,6 +95,9 @@ func (c *Client) Logger() logging.Handler {
 // handshake occurs when the first RPC is made or [Client.WaitReady] is
 // called.
 //
+// The ctx parameter is reserved for forward compatibility (e.g., connect
+// timeouts); it is not currently used because [grpc.NewClient] is non-blocking.
+//
 // Connect returns an error if called more than once without an
 // intervening [Client.Close]. This prevents connection and goroutine
 // leaks that would occur if a previous connection were silently

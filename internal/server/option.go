@@ -46,6 +46,7 @@ func WithTLS(certFile, keyFile string) Option {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
 			s.configErr = fmt.Errorf("failed to load TLS certificate: %w", err)
+			s.tlsConfig = nil
 			return
 		}
 		s.configErr = nil
@@ -66,18 +67,21 @@ func WithMutualTLS(certFile, keyFile, caCertFile string) Option {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
 			s.configErr = fmt.Errorf("failed to load TLS certificate: %w", err)
+			s.tlsConfig = nil
 			return
 		}
 
 		caCert, err := os.ReadFile(caCertFile)
 		if err != nil {
 			s.configErr = fmt.Errorf("failed to read CA certificate: %w", err)
+			s.tlsConfig = nil
 			return
 		}
 
 		caPool := x509.NewCertPool()
 		if !caPool.AppendCertsFromPEM(caCert) {
 			s.configErr = fmt.Errorf("failed to parse CA certificate from %s", caCertFile)
+			s.tlsConfig = nil
 			return
 		}
 
