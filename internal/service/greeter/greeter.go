@@ -53,19 +53,22 @@ func (s *Service) SayHelloServerStream(req *pb.SayHelloServerStreamRequest, stre
 		fmt.Sprintf("Good to see you, %s!", req.GetName()),
 	}
 
-	for _, greeting := range greetings {
+	for i, greeting := range greetings {
 		if err := stream.Send(&pb.SayHelloServerStreamResponse{Message: greeting}); err != nil {
 			return fmt.Errorf("failed to send greeting: %w", err)
 		}
 		// Simulate some processing delay between messages, respecting
 		// client cancellation so the server stops promptly instead of
 		// sleeping the full duration. On cancellation, the next Send
-		// will return the appropriate error.
-		delay := time.NewTimer(500 * time.Millisecond)
-		select {
-		case <-delay.C:
-		case <-stream.Context().Done():
-			delay.Stop()
+		// will return the appropriate error. Skip delay after the
+		// last message to avoid unnecessary latency before returning.
+		if i < len(greetings)-1 {
+			delay := time.NewTimer(500 * time.Millisecond)
+			select {
+			case <-delay.C:
+			case <-stream.Context().Done():
+				delay.Stop()
+			}
 		}
 	}
 

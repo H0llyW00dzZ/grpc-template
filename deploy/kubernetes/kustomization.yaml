@@ -24,7 +24,11 @@ resources:
   # Uncomment to expose the gRPC server via an external LoadBalancer:
   # - service-lb.yaml
 
-# Common labels
-commonLabels:
-  app: grpc-template
-  component: server
+# Metadata-only labels — uses the modern "labels" transformer instead of the
+# deprecated "commonLabels" to avoid injecting labels into selectors.
+# commonLabels silently overwrites NetworkPolicy ingress from[].podSelector,
+# turning "app: grpc-client" into "app: grpc-template" and breaking the rule.
+labels:
+  - pairs:
+      app: grpc-template
+      component: server

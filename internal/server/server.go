@@ -152,8 +152,11 @@ func (s *Server) Run(ctx context.Context) error {
 
 	grpcServer := s.setupServer()
 
-	// Use injected listener or start a new TCP listener.
+	// Use injected listener or start a new TCP listener. The listener
+	// is consumed by Serve, so clear it to allow subsequent Run calls
+	// to fall back to the configured port.
 	lis := s.listener
+	s.listener = nil
 	if lis == nil {
 		var err error
 		lis, err = net.Listen("tcp", ":"+s.port)

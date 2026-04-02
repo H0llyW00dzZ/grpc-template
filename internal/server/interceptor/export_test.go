@@ -66,10 +66,13 @@ func StopCleanup() {
 }
 
 // ResetConfig resets the package-level configuration to defaults.
+// It stops any previously configured rate limiter to prevent cleanup
+// goroutine leaks between tests.
 // This is only available in tests.
 func ResetConfig() {
 	configMu.Lock()
 	defer configMu.Unlock()
+	stopPreviousLimiter(defaultConfig.rateLimiter)
 	defaultConfig = &config{
 		excludedMethods: make(map[string]struct{}),
 	}
