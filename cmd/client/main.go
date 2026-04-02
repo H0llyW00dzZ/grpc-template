@@ -22,7 +22,7 @@ import (
 
 const (
 	defaultAddr = "dns:///localhost:50051"
-	defaultName = "World"
+	defaultName = "Gopher"
 )
 
 func main() {
