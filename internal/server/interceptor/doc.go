@@ -48,16 +48,17 @@
 //   - [Recovery] / [StreamRecovery] — recovers from panics and returns
 //     codes.Internal to the client.
 //   - [RequestID] / [StreamRequestID] — extracts or generates a unique
-//     request ID (x-request-id) for distributed tracing.
+//     request ID (x-request-id) for distributed tracing. Retrieve it
+//     downstream with [RequestIDFromContext].
 //   - [Auth] / [StreamAuth] — validates bearer tokens via a pluggable
 //     [AuthFunc] with support for method exclusion.
 //   - [Validation] — validates incoming requests implementing the
 //     [Validator] interface (compatible with protoc-gen-validate / buf validate).
 //   - [RateLimit] / [StreamRateLimit] — configurable per-peer rate limiting
 //     powered by a [RateLimiter] interface (scalable to Redis or other databases).
-//     The default [MemoryRateLimiter] executes a token-bucket algorithm with
-//     automatic stale-limiter cleanup (at half the TTL interval for tighter
-//     memory reclamation). When a rate limiter is replaced via
+//     The default [MemoryRateLimiter] (created via [NewMemoryRateLimiter])
+//     executes a token-bucket algorithm with automatic stale-limiter cleanup
+//     (at half the TTL interval for tighter memory reclamation). When a rate limiter is replaced via
 //     [WithRateLimiter] or [WithRateLimit], the previous limiter is stopped
 //     automatically if it implements a Stop method (e.g., [MemoryRateLimiter]),
 //     preventing background goroutine leaks. Supports proxy-aware client IP

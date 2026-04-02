@@ -29,7 +29,7 @@ A production-ready Go gRPC template/boilerplate for bootstrapping new gRPC proje
 - **Multi-language** — generates Go server & client stubs, TypeScript/JavaScript, PHP, and C++ client code
 - **Functional Options** — clean, extensible configuration for both server and client
 - **TLS / mTLS** — secure connections with a single option (server + client)
-- **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend
+- **Pluggable Logging** — `logging.Handler` interface (default: `slog`) — swap in zap, zerolog, logrus, or any backend; `logging.Resolve` provides nil-safe fallback to the default handler
 - **Built-in Interceptors** — server (recovery, logging, request ID, auth, validation, rate limiting) and client (logging, timeout, retry, auth) interceptor packages for both unary and streaming RPCs — with proxy-aware client IP extraction
 
 > [!TIP]
@@ -309,6 +309,7 @@ srv.RegisterService(
 | Set max msg size | `cmd/server/main.go` | `server.WithMaxMsgSize(1024 * 1024 * 50)` |
 | Stream limits | `cmd/server/main.go` | `server.WithMaxConcurrentStreams(1000)` |
 | Custom listener | `cmd/server/main.go` | `server.WithListener(lis)` |
+| Raw gRPC options | `cmd/server/main.go` | `server.WithGrpcOptions(opts...)` — pass-through any `grpc.ServerOption` |
 | Health status | runtime | `srv.Health().SetServingStatus(svc, status)` — toggle per-service health at runtime |
 
 ### Client
@@ -322,7 +323,12 @@ srv.RegisterService(
 | Unary interceptors | `cmd/client/main.go` | `client.WithUnaryInterceptors(clientinterceptor.Logging(), clientinterceptor.Timeout(), ...)` |
 | Stream interceptors | `cmd/client/main.go` | `client.WithStreamInterceptors(clientinterceptor.StreamLogging(), ...)` |
 | Health watching | `cmd/client/main.go` | `client.WithHealthWatch()` — auto-reconnects with exponential backoff |
+| Retry codes | `cmd/client/main.go` | `client.WithRetryCodes(codes.Unavailable, codes.ResourceExhausted)` — override default retryable codes |
+| Keepalive | `cmd/client/main.go` | `client.WithKeepalive(params)` — keep long-lived connections alive through proxies |
+| Max message size | `cmd/client/main.go` | `client.WithMaxMsgSize(maxBytes)` — override default 4 MB limit |
+| Raw dial options | `cmd/client/main.go` | `client.WithDialOptions(opts...)` — pass-through any `grpc.DialOption` |
 | Auth / Bearer token | `cmd/client/main.go` | `client.WithTokenSource(clientinterceptor.StaticToken("..."))` or `clientinterceptor.OAuth2TokenSource(oauth2.TokenSource)` (from `golang.org/x/oauth2`) |
+| Connection state | runtime | `c.State()` — returns current [connectivity.State]; `c.WaitReady(ctx)` — blocks until Ready |
 
 ### Project
 
@@ -349,6 +355,7 @@ srv.RegisterService(
 | `make bench BENCH_FILTER=GetConfig` | Run only matching benchmarks |
 | `make vet` | Run `go vet` |
 | `make lint` | Run `golangci-lint` |
+| `make lint-proto` | Lint proto files with `buf lint` |
 | `make gocyclo` | Cyclomatic complexity check (threshold 14) |
 | `make gocyclo CYCLO_THRESHOLD=15` | Custom complexity threshold |
 | `make clean` | Remove binaries and generated code (Go + TS + PHP + C++) |

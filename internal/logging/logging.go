@@ -18,6 +18,13 @@
 // [SetDefault]. Both functions are safe for concurrent use:
 //
 //	logging.SetDefault(myZapAdapter)
+//
+// # Nil-Safe Resolution
+//
+// [Resolve] returns the given handler if non-nil, otherwise falls back to
+// [Default]. Interceptors use this to avoid repetitive nil checks:
+//
+//	l := logging.Resolve(cfg.logger) // never nil
 package logging
 
 import (

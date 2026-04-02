@@ -124,7 +124,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 - See internal/logging/logging.go:28
 - Services receive logger via NewService(l logging.Handler)
 - `logging.Default()` / `SetDefault()` are concurrent-safe via `atomic.Value`. `SetDefault(nil)` panics to fail fast.
-- In interceptors, use `logging.Resolve(cfg.logger)` (or the deprecated `cfg.resolvedLogger()`) instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`.
+- In interceptors, use `logging.Resolve(cfg.logger)` instead of manually checking `cfg.logger == nil` and falling back to `logging.Default()`.
 
 ### Testing Style
 - Use bufconn for in-memory gRPC tests (see internal/testutil/grpctest.go)
@@ -146,7 +146,7 @@ And every `.proto` file must also start with the identical header (same `//` com
 
 ### Server and Interceptors
 - Use functional options: `server.WithXXX()` and `client.WithXXX()`
-- Register services via `RegisterService(registrar func(*grpc.Server))` — must be called before `Run`; not safe for concurrent use
+- Register services via `RegisterService(registrars ...ServiceRegistrar)` (variadic) — must be called before `Run`; not safe for concurrent use
 - Server interceptors in `internal/server/interceptor/`
 - Client interceptors in `internal/client/interceptor/`
 - Always chain interceptors properly (see `server/doc.go` and `client/doc.go`)
