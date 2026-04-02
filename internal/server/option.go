@@ -8,6 +8,7 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -268,6 +269,10 @@ func WithTrustProxy(trust bool) Option {
 func WithDefaultServiceConfig(configJSON string) Option {
 	return func(s *Server) {
 		if configJSON == "" {
+			return
+		}
+		if !json.Valid([]byte(configJSON)) {
+			s.configErr = fmt.Errorf("invalid service config JSON: %s", configJSON)
 			return
 		}
 		s.serviceConfig = configJSON

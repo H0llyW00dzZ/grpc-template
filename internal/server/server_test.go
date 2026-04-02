@@ -444,3 +444,14 @@ func TestServiceConfig_Default(t *testing.T) {
 	srv := server.New(server.WithPort("0"))
 	assert.Empty(t, srv.ServiceConfig())
 }
+
+func TestWithDefaultServiceConfig_InvalidJSON(t *testing.T) {
+	srv := server.New(
+		server.WithDefaultServiceConfig(`{loadBalancingConfig":[{"round_robin":{}}]}`),
+		server.WithPort("0"),
+	)
+	err := srv.Run(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration error")
+	assert.Contains(t, err.Error(), "invalid service config JSON")
+}
