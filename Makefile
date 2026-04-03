@@ -104,17 +104,17 @@ init: header
 	echo "==> Rewriting module path in source files..."; \
 	TEMPLATE_PROJECT="grpc-template"; \
 	if [ "$$UNAME_S" = "Darwin" ]; then \
-		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
+		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' -o -name 'Makefile' \) \
 			-not -path './.git/*' \
 			-exec sed -i '' "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
-		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' \) \
+		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' -o -name 'Makefile' \) \
 			-not -path './.git/*' \
 			-exec sed -i '' "s|$$TEMPLATE_PROJECT|$$PROJECT|g" {} +; \
 	else \
-		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' \) \
+		find . -type f \( -name '*.go' -o -name '*.proto' -o -name '*.yaml' -o -name '*.yml' -o -name 'Makefile' \) \
 			-not -path './.git/*' \
 			-exec sed -i "s|$(TEMPLATE_MODULE)|$$RESOLVED_MODULE|g" {} +; \
-		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' \) \
+		find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' -o -name 'Dockerfile' -o -name 'Makefile' \) \
 			-not -path './.git/*' \
 			-exec sed -i "s|$$TEMPLATE_PROJECT|$$PROJECT|g" {} +; \
 	fi; \
