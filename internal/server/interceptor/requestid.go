@@ -88,11 +88,15 @@ func ensureRequestID(ctx context.Context) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, generateUUID())
 }
 
-// generateUUID produces a version 4 UUID string using [crypto/rand].
+// generateUUID produces a version 4 (random) UUID string per [RFC 9562]
+// using [crypto/rand] as the entropy source.
 //
-// Note: On Linux, [crypto/rand] reads from [/dev/urandom] which never
-// returns an error, so the error value is safe to discard.
+// [crypto/rand] uses the platform's cryptographic random source
+// (getrandom(2) on Linux, CryptGenRandom on Windows, [/dev/urandom] as
+// fallback) which is always available after boot, so the error from
+// [rand.Read] is safe to discard.
 //
+// [RFC 9562]: https://datatracker.ietf.org/doc/html/rfc9562#section-5.4
 // [/dev/urandom]: https://grokipedia.com/page/%2Fdev%2Frandom
 func generateUUID() string {
 	var uuid [16]byte
