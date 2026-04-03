@@ -38,7 +38,7 @@ import (
 const (
 	numServers  = 3
 	numRequests = 12
-	numStreams   = 6
+	numStreams  = 6
 	scheme      = "lb-demo"
 	serviceName = "greeter"
 )
