@@ -1,4 +1,4 @@
-.PHONY: all proto proto-path lint-proto build run-server run-client test test-cover bench vet lint gocyclo clean deps deps-cpp header init
+.PHONY: all proto proto-path lint-proto build run-server run-client example-lb test test-cover bench vet lint gocyclo clean deps deps-cpp header init
 
 # Binary output directory.
 BIN_DIR := bin
@@ -204,6 +204,12 @@ run-server: header
 # Run the gRPC client demo.
 run-client: header
 	go run ./cmd/client
+
+# Run the load balancing demo (starts 3 servers, round-robin client).
+example-lb: header
+	@echo "==> Running load balancing demo..."
+	go run ./examples/loadbalancing
+	@echo "==> Done."
 
 ## ──────────────────────────────────────────────
 ## Quality
