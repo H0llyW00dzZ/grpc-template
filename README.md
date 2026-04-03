@@ -54,6 +54,20 @@ In 2026, gRPC is the clear winner for service-to-service communication — and *
 
 Modern AI systems — LLM orchestrators, inference pipelines, tool-calling agents (MCP), embedding services — make **thousands of low-latency calls** between components. The overhead of REST/JSON serialization and HTTP/1.1 connection management adds up fast. gRPC eliminates that overhead with binary serialization, persistent multiplexed connections, and native streaming, making it the natural transport layer for AI-native architectures.
 
+## Multi-language
+
+This template generates code for **Go, TypeScript/JavaScript, PHP, and C++** from a single set of `.proto` definitions — but the server implementation is Go-only by design.
+
+> [!IMPORTANT]
+> **Go is the highest-priority language for the server.** The entire server architecture — interceptors, health checks, graceful shutdown, TLS/mTLS — is built in Go. Other generated languages (TypeScript, PHP, C++) are for client-side consumption only.
+
+**Why Go for the server?**
+
+Go is purpose-built for backend services. It compiles fast, deploys as a single static binary, delivers excellent runtime performance, and makes concurrency trivial with goroutines and channels. The language is deliberately simple — easy to learn, read, and maintain — while still being production-ready for high-throughput, low-latency systems.
+
+> [!TIP]
+> The generated TypeScript, PHP, and C++ stubs are intended for **client-side usage** — consuming gRPC services from web frontends, existing PHP backends, or native applications. If you need a server in another language, the `.proto` files are portable — just plug them into that language's gRPC toolchain.
+
 ## Showcase
 
 The demo below shows the [`cmd/server`](cmd/server) and [`cmd/client`](cmd/client) in action — unary and server-streaming RPCs over gRPC:
