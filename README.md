@@ -72,9 +72,9 @@ With request ID tracing added to the interceptor chain, every unary and streamin
 
 ![gRPC Streaming Interceptor with Reflection and Request ID](assets/image/grpc-go-streaming-Interceptor-with-reflection-and-request-id.gif)
 
-With client-side load balancing (`round_robin`) and server-advertised service config, the client distributes RPCs across available backends while the server declares its preferred balancing policy via `WithDefaultServiceConfig`:
+With client-side load balancing (`round_robin`), the demo starts 3 independent server instances and a single client that distributes both unary RPCs and server-streaming RPCs across them via a manual resolver — each log line shows which backend handled the request, with a distribution summary at the end:
 
-![gRPC Streaming Interceptor with Load Balancing](assets/image/grpc-go-streaming-Interceptor-with-load-balancing.gif)
+![gRPC Load Balancing Demo](assets/image/grpc-go-streaming-Interceptor-with-load-balancing.gif)
 
 <details>
 <summary><b>Server configuration</b> — <code>cmd/server/main.go</code></summary>
@@ -211,6 +211,44 @@ func main() {
 
 </details>
 
+<details>
+<summary><b>Load balancing example</b> — <code>examples/loadbalancing/</code> (<code>make example-lb</code>)</summary>
+
+```go
+// main.go — entry point: starts servers, connects client, runs demos
+func main() {
+	l := logging.Default()
+	listeners := startServers(l)
+
+	r := manual.NewBuilderWithScheme("lb-demo")
+	resolver.Register(r)
+	// ... push listener addresses into resolver ...
+
+	c := client.New("lb-demo:///greeter",
+		client.WithInsecure(),
+		client.WithLoadBalancing("round_robin"),
+	)
+	c.Connect(ctx)
+
+	caller := greeter.NewCaller(c.Conn(), l)
+	runUnaryDemo(ctx, caller, l)   // 12 unary RPCs distributed across 3 servers
+	runStreamDemo(ctx, caller, l)  // 6 streams distributed across 3 servers
+}
+
+// server.go — starts N independent gRPC server instances
+func startServers(l logging.Handler) []net.Listener { ... }
+
+// demo.go — unary and streaming distribution demos with summary
+func runUnaryDemo(ctx context.Context, caller *greeter.Caller, l logging.Handler) { ... }
+func runStreamDemo(ctx context.Context, caller *greeter.Caller, l logging.Handler) { ... }
+
+// interceptor.go — injects x-server-addr header to identify backends
+func serverTag(addr string) grpc.UnaryServerInterceptor { ... }
+func streamServerTag(addr string) grpc.StreamServerInterceptor { ... }
+```
+
+</details>
+
 ## Project Structure
 
 ```text
@@ -218,6 +256,8 @@ grpc-template/
 ├── cmd/
 │   ├── server/main.go          # Server entry point
 │   └── client/main.go          # Client demo
+├── examples/
+│   └── loadbalancing/          # Round-robin load balancing demo (3 servers)
 ├── deploy/                     # Deployment templates
 │   └── kubernetes/             # Kustomize manifests (Deployment, HPA, NetworkPolicy, PDB, Service)
 ├── internal/
@@ -505,6 +545,7 @@ srv.RegisterService(
 | `make build` | Build server and client binaries |
 | `make run-server` | Run the gRPC server |
 | `make run-client` | Run the client demo |
+| `make example-lb` | Run the load balancing demo (3 servers, round-robin) |
 | `make test` | Run all tests with race detector |
 | `make test-cover` | Run tests with coverage (atomic + race, generates coverage.txt) |
 | `make bench` | Run all benchmarks with `-benchmem` |

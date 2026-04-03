@@ -34,14 +34,18 @@ func NewCaller(conn grpc.ClientConnInterface, l logging.Handler) *Caller {
 }
 
 // SayHello sends a unary greeting request and returns the response.
-func (c *Caller) SayHello(ctx context.Context, name string) (*pb.SayHelloResponse, error) {
+// Optional [grpc.CallOption] values (e.g., [grpc.Header]) are forwarded
+// to the underlying gRPC call.
+func (c *Caller) SayHello(ctx context.Context, name string, opts ...grpc.CallOption) (*pb.SayHelloResponse, error) {
 	c.log.Info("calling SayHello", "name", name)
-	return c.client.SayHello(ctx, &pb.SayHelloRequest{Name: name})
+	return c.client.SayHello(ctx, &pb.SayHelloRequest{Name: name}, opts...)
 }
 
 // SayHelloServerStream opens a server-streaming greeting and returns
 // the stream for the caller to consume.
-func (c *Caller) SayHelloServerStream(ctx context.Context, name string) (pb.GreeterService_SayHelloServerStreamClient, error) {
+// Optional [grpc.CallOption] values are forwarded to the underlying
+// gRPC call.
+func (c *Caller) SayHelloServerStream(ctx context.Context, name string, opts ...grpc.CallOption) (pb.GreeterService_SayHelloServerStreamClient, error) {
 	c.log.Info("calling SayHelloServerStream", "name", name)
-	return c.client.SayHelloServerStream(ctx, &pb.SayHelloServerStreamRequest{Name: name})
+	return c.client.SayHelloServerStream(ctx, &pb.SayHelloServerStreamRequest{Name: name}, opts...)
 }
