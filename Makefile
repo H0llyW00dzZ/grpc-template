@@ -37,6 +37,14 @@ all: header proto build
 # GitHub, GitLab, Gitea, Bitbucket, or any self-hosted git server.
 # Falls back to github.com if no remote is configured.
 #
+# The project name is sanitised for a valid Go module path:
+#   - lowercase everything
+#   - spaces → hyphens
+#   - keep only alphanumeric, hyphen, underscore, dot
+#   - collapse multiple hyphens into one
+#   - remove leading and trailing hyphens
+#   - this prevents broken module paths like "My Awesome Project"
+#
 # Usage (auto-derive from git remote + git config):
 #   make init DIR=../my-grpc-project
 #
@@ -86,6 +94,16 @@ init: header
 			echo "ERROR: $(DIR) already exists and is not empty. Choose a different path."; \
 			exit 1; \
 		fi; \
+	fi; \
+	PROJECT=$$(echo "$$PROJECT" \
+		| tr '[:upper:]' '[:lower:]' \
+		| tr ' ' '-' \
+		| tr -c '[:alnum:]-._' '-' \
+		| tr -s '-' \
+		| sed 's/^-//; s/-$$//'); \
+	if [ -z "$$PROJECT" ]; then \
+		echo "ERROR: Project name became empty after sanitization. Please choose a different directory name."; \
+		exit 1; \
 	fi; \
 	if [ -z "$(MODULE)" ]; then \
 		RESOLVED_MODULE="$$GIT_HOST/$$GIT_USER/$$PROJECT"; \
