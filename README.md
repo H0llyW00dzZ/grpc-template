@@ -358,9 +358,10 @@ make init MODULE=gitea.example.com/yourorg/yourproject
 `make init` will:
 1. Detect the git host from `git remote get-url origin` (HTTPS or SSH) — falls back to `github.com` if no remote is set
 2. Read `git config user.name` and the project directory name to build the Go module path
-3. Rewrite the module path across all `.go`, `.proto`, `.yaml`, and `Makefile` files
-4. Update `go.mod` and run `go mod tidy`
-5. Wipe the template git history and create a fresh initial commit
+3. Sanitise the project name for a valid Go module path (lowercase, spaces → hyphens, collapse repeated hyphens, strip invalid characters)
+4. Rewrite the module path across all `.go`, `.proto`, `.yaml`, and `Makefile` files
+5. Update `go.mod` and run `go mod tidy`
+6. Wipe the template git history and create a fresh initial commit
 
 
 ## Prerequisites
